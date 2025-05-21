@@ -56,8 +56,6 @@ export class FredSource implements DataSource {
 		} catch (error) {
 			// logger.error(`Error fetching data from FRED for ${this.series_id}:`, { error });
 			console.error(`Error fetching data from FRED for ${this.series_id}:`, error);
-			// Decide: throw custom error or return null to be filtered by Gatherer
-			// For now, let's rethrow so Gatherer's Promise.allSettled can catch it.
 			if (axios.isAxiosError(error)) {
 				throw new Error(`FRED API Error (${error.response?.status}): ${error.message}`);
 			}
