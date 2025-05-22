@@ -8,16 +8,32 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: pass
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
 
   timescaledb:
     image: timescale/timescaledb:latest-pg17
     container_name: timescaledb
     ports:
-      - "5432:5432"
+      - "5432:5432" 
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: postgres 
       POSTGRES_DB: market_signals
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data  
+      - ./timescaledb-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d market_signals"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: on-failure 
 
   data-collector:
     build:
@@ -27,5 +43,25 @@ services:
     env_file:
       - ./data-collector/.env
     depends_on:
-      - rabbitmq
+      rabbitmq:
+       condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+
+  signal-persister: 
+    build:
+      context: ./signal-persister
+      dockerfile: signal-persister.dockerfile
+    container_name: signal-persister
+    env_file:
+      - ./signal-persister/.env 
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: on-failure
+
+volumes: 
+  timescaledb_data:
   
