@@ -1,5 +1,5 @@
 import { DataSource } from "./datasources/Datasource";
-import { Signal } from "./models/signal";
+import { Signal } from "./models/signal.interface";
 
 export class Gatherer {
 	private sources: DataSource[];

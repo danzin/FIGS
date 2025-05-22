@@ -1,6 +1,6 @@
 import axios from "axios";
 import { DataSource } from "./Datasource";
-import { Signal } from "../models/signal";
+import { Signal } from "../models/signal.interface";
 import { config } from "../utils/config";
 
 export class FredSource implements DataSource {
@@ -52,6 +52,7 @@ export class FredSource implements DataSource {
 				name: this.key,
 				timestamp: new Date(latestObservation.date),
 				value: parseFloat(latestObservation.value),
+				source: "FRED",
 			};
 		} catch (error) {
 			// logger.error(`Error fetching data from FRED for ${this.series_id}:`, { error });

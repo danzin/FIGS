@@ -1,4 +1,4 @@
-import { Signal } from "../models/signal";
+import { Signal } from "../models/signal.interface";
 
 export interface DataSource {
 	/** Unique key for this data source */
