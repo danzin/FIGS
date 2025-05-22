@@ -37,7 +37,7 @@ async function setupBroker() {
 async function publishSignals() {
 	try {
 		const sources = [
-			new FredSource(FRED_API_KEY!, "M2SL"), // TODOL: FIX THE HARDCODING HERE. It should come from datapoints.
+			new FredSource(FRED_API_KEY!, datapoints.get("FREDM2") as string),
 			// new CoingeckoSource(COINGECKO_API_URL!),
 			// more sources
 		];
