@@ -12,7 +12,7 @@ function getEnv(key: string, required: boolean = true): string | undefined {
 
 export const config = {
 	FRED_API_KEY: getEnv("FRED_API_KEY"),
-	COINGECKO_API_URL: process.env.COINGECKO_API_URL,
-	RABBITMQ_URL: process.env.RABBITMQ_URL,
-	CRON_SCHEDULE: process.env.CRON_SCHEDULE,
+	// COINGECKO_API_URL: getEnv("COINGECKO_API_URL"),
+	RABBITMQ_URL: getEnv("RABBITMQ_URL"),
+	CRON_SCHEDULE: getEnv("CRON_SCHEDULE"),
 };
