@@ -17,6 +17,7 @@ export class RabbitMQService implements MessageBroker {
 	}
 
 	public async connect(): Promise<void> {
+		// Indempotence checks
 		if (this.channel && this.channelModel && this.connection) {
 			console.log("[RabbitMQService] Already connected.");
 			return;
@@ -26,6 +27,7 @@ export class RabbitMQService implements MessageBroker {
 			return;
 		}
 
+		// Clear previous reconnect timers
 		this.isConnecting = true;
 		if (this.reconnectTimeout) {
 			clearTimeout(this.reconnectTimeout);
@@ -33,9 +35,9 @@ export class RabbitMQService implements MessageBroker {
 		}
 
 		try {
-			this.channelModel = await amqp.connect(this.url);
+			this.channelModel = await amqp.connect(this.url); // Returns a ChannelModel
 			this.connection = this.channelModel.connection; // Access the underlying connection
-			this.channel = await this.channelModel.createChannel();
+			this.channel = await this.channelModel.createChannel(); // Get a Channel
 
 			console.log("[RabbitMQService] Connected to RabbitMQ and channel created.");
 
