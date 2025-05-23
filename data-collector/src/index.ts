@@ -1,4 +1,3 @@
-import amqp, { ChannelModel, Channel } from "amqplib";
 import cron from "node-cron";
 
 import { Gatherer } from "./gatherer";
@@ -33,7 +32,7 @@ async function setupBroker() {
 
 async function publishSignals() {
 	try {
-		const sources = [new FredSource(FRED_API_KEY!, "M2SL")];
+		const sources = [new FredSource(FRED_API_KEY!, datapoints.get("FREDM2") as string)];
 		const gatherer = new Gatherer(sources);
 		const signals = await gatherer.collectAll();
 
