@@ -57,7 +57,7 @@ export class TimescaleDBService implements DatabaseService {
             INSERT INTO public.signals (time, name, value, source)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (name, time) DO UPDATE SET 
-                value = EXCLUDED.value,
+                source = EXCLUDED.source
     `;
 		try {
 			await this.pool.query(query, [signal.timestamp, signal.name, signal.value, signal.source]);
