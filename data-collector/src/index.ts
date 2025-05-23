@@ -7,6 +7,8 @@ import { datapoints } from "./utils/datapoints";
 import { RabbitMQService } from "./services/RabbitMQService";
 import { CoinGeckoSource } from "./datasources/coingecko";
 import { FearGreedSource } from "./datasources/feargreed";
+import { VIXSource } from "./datasources/vixSource";
+import { SPYSource } from "./datasources/spySource";
 
 // 1. Validate env
 const FRED_API_KEY = config.FRED_API_KEY!;
@@ -32,6 +34,8 @@ async function publishSignals() {
 			new CoinGeckoSource("bitcoin", "dominance"),
 			new CoinGeckoSource("ethereum", "price"),
 			new FearGreedSource(),
+			new VIXSource(),
+			new SPYSource(),
 		];
 		const gatherer = new Gatherer(sources);
 		const signals = await gatherer.collectAll();
