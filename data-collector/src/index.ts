@@ -18,6 +18,7 @@ class DataCollectorApp {
 		this.setupGracefulShutdown();
 	}
 
+	//TODO: Implement adding tickers manually through the API
 	public async start(): Promise<void> {
 		try {
 			console.log("[DataCollectorApp] Starting application...");

@@ -14,14 +14,18 @@ export class SchedulerConfigManager {
 	}
 
 	public setupDefaultSchedules(): void {
-		// HIGH FREQUENCY - Every 5 minutes during market hours, every 15 minutes off-hours
+		// HIGH FREQUENCY - testing different frequencies.
 		this.registerHighFrequencySource(
 			new CoinGeckoSource("bitcoin", "price"),
-			"*/5 * * * *", // Every 5 minutes
+			"*/15 * * * *", // Every 15 minutes
 			{ maxRetries: 2, retryDelay: 30000 }
 		);
 
-		this.registerHighFrequencySource(new CoinGeckoSource("ethereum", "price"), "*/5 * * * *", {
+		this.registerHighFrequencySource(new CoinGeckoSource("ethereum", "price"), "*/15 * * * *", {
+			maxRetries: 2,
+			retryDelay: 30000,
+		});
+		this.registerHighFrequencySource(new CoinGeckoSource("solana", "price"), "*/15 * * * *", {
 			maxRetries: 2,
 			retryDelay: 30000,
 		});
@@ -46,7 +50,7 @@ export class SchedulerConfigManager {
 		// Bitcoin dominance (changes slowly but important)
 		this.registerMediumFrequencySource(
 			new CoinGeckoSource("bitcoin", "dominance"),
-			"0 */1 * * *", // Every hour
+			"0 */2 * * *", // Every 2 hours
 			{ maxRetries: 2, retryDelay: 120000 }
 		);
 
