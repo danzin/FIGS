@@ -5,6 +5,7 @@ import { VIXSource, SPYSource } from "./datasources/yahooFinance";
 import { FearGreedSource } from "./datasources/feargreed";
 import { MessageBroker } from "./services/messaging.interface";
 import { config } from "./utils/config";
+import { datapoints } from "./utils/datapoints";
 
 export class SchedulerConfigManager {
 	private scheduler: SignalScheduler;
@@ -37,15 +38,11 @@ export class SchedulerConfigManager {
 			{ maxRetries: 3, retryDelay: 60000 }
 		);
 
-		// MEDIUM FREQUENCY - Every 30 minutes to 1 hour
+		// MEDIUM FREQUENCY -  1 hour
 		// Market indices and volatility (market hours sensitive)
-		this.registerMediumFrequencySource(
-			new VIXSource(),
-			"0 * * * *", // Every 30 minutes
-			{ maxRetries: 3, retryDelay: 60000 }
-		);
+		this.registerMediumFrequencySource(new VIXSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 
-		this.registerMediumFrequencySource(new SPYSource(), "*/30 * * * *", { maxRetries: 3, retryDelay: 60000 });
+		this.registerMediumFrequencySource(new SPYSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 
 		// Bitcoin dominance (changes slowly but important)
 		this.registerMediumFrequencySource(
@@ -63,20 +60,22 @@ export class SchedulerConfigManager {
 		// LOW FREQUENCY - Daily or less frequent
 		// FRED data (M2 Money Supply - monthly updates, check daily)
 		this.registerLowFrequencySource(
-			new FredSource(config.FRED_API_KEY!, "M2SL"),
+			new FredSource(config.FRED_API_KEY!, datapoints.get("M2") as string), // M2 Money supply
 			"0 9 * * *", // 9 AM UTC daily
 			{ maxRetries: 5, retryDelay: 300000 }
 		);
 
 		// More FRED economic indicators
-		this.registerLowFrequencySource(
-			new FredSource(config.FRED_API_KEY!, "DGS10"), // 10-Year Treasury
-			"0 9 * * *",
-			{ maxRetries: 5, retryDelay: 300000 }
-		);
+
+		// DGS10 Not necessary as of now
+		// this.registerLowFrequencySource(
+		// 	new FredSource(config.FRED_API_KEY!, datapoints.get("DG") as string), // 10-Year Treasury
+		// 	"0 9 * * *",
+		// 	{ maxRetries: 5, retryDelay: 300000 }
+		// );
 
 		this.registerLowFrequencySource(
-			new FredSource(config.FRED_API_KEY!, "UNRATE"), // Unemployment Rate
+			new FredSource(config.FRED_API_KEY!, datapoints.get("UNR") as string), // Unemployment Rate
 			"0 9 * * 1", // Monday 9 AM UTC (weekly check)
 			{ maxRetries: 5, retryDelay: 300000 }
 		);
