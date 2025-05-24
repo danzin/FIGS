@@ -41,7 +41,7 @@ export class SchedulerConfigManager {
 		// Market indices and volatility (market hours sensitive)
 		this.registerMediumFrequencySource(
 			new VIXSource(),
-			"*/30 * * * *", // Every 30 minutes
+			"0 * * * *", // Every 30 minutes
 			{ maxRetries: 3, retryDelay: 60000 }
 		);
 
