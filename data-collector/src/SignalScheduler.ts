@@ -251,9 +251,9 @@ export class SignalScheduler {
 
 	private startHealthMonitoring(): void {
 		cron.schedule(
-			"*/5 * * * *",
+			"*0 * * * *",
 			() => {
-				// Every 5 minutes
+				// Every 1 hour
 				this.performHealthCheck();
 			},
 			{
