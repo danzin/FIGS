@@ -80,3 +80,17 @@ export class YahooFinanceSource implements DataSource {
 		}
 	}
 }
+
+export class VIXSource extends YahooFinanceSource {
+	constructor() {
+		super("^VIX", "price");
+		this.key = "vix_level";
+	}
+}
+
+export class SPYSource extends YahooFinanceSource {
+	constructor() {
+		super("SPY", "price");
+		this.key = "spy_price";
+	}
+}

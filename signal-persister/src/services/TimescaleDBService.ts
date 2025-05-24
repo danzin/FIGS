@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from "pg";
+import { Pool } from "pg";
 import { DatabaseService } from "./database.interface";
 import { Signal } from "../models/signal.interface";
 

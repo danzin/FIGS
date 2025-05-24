@@ -9,9 +9,11 @@
     "inspect": "ts-node scripts/inspect-signals.ts"
   },
   "dependencies": {
+    "@types/express": "^5.0.2",
     "amqplib": "^0.10.3",
     "axios": "^1.5.0",
     "dotenv": "^16.0.0",
+    "express": "^5.1.0",
     "node-cron": "^3.0.0"
   },
   "devDependencies": {
