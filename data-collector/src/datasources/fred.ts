@@ -4,12 +4,13 @@ import { Signal } from "../models/signal.interface";
 import { config } from "../utils/config";
 
 export class FredSource implements DataSource {
-	public key = "fred_m2";
+	public key: string;
 	private readonly apiKey: string;
 	private readonly series_id: string;
 	constructor(apiKey: string, series_id: string) {
 		this.apiKey = apiKey;
 		this.series_id = series_id;
+		this.key = `FRED_${series_id}`;
 	}
 	async fetch(): Promise<Signal | null> {
 		try {

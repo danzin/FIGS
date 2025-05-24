@@ -15,4 +15,5 @@ export const config = {
 	// COINGECKO_API_URL: getEnv("COINGECKO_API_URL"),
 	RABBITMQ_URL: getEnv("RABBITMQ_URL"),
 	CRON_SCHEDULE: getEnv("CRON_SCHEDULE"),
+	PORT: getEnv("PORT"),
 };

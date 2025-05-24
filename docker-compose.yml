@@ -40,6 +40,8 @@ services:
       context: ./data-collector      
       dockerfile: data-collector.dockerfile        
     container_name: data-collector
+    ports:
+      - "3000:3000" 
     env_file:
       - ./data-collector/.env
     depends_on:
