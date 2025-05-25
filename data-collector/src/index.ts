@@ -1,24 +1,22 @@
 import { RabbitMQService } from "./services/RabbitMQService";
 import { SchedulerConfigManager } from "./SchedulerConfigManager";
+import { ApiServer } from "./api/ApiServer";
 import { config } from "./utils/config";
-import express, { Request, Response } from "express";
 
 class DataCollectorApp {
 	private messageBroker: RabbitMQService;
 	private schedulerManager: SchedulerConfigManager;
-	private app: express.Application;
+	private apiServer: ApiServer;
 	private isShuttingDown: boolean = false;
 
 	constructor() {
 		this.messageBroker = new RabbitMQService(config.RABBITMQ_URL!);
 		this.schedulerManager = new SchedulerConfigManager(this.messageBroker);
-		this.app = express();
+		this.apiServer = new ApiServer(this.schedulerManager);
 
-		this.setupExpress();
 		this.setupGracefulShutdown();
 	}
 
-	//TODO: Implement adding tickers manually through the API
 	public async start(): Promise<void> {
 		try {
 			console.log("[DataCollectorApp] Starting application...");
@@ -37,15 +35,13 @@ class DataCollectorApp {
 			this.schedulerManager.getScheduler().start();
 			console.log("[DataCollectorApp] Scheduler started");
 
-			// Start HTTP API for monitoring and control
+			// Start HTTP API server
 			const port = config.PORT!;
-			this.app.listen(port, () => {
-				console.log(`[DataCollectorApp] HTTP API listening on port ${port}`);
-			});
+			this.apiServer.listen(Number(port));
 
 			console.log("[DataCollectorApp] Application started successfully");
 
-			// Log initial status
+			// Log initial status after a delay
 			setTimeout(() => {
 				this.logSchedulerStatus();
 			}, 10000);
@@ -53,53 +49,6 @@ class DataCollectorApp {
 			console.error("[DataCollectorApp] Failed to start application:", error);
 			process.exit(1);
 		}
-	}
-
-	private setupExpress(): void {
-		this.app.use(express.json());
-
-		// Health check endpoint
-		this.app.get("/health", (req: Request, res: Response) => {
-			res.json({
-				status: "healthy",
-				timestamp: new Date().toISOString(),
-				uptime: process.uptime(),
-			});
-		});
-
-		// Get scheduler status
-		this.app.get("/status", (req: Request, res: Response) => {
-			const status = this.schedulerManager.getScheduler().getStatus();
-			res.json({
-				sources: status,
-				summary: {
-					total: status.length,
-					enabled: status.filter((s) => s.enabled).length,
-					healthy: status.filter((s) => s.isHealthy).length,
-					failing: status.filter((s) => s.consecutiveFailures > 0).length,
-				},
-			});
-		});
-
-		// Manually trigger a specific source
-		this.app.post("/trigger/:sourceKey", async (req: Request, res: Response) => {
-			const { sourceKey } = req.params;
-
-			try {
-				await this.schedulerManager.getScheduler().triggerSource(sourceKey);
-				res.json({
-					success: true,
-					message: `Triggered ${sourceKey}`,
-					timestamp: new Date().toISOString(),
-				});
-			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				res.status(400).json({
-					success: false,
-					error: errorMessage,
-				});
-			}
-		});
 	}
 
 	private setupGracefulShutdown(): void {
