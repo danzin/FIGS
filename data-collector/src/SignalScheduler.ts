@@ -66,7 +66,7 @@ export class SignalScheduler {
 
 		console.log("[SignalScheduler] Starting scheduler...");
 		this.isRunning = true;
-
+		console.log(this.scheduledSources);
 		for (const [sourceKey, config] of this.scheduledSources) {
 			if (config.enabled) {
 				this.scheduleSource(sourceKey, config);
@@ -251,7 +251,7 @@ export class SignalScheduler {
 
 	private startHealthMonitoring(): void {
 		cron.schedule(
-			"*0 * * * *",
+			"0 * * * *",
 			() => {
 				// Every 1 hour
 				this.performHealthCheck();
