@@ -92,7 +92,7 @@ export class SignalsService {
       }));
     } catch (error) {
       console.error(`Error fetching signals for ${signalName}:`, error);
-      throw error; // Or a more specific HTTP exception
+      throw error; // TODO: Consider custome specific HTTP exception
     }
   }
 
