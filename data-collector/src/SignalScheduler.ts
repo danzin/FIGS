@@ -41,11 +41,11 @@ export class SignalScheduler {
 
 		console.log(`[SignalScheduler] Registered source: ${sourceKey} with schedule: ${config.schedule}`);
 
-    // If the scheduler is already running and the source is enabled, schedule it immediately
-    if (this.isRunning && config.enabled) {
-        this.scheduleSource(sourceKey, config);
-        console.log(`[SignalScheduler] Immediately scheduled running task for ${sourceKey}`);
-    }
+		// If the scheduler is already running and the source is enabled, schedule it immediately
+		if (this.isRunning && config.enabled) {
+			this.scheduleSource(sourceKey, config);
+			console.log(`[SignalScheduler] Immediately scheduled running task for ${sourceKey}`);
+		}
 	}
 
 	/**
