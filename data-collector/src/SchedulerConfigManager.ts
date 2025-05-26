@@ -40,6 +40,7 @@ export class SchedulerConfigManager {
 
 		// MEDIUM FREQUENCY -  1 hour
 		// Market indices and volatility (market hours sensitive)
+		//registerMediumFrequencySource Registers them for the long term!!!!!!
 		this.registerMediumFrequencySource(new VIXSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 
 		this.registerMediumFrequencySource(new SPYSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
@@ -66,8 +67,6 @@ export class SchedulerConfigManager {
 		);
 
 		// More FRED economic indicators
-
-		// DGS10 Not necessary as of now
 		// this.registerLowFrequencySource(
 		// 	new FredSource(config.FRED_API_KEY!, datapoints.get("DG") as string), // 10-Year Treasury
 		// 	"0 9 * * *",
@@ -117,6 +116,7 @@ export class SchedulerConfigManager {
 		});
 	}
 
+	// Doesn't register them for the long term!!!!!!!!
 	public addCustomSchedule(source: any, cronExpression: string, options: Partial<ScheduledDataSource> = {}): void {
 		this.scheduler.registerSource({
 			source,
