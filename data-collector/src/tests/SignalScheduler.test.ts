@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { SignalScheduler, ScheduledDataSource } from "../SignalScheduler";
-import { DataSource } from "../datasources/Datasource"; // Adjusted import
-import { MessageBroker } from "../services/messaging.interface"; // Adjusted import
+import { DataSource } from "../datasources/Datasource";
+import { MessageBroker } from "../services/messaging.interface";
 
 // Mock node-cron
 jest.mock("node-cron", () => ({
@@ -100,7 +100,7 @@ describe("SignalScheduler Dynamic Registration", () => {
 
 		// Simulate the cron job execution for the dynamic source
 		// by directly calling the function passed to cron.schedule
-		// (mockTask as any) is used because _scheduledFunc is not part of the official type
+
 		if (mockTask && (mockTask as any)._scheduledFunc) {
 			await (mockTask as any)._scheduledFunc();
 		} else {
