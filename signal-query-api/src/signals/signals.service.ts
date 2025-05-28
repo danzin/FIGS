@@ -47,6 +47,7 @@ export class SignalsService {
       }
       // This is a simplified aggregation, just taking the average.
       // For OHLC will need FIRST/LAST aggregates.
+      // TODO: Work on that
       query = `
             SELECT
                 time_bucket($${paramIndex++}, time) as time_bucket_alias,
@@ -83,6 +84,7 @@ export class SignalsService {
         return []; //Might need to throw throw NotFoundException, will see
       }
 
+      // FIX any
       // Map to DTO, ensuring correct 'time' field name if using time_bucket_alias
       return result.rows.map((row) => ({
         time: row.time_bucket_alias || row.time, // Use alias if present
@@ -96,6 +98,7 @@ export class SignalsService {
     }
   }
 
+  // TODO: fix
   async findLatestByName(signalName: string): Promise<SignalDto | null> {
     const query = `
        SELECT time, name, value, source
