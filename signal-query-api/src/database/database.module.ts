@@ -24,7 +24,7 @@ const dbProvider = {
         '[DatabaseModule] Failed to connect to TimescaleDB:',
         error,
       );
-      throw error; // Fail fast if DB connection fails on startup
+      throw error; // Fail on DB connection error
     }
     return pool;
   },
