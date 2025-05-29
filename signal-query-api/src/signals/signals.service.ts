@@ -7,6 +7,15 @@ import {
 import { Pool } from 'pg';
 import { PG_CONNECTION } from '../database/database.constants';
 import { SignalDto, GetSignalsQueryDto } from '../models/signal.dto';
+
+interface Row {
+  time: Date;
+  time_bucket_alias: Date;
+  name: string;
+  value: string;
+  source: string;
+}
+
 @Injectable()
 export class SignalsService {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
@@ -86,7 +95,7 @@ export class SignalsService {
 
       // FIX any
       // Map to DTO, ensuring correct 'time' field name if using time_bucket_alias
-      return result.rows.map((row) => ({
+      return result.rows.map((row: Row) => ({
         time: row.time_bucket_alias || row.time, // Use alias if present
         name: row.name,
         value: parseFloat(row.value), // Ensure value is number
@@ -99,6 +108,7 @@ export class SignalsService {
   }
 
   // TODO: fix
+
   async findLatestByName(signalName: string): Promise<SignalDto | null> {
     const query = `
        SELECT time, name, value, source
@@ -112,7 +122,7 @@ export class SignalsService {
       if (result.rows.length === 0) {
         return null;
       }
-      const row = result.rows[0];
+      const row: Row = result.rows[0] as Row;
       return {
         time: row.time,
         name: row.name,
