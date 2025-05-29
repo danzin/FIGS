@@ -63,7 +63,7 @@ export class SignalsService {
 
       query = `
       SELECT
-        time_bucket($2, time) as time_bucket_alias,
+        time_bucket($2::interval, time) as time_bucket_alias,
         name,
         AVG(value) as value,
         source

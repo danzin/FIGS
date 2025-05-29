@@ -18,7 +18,6 @@ export class SignalDto {
   time: Date; // In DB it's timestamptz, here it's Date
 
   @IsNumber()
-  @IsNotEmpty()
   value: number;
 
   @IsString()
