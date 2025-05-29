@@ -28,7 +28,7 @@ export default tseslint.config(
   {
     rules: {
       'prettier/prettier': [
-        'off',
+        'warn',
         // Prettier config options
         {
           tabWidth: 2,

@@ -26,22 +26,26 @@ export class SignalsService {
   ): Promise<SignalDto[]> {
     const { startTime, endTime, limit = 100, granularity } = queryParams;
 
-    let query = `SELECT time, name, value, source FROM public.signals WHERE name = $1`;
+    const filterClauses: string[] = [];
     const queryValues: any[] = [signalName];
-    let paramIndex = 2;
+
+    // Helper to add clause and value
+    const addFilter = (clause: string, value: any) => {
+      filterClauses.push(clause.replace('?', `$${queryValues.length + 1}`));
+      queryValues.push(value);
+    };
 
     if (startTime) {
-      query += ` AND time >= $${paramIndex++}`;
-      queryValues.push(new Date(startTime));
+      addFilter('time >= ?', new Date(startTime));
     }
     if (endTime) {
-      query += ` AND time <= $${paramIndex++}`;
-      queryValues.push(new Date(endTime));
+      addFilter('time <= ?', new Date(endTime));
     }
 
-    // Basic granularity handling with time_bucket
+    let query: string;
+
     if (granularity) {
-      // TODO: use a whitelist or map to valid INTERVAL values.
+      // Validate granularity
       const validGranularities = [
         '1 minute',
         '5 minutes',
@@ -54,56 +58,52 @@ export class SignalsService {
       if (!validGranularities.includes(granularity.toLowerCase())) {
         throw new BadRequestException('Invalid granularity value.');
       }
-      // This is a simplified aggregation, just taking the average.
-      // For OHLC will need FIRST/LAST aggregates.
-      // TODO: Work on that
-      query = `
-            SELECT
-                time_bucket($${paramIndex++}, time) as time_bucket_alias,
-                name,
-                AVG(value) as value, -- Example: average value in bucket
-                source -- This might need different handling with aggregation (e.g., FIRST source)
-            FROM public.signals
-            WHERE name = $1 `; // $1 is signalName
-      queryValues.splice(1, 0, granularity); // Insert granularity as the new $2
+      // Insert granularity as $2, shift all other params
+      queryValues.splice(1, 0, granularity);
 
-      let whereClause = '';
-      let currentParamIndex = paramIndex; // Start after granularity and name
-      if (startTime) {
-        whereClause += ` AND time >= $${currentParamIndex++}`;
-      }
-      if (endTime) {
-        whereClause += ` AND time <= $${currentParamIndex++}`;
-      }
-      query += whereClause;
-      query += ` GROUP BY time_bucket_alias, name, source ORDER BY time_bucket_alias DESC LIMIT $${currentParamIndex++};`;
+      query = `
+      SELECT
+        time_bucket($2, time) as time_bucket_alias,
+        name,
+        AVG(value) as value,
+        source
+      FROM public.signals
+      WHERE name = $1
+      ${filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : ''}
+      GROUP BY time_bucket_alias, name, source
+      ORDER BY time_bucket_alias DESC
+      LIMIT $${queryValues.length + 1};
+    `;
       queryValues.push(limit);
     } else {
-      query += ` ORDER BY time DESC LIMIT $${paramIndex++};`;
+      query = `
+      SELECT time, name, value, source
+      FROM public.signals
+      WHERE name = $1
+      ${filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : ''}
+      ORDER BY time DESC
+      LIMIT $${queryValues.length + 1};
+    `;
       queryValues.push(limit);
     }
 
     try {
       const result = await this.pool.query(query, queryValues);
       if (result.rows.length === 0 && !granularity) {
-        // For now not throwing if no results found without granularity
         console.warn(
           `No signals found for name: ${signalName} with params: ${JSON.stringify(queryParams)}`,
         );
-        return []; //Might need to throw throw NotFoundException, will see
+        return [];
       }
-
-      // FIX any
-      // Map to DTO, ensuring correct 'time' field name if using time_bucket_alias
       return result.rows.map((row: Row) => ({
-        time: row.time_bucket_alias || row.time, // Use alias if present
+        time: row.time_bucket_alias || row.time,
         name: row.name,
-        value: parseFloat(row.value), // Ensure value is number
+        value: parseFloat(row.value),
         source: row.source,
       }));
     } catch (error) {
       console.error(`Error fetching signals for ${signalName}:`, error);
-      throw error; // TODO: Consider custome specific HTTP exception
+      throw error;
     }
   }
 
