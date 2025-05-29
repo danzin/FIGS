@@ -107,8 +107,6 @@ export class SignalsService {
     }
   }
 
-  // TODO: fix
-
   async findLatestByName(signalName: string): Promise<SignalDto | null> {
     const query = `
        SELECT time, name, value, source
