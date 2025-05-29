@@ -18,7 +18,7 @@ const dbProvider = {
     try {
       const client = await pool.connect();
       console.log('[DatabaseModule] Successfully connected to TimescaleDB.');
-      client.release(); // Fixed memory leak by not releasing client pool
+      client.release(); // Fixed memory leak caused by not releasing client pool
     } catch (error) {
       console.error(
         '[DatabaseModule] Failed to connect to TimescaleDB:',
