@@ -1,15 +1,28 @@
 import { Request, Response } from "express";
 import { SchedulerConfigManager } from "../../SchedulerConfigManager";
+import { HealthService } from "../../services/HealthService";
 
 export class StatusController {
-	constructor(private schedulerManager: SchedulerConfigManager) {}
+	constructor(
+		private schedulerManager: SchedulerConfigManager,
+		private healthService: HealthService
+	) {}
 
-	getHealth = (req: Request, res: Response): void => {
-		res.json({
-			status: "healthy",
-			timestamp: new Date().toISOString(),
-			uptime: process.uptime(),
-		});
+	getHealth = async (req: Request, res: Response): Promise<void> => {
+		try {
+			const health = await this.healthService.getSystemHealth();
+			const statusCode = health.status === "healthy" ? 200 : health.status === "degraded" ? 200 : 503; // Service Unavailable for unhealthy
+			res.status(statusCode).json(health);
+		} catch (error) {
+			res.status(503).json({
+				status: "unhealthy",
+				timestamp: new Date().toISOString(),
+				error: error instanceof Error ? error.message : "Unknown error conducting health check",
+				uptime: process.uptime(),
+				components: {},
+				summary: {},
+			});
+		}
 	};
 
 	getSchedulerStatus = (req: Request, res: Response): void => {

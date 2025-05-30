@@ -1,19 +1,24 @@
 import { RabbitMQService } from "./services/RabbitMQService";
+import { HealthService } from "./services/HealthService";
 import { SchedulerConfigManager } from "./SchedulerConfigManager";
 import { ApiServer } from "./api/ApiServer";
 import { config } from "./utils/config";
+import { SystemMonitor } from "./SystemMonitor";
 
 class DataCollectorApp {
 	private messageBroker: RabbitMQService;
 	private schedulerManager: SchedulerConfigManager;
 	private apiServer: ApiServer;
 	private isShuttingDown: boolean = false;
+	private healthService: HealthService;
+	private systemMonitor: SystemMonitor;
 
 	constructor() {
 		this.messageBroker = new RabbitMQService(config.RABBITMQ_URL!);
 		this.schedulerManager = new SchedulerConfigManager(this.messageBroker);
-		this.apiServer = new ApiServer(this.schedulerManager);
-
+		this.healthService = new HealthService(this.schedulerManager, this.messageBroker);
+		this.apiServer = new ApiServer(this.schedulerManager, this.healthService);
+		this.systemMonitor = new SystemMonitor(this.healthService);
 		this.setupGracefulShutdown();
 	}
 
@@ -41,6 +46,8 @@ class DataCollectorApp {
 
 			console.log("[DataCollectorApp] Application started successfully");
 
+			console.log(`[DataCollectorApp] Starting system monitor`);
+			this.systemMonitor.startMonitoring();
 			// Log initial status after a delay
 			setTimeout(() => {
 				this.logSchedulerStatus();
@@ -69,6 +76,9 @@ class DataCollectorApp {
 				// Close message broker connection
 				await this.messageBroker.close();
 				console.log("[DataCollectorApp] Message broker closed");
+
+				this.systemMonitor.stopMonitoring();
+				console.log("[DataCollectorApp] System monitor stopped");
 
 				console.log("[DataCollectorApp] Graceful shutdown completed");
 				process.exit(0);
