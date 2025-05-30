@@ -16,4 +16,7 @@ export const config = {
 	RABBITMQ_URL: getEnv("RABBITMQ_URL"),
 	CRON_SCHEDULE: getEnv("CRON_SCHEDULE"),
 	PORT: getEnv("PORT"),
+	HEALTH_HEAP_WARNING_MB: parseInt(process.env.HEALTH_HEAP_WARNING_MB || "512", 10),
+	HEALTH_HEAP_CRITICAL_MB: parseInt(process.env.HEALTH_HEAP_CRITICAL_MB || "768", 10),
+	MONITOR_CHECK_INTERVAL_CRON: process.env.MONITOR_CHECK_INTERVAL_CRON || "*/5 * * * *",
 };
