@@ -1,7 +1,6 @@
 import { SchedulerConfigManager } from "../../SchedulerConfigManager";
 import { CoinGeckoSource } from "../../datasources/coingecko";
 import { AddTickerRequest, AddTickerResponse, TickerListResponse, ValidationResponse } from "../types/ticker.types";
-//TODO: Fix scheduling through the ticker service. It adds it to the schedule, but it doesn't run it.
 export class TickerService {
 	constructor(private schedulerManager: SchedulerConfigManager) {}
 

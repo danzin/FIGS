@@ -5,18 +5,21 @@ import { TickerController } from "./controllers/TickerController";
 import { StatusController } from "./controllers/StatusController";
 import { createTickerRoutes } from "./routes/tickerRoutes";
 import { createStatusRoutes } from "./routes/statusRoutes";
+import { HealthService } from "../services/HealthService";
 
 export class ApiServer {
 	private app: Application;
 	private tickerService: TickerService;
 	private tickerController: TickerController;
 	private statusController: StatusController;
-
-	constructor(private schedulerManager: SchedulerConfigManager) {
+	constructor(
+		private schedulerManager: SchedulerConfigManager,
+		healthService: HealthService
+	) {
 		this.app = express();
 		this.tickerService = new TickerService(schedulerManager);
 		this.tickerController = new TickerController(this.tickerService);
-		this.statusController = new StatusController(schedulerManager);
+		this.statusController = new StatusController(schedulerManager, healthService);
 
 		this.setupMiddleware();
 		this.setupRoutes();

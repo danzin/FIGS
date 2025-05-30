@@ -1,5 +1,5 @@
 import amqp, { ChannelModel, Connection, Channel, ConsumeMessage, Options } from "amqplib";
-import { MessageBroker } from "./messaging.interface";
+import { MessageBroker } from "../models/messaging.interface";
 import { Signal } from "../models/signal.interface";
 /** Apparently in v0.10.7 of amqplib types,
  * amqp.connect() now resolves to a ChannelModel, not a Connection.
@@ -228,5 +228,9 @@ export class RabbitMQService implements MessageBroker {
 			console.error("[RabbitMQService] Error during close:", error);
 		}
 		this.isConnecting = false; // Reset connection flag
+	}
+
+	public isConnected(): boolean {
+		return !!(this.connection && this.channel && !this.connection.expectSocketClose && !this.isConnecting);
 	}
 }

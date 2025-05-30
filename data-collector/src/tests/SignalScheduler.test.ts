@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { SignalScheduler, ScheduledDataSource } from "../SignalScheduler";
 import { DataSource } from "../datasources/Datasource";
-import { MessageBroker } from "../services/messaging.interface";
+import { MessageBroker } from "../models/messaging.interface";
 
 // Mock node-cron
 jest.mock("node-cron", () => ({
