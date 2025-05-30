@@ -18,7 +18,7 @@ export default defineConfig([
 	{
 		rules: {
 			"prettier/prettier": [
-				"none",
+				"off",
 				// Prettier config options
 				{
 					tabWidth: 2,
