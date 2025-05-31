@@ -1,8 +1,8 @@
-Signal Query API - A NestJS-based service for querying and managing signal data with PostgreSQL backend.
+Signal Query API - A NestJS-based service for querying and managing signal data with PostgreSQL's TimescaleDB backend.
 
-+ ## Features
-+ 
-+ - Signal data querying and management
-+ - PostgreSQL database integration
-+ - Input validation and transformation
-+ - RESTful API with `/api/v1` prefix
+ ## Features
+ 
+ - Signal data querying and management
+ - PostgreSQL database integration
+ - Input validation and transformation
+ - RESTful API with `/api/v1` prefix
