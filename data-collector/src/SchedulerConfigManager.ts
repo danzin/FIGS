@@ -116,7 +116,6 @@ export class SchedulerConfigManager {
 		});
 	}
 
-	// Doesn't register them for the long term!!!!!!!!
 	public addCustomSchedule(source: any, cronExpression: string, options: Partial<ScheduledDataSource> = {}): void {
 		this.scheduler.registerSource({
 			source,
