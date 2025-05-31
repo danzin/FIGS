@@ -19,7 +19,7 @@ export class ApiServer {
 		this.app = express();
 		this.tickerService = new TickerService(schedulerManager);
 		this.tickerController = new TickerController(this.tickerService);
-		this.statusController = new StatusController(schedulerManager, healthService);
+		this.statusController = new StatusController(this.schedulerManager, healthService);
 
 		this.setupMiddleware();
 		this.setupRoutes();
