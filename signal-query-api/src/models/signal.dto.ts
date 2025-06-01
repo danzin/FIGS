@@ -44,4 +44,8 @@ export class GetSignalsQueryDto {
   @IsOptional()
   @IsString()
   granularity?: string; // e.g., '1 minute', '1 hour', '1 day'
+
+  @IsOptional()
+  @IsString()
+  source?: string;
 }
