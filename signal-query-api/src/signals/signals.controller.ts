@@ -26,7 +26,7 @@ export class SignalsController {
     @Param('name') signalName: string,
     @Query() queryParams: GetSignalsQueryDto,
   ): Promise<SignalDto[]> {
-    const signals = await this.signalsService.findByName(
+    const signals = await this.signalsService.getByName(
       signalName,
       queryParams,
     );
@@ -40,22 +40,12 @@ export class SignalsController {
   async getLatestSignalByName(
     @Param('name') signalName: string,
   ): Promise<SignalDto> {
-    const signal = await this.signalsService.findLatestByName(signalName);
+    const signal = await this.signalsService.getLatest(signalName);
     if (!signal) {
       throw new NotFoundException(
         `No latest signal found for name '${signalName}'.`,
       );
     }
     return signal;
-  }
-
-  @Get('distinct/names')
-  async getDistinctSignalNames(): Promise<string[]> {
-    return this.signalsService.getDistinctSignalNames();
-  }
-
-  @Get('distinct/sources')
-  async getDistinctSignalSources(): Promise<string[]> {
-    return this.signalsService.getDistinctSignalSources();
   }
 }
