@@ -85,10 +85,6 @@ export class SignalsRepository {
       throw new BadRequestException(`Invalid granularity: ${granularity}`);
     }
 
-    // Option A: Query the continuous aggregate view (preferred if you've created one)
-    // Assume you created a view named "signals_hourly" (or "signals_${granText}" dynamically).
-    // For simplicity, let's assume we have a view "signals_${granularity_underscored}".
-    // But if you only created one continuous view (e.g. 'signals_hourly'), use that directly:
     const caggName = this.getContinuousViewName(granularity);
 
     const queryValues: any[] = [signalName, granularity]; // $1 = name, $2 = granularity
