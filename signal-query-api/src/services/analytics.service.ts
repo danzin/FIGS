@@ -1,4 +1,4 @@
-import { SignalsRepository } from 'src/repositories/signals.repository';
+// import { SignalsRepository } from 'src/repositories/signals.repository';
 
 // @Injectable()
 // export class AnalyticsService {
