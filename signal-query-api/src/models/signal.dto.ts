@@ -28,11 +28,11 @@ export class SignalDto {
 export class GetSignalsQueryDto {
   @IsOptional()
   @IsString()
-  startTime?: string; // Will be parsed to Date
+  startTime?: string;
 
   @IsOptional()
   @IsString()
-  endTime?: string; // Will be parsed to Date
+  endTime?: string;
 
   @IsOptional()
   @Type(() => Number)
