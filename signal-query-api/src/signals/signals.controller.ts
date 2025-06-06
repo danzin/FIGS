@@ -40,12 +40,6 @@ export class SignalsController {
   async getLatestSignalByName(
     @Param('name') signalName: string,
   ): Promise<SignalDto> {
-    const signal = await this.signalsService.getLatest(signalName);
-    if (!signal) {
-      throw new NotFoundException(
-        `No latest signal found for name '${signalName}'.`,
-      );
-    }
-    return signal;
+    return await this.signalsService.getLatest(signalName);
   }
 }
