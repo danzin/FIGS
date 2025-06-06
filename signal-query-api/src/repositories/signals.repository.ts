@@ -86,6 +86,8 @@ export class SignalsRepository {
       throw new BadRequestException(`Invalid granularity: ${granularity}`);
     }
     // Consider adding a dictionary of complete SQL templates, one per view.
+    // THIS IS SAFE
+    // IT DOESN'T ALLOW FOR SQL INJECTION BECAUSE OF WHITELIST + SWITCH! IT'S SAFE
     const caggName = this.getContinuousViewName(granularity);
 
     const queryValues: any[] = [signalName, granularity]; // $1 = name, $2 = granularity
