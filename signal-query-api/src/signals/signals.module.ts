@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SignalsController } from './signals.controller';
-import { SignalsService } from './signals.service';
+import { SignalsService } from '../services/signals.service';
 
 @Module({
   controllers: [SignalsController],

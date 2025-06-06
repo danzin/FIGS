@@ -7,7 +7,7 @@ import {
   ValidationPipe,
   UsePipes,
 } from '@nestjs/common';
-import { SignalsService } from './signals.service';
+import { SignalsService } from '../services/signals.service';
 import { SignalDto, GetSignalsQueryDto } from '../models/signal.dto';
 
 @Controller('signals') // Base path for this controller will be /signals
