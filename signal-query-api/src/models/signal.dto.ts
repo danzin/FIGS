@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   Min,
 } from 'class-validator';
@@ -54,7 +55,10 @@ export class GetSignalsQueryDto {
 
   @IsOptional()
   @IsString()
-  granularity?: string; // e.g., '1 minute', '1 hour', '1 day'
+  @Matches(new RegExp(`^(${VALID_GRANS.join('|')})$`), {
+    message: `granularity must be one of ${VALID_GRANS.join(', ')}`,
+  })
+  granularity?: string;
 
   @IsOptional()
   @IsString()
