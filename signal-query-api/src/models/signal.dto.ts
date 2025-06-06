@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsDate,
+  IsISO8601,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -8,6 +9,16 @@ import {
   Max,
   Min,
 } from 'class-validator';
+
+const VALID_GRANS = [
+  '1 minute',
+  '5 minutes',
+  '15 minutes',
+  '1 hour',
+  '1 day',
+  '1 week',
+  '1 month',
+];
 export class SignalDto {
   @IsString()
   @IsNotEmpty()
@@ -27,11 +38,11 @@ export class SignalDto {
 
 export class GetSignalsQueryDto {
   @IsOptional()
-  @IsString()
+  @IsISO8601({}, { message: 'startTime must be a valid ISO8601 timestamp' })
   startTime?: string;
 
   @IsOptional()
-  @IsString()
+  @IsISO8601({}, { message: 'endTime must be a valid ISO8601 timestamp' })
   endTime?: string;
 
   @IsOptional()
