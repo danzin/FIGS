@@ -5,7 +5,7 @@ import {
   Query,
   NotFoundException,
 } from '@nestjs/common';
-import { SignalsService } from './signals.service';
+import { SignalsService } from './../services/signals.service';
 import { GetSignalsQueryDto, SignalDto } from '../models/signal.dto';
 
 @Controller('signals')
