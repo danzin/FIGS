@@ -89,8 +89,7 @@ export class SignalsRepository {
     // THIS IS SAFE
     // IT DOESN'T ALLOW FOR SQL INJECTION BECAUSE OF WHITELIST + SWITCH! IT'S SAFE
     const caggName = this.getContinuousViewName(granularity);
-
-    const queryValues: any[] = [signalName, granularity]; // $1 = name, $2 = granularity
+    const queryValues: any[] = [signalName];
     const filterClauses: string[] = [];
 
     if (startTime) {
@@ -102,15 +101,14 @@ export class SignalsRepository {
       filterClauses.push(`bucketed_at <= $${queryValues.length}`);
     }
 
-    // If you have a continuous aggregate view named signals_hourly:
     const text = `
-      SELECT bucketed_at AS time, name, avg_value AS value, source
-      FROM public.${caggName}
-      WHERE name = $1
-      ${filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : ''}
-      ORDER BY bucketed_at DESC
-      LIMIT $${queryValues.length + 1};
-    `;
+    SELECT bucketed_at AS time, name, avg_value AS value, source
+    FROM public.${caggName}
+    WHERE name = $1
+    ${filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : ''}
+    ORDER BY bucketed_at DESC
+    LIMIT $${queryValues.length + 1};
+  `;
     queryValues.push(limit);
 
     const result: QueryResult<RawRow> = await this.pool.query(
