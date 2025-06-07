@@ -22,6 +22,8 @@ export class SignalsController {
     @Param('name') name: string,
     @Query() queryParams: GetSignalsQueryDto,
   ): Promise<SignalDto[]> {
+    console.log('Query Params:', queryParams);
+    console.log('Signal Name:', name);
     return this.signalsService.getByName(name, queryParams);
   }
 

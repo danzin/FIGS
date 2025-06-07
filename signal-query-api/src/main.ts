@@ -6,7 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('port') || 3000;
+  const port = configService.get<number>('port') || 3003;
 
   app.setGlobalPrefix('api/v1');
 
