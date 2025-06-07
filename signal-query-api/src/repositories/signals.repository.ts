@@ -159,17 +159,16 @@ export class SignalsRepository {
   }
 
   /**
-   * Utility: map granularity string to CAGG view name, e.g. "1 hour" -> "signals_hourly"
+   * Utility: map granularity string to CAGG view name
    */
   private getContinuousViewName(granularity: string): string {
     switch (granularity.toLowerCase()) {
       case '1 hour':
         return 'signals_hourly';
       case '1 day':
-        return 'signals_daily'; // if you create such a view
+        return 'signals_daily';
       case '1 week':
-        return 'signals_weekly'; // etc.
-      // … handle other cases or throw if unsupported
+        return 'signals_weekly';
       default:
         throw new BadRequestException(
           `No continuous view defined for ${granularity}`,
