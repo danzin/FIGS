@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { Pool, QueryResult } from 'pg';
-import { SignalDto, GetSignalsQueryDto } from '../models/signal.dto';
+import { SignalDto, GetSignalsQueryDto, OhlcDto } from '../models/signal.dto';
 import { PG_CONNECTION } from '../database/database.constants';
 
 interface RawRow {
@@ -57,6 +57,12 @@ export class SignalsRepository {
     }));
   }
 
+  async findBucketedOHLC(
+    name: string, // here name is the base asset, e.g. "coingecko_bitcoin"
+    params: GetSignalsQueryDto,
+  ): Promise<OhlcDto[]> {
+    return this.queryView('signals_hourly_ohlc', name, params);
+  }
   /**
    * Fetch bucketed (aggregated) signals using time_bucket or continuous aggregate view.
    */
@@ -158,6 +164,38 @@ export class SignalsRepository {
     return result.rows.map((r) => r.name);
   }
 
+  // Generic helper for querying a view
+  private async queryView<T extends import('pg').QueryResultRow = SignalDto>(
+    viewName: string,
+    signalKey: string,
+    params: GetSignalsQueryDto,
+  ): Promise<T[]> {
+    const { startTime, endTime, limit = 100 } = params;
+    const values: any[] = [signalKey];
+    const filters: string[] = [];
+
+    if (startTime) {
+      values.push(new Date(startTime));
+      filters.push(`bucketed_at >= $${values.length}`);
+    }
+    if (endTime) {
+      values.push(new Date(endTime));
+      filters.push(`bucketed_at <= $${values.length}`);
+    }
+
+    const text = `
+      SELECT *                                             
+        FROM public.${viewName}
+       WHERE base_name = $1                               
+         ${filters.length ? 'AND ' + filters.join(' AND ') : ''}
+       ORDER BY bucketed_at DESC
+       LIMIT $${values.length + 1};
+    `;
+    values.push(limit);
+
+    const result = await this.pool.query<T>(text, values);
+    return result.rows;
+  }
   /**
    * Utility: map granularity string to CAGG view name
    */
