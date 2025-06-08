@@ -20,6 +20,7 @@ const VALID_GRANS = [
   '1 week',
   '1 month',
 ];
+
 export class SignalDto {
   @IsString()
   @IsNotEmpty()
@@ -35,6 +36,23 @@ export class SignalDto {
   @IsString()
   @IsNotEmpty()
   source: string;
+}
+
+export class OhlcDto {
+  time: Date;
+  name: string;
+  open_price: number;
+  high_price: number;
+  low_price: number;
+  close_price: number;
+  total_volume: number;
+}
+
+export class VwapDto {
+  time: Date;
+  name: string;
+  vwap: number;
+  total_volume: number;
 }
 
 export class GetSignalsQueryDto {
