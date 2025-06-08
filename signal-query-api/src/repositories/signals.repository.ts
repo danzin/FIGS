@@ -57,6 +57,9 @@ export class SignalsRepository {
     }));
   }
 
+  /**
+   * Fetch bucketed average hourly
+   */
   async findBucketedAverage(
     name: string,
     params: GetSignalsQueryDto,
