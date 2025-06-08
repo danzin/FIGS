@@ -57,12 +57,17 @@ export class SignalsRepository {
     }));
   }
 
+  /**
+   * Fetch bucketed (aggregated) OHLC data for a specific base asset.
+   * The name here is the base asset, e.g. "coingecko_bitcoin".
+   */
   async findBucketedOHLC(
-    name: string, // here name is the base asset, e.g. "coingecko_bitcoin"
+    name: string,
     params: GetSignalsQueryDto,
   ): Promise<OhlcDto[]> {
     return this.queryView('signals_hourly_ohlc', name, params);
   }
+
   /**
    * Fetch bucketed (aggregated) signals using time_bucket or continuous aggregate view.
    */
