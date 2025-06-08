@@ -71,7 +71,6 @@ export class SignalsRepository {
   /**
    * Fetch bucketed (aggregated) signals using time_bucket or continuous aggregate view.
    */
-  //TODO: Add support for the OHLC query, the aggregate exists in the DB
   async findBucketed(
     signalName: string,
     params: GetSignalsQueryDto,
