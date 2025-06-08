@@ -57,6 +57,12 @@ export class SignalsRepository {
     }));
   }
 
+  async findBucketedAverage(
+    name: string,
+    params: GetSignalsQueryDto,
+  ): Promise<SignalDto[]> {
+    return this.queryView('signals_hourly', name, params);
+  }
   /**
    * Fetch bucketed (aggregated) OHLC data for a specific base asset.
    * The name here is the base asset, e.g. "coingecko_bitcoin".
@@ -203,6 +209,7 @@ export class SignalsRepository {
   /**
    * Utility: map granularity string to CAGG view name
    */
+  //TODO: get rid of this, reduntant now with queryView
   private getContinuousViewName(granularity: string): string {
     switch (granularity.toLowerCase()) {
       case '1 hour':
