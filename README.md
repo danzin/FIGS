@@ -3,7 +3,8 @@
 A backend system designed for ingesting and querying financial signals using a microservice architecture.
 
 ## 🧠 Tech Stack
-
+- **Express**
+- **NodeJS**
 - **NestJS** + **TypeScript**
 - **RabbitMQ** for event-based communication
 - **TimescaleDB (PostgreSQL)** for time-series data
