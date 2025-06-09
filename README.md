@@ -1,7 +1,28 @@
-# Microservice-based backend system for collecting, persisting, and querying real-time financial signals.
+# Financial Insights Gathering System (FIGS)
 
- ## Built with NestJS, TypeScript, RabbitMQ, and TimescaleDB
+A backend system designed for ingesting and querying financial signals using a microservice architecture.
 
-  ### Implements raw and bucketed queries using PostgreSQL continuous aggregates
+## 🧠 Tech Stack
 
-  ### Dockerized architecture with plans to integrate Redis caching and deploy to AWS ECS
+- **NestJS** + **TypeScript**
+- **RabbitMQ** for event-based communication
+- **TimescaleDB (PostgreSQL)** for time-series data
+- **Docker** for container orchestration
+- Planned: **Redis** for caching, **AWS ECS** deployment
+
+## 📦 Microservices
+
+- **data-collector**: Consumes and publishes signals
+- **signal-persister**: Writes signals to TimescaleDB
+- **signal-query-api**: Serves raw + aggregated signal queries
+
+## 📊 Features
+
+- Raw + bucketed query support
+- Continuous aggregates for fast timescale lookups
+- Extensible DTOs and modular repository layer
+
+## 🚀 Running Locally
+
+```bash
+docker compose up --build
