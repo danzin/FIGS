@@ -1,5 +1,7 @@
-# Financial Insights Gathering System 
+# Microservice-based backend system for collecting, persisting, and querying real-time financial signals.
 
-## A microservice based project for gathering, storing, analyzing and serving various financial signals. 
+ ## Built with NestJS, TypeScript, RabbitMQ, and TimescaleDB
 
-The project is aimed to be a small yet functional way of providing actionable insights on different aspects of the world of finance. 
+  ### Implements raw and bucketed queries using PostgreSQL continuous aggregates
+
+  ### Dockerized architecture with plans to integrate Redis caching and deploy to AWS ECS
