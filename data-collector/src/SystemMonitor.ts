@@ -85,10 +85,12 @@ export class SystemMonitor {
 		this.cronJobs.push(healthCheckJob, reportJob);
 		console.log("[SystemMonitor] Monitoring started successfully.");
 
-		// Perform initial health check
-		this.performAndProcessHealthCheck().catch((error) => {
-			console.error("[SystemMonitor] Initial health check failed:", error);
-		});
+		// Perform initial health check with 5sec delay
+		setTimeout(() => {
+			this.performAndProcessHealthCheck().catch((error) => {
+				console.error("[SystemMonitor] Initial health check failed:", error);
+			});
+		}, 5000);
 	}
 
 	public stopMonitoring(): void {

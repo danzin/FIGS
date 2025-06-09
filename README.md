@@ -26,3 +26,4 @@ A backend system designed for ingesting and querying financial signals using a m
 
 ```bash
 docker compose up --build
+

@@ -148,6 +148,9 @@ export class SignalScheduler {
 			const task = cron.schedule(
 				config.schedule,
 				async () => {
+					const jitterMs = Math.floor(Math.random() * 30000); // Random jitter between 0 and 30 seconds
+					console.log(`[SignalScheduler] Task for ${sourceKey} triggered, applying ${jitterMs}ms jitter.`);
+					await this.sleep(jitterMs); // Apply jitter before collecting signal
 					await this.collectSignal(sourceKey, config);
 				},
 				{
