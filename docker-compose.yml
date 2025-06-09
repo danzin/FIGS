@@ -64,6 +64,20 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  signal-query-api:
+    build:
+      context: ./signal-query-api
+      dockerfile: signal-query-api.dockerfile
+    container_name: signal-query-api
+    ports:
+      - "8080:3003"
+    env_file:
+      - ./signal-query-api/.env
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: on-failure 
+
 volumes: 
   timescaledb_data:
   
