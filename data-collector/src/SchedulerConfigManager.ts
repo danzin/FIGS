@@ -3,6 +3,7 @@ import { FredSource } from "./datasources/fred";
 import { CoinGeckoSource } from "./datasources/coingecko";
 import { VIXSource, SPYSource } from "./datasources/yahooFinance";
 import { FearGreedSource } from "./datasources/feargreed";
+import { GoogleTrendsSource } from "./datasources/googleTrends"; // Add this import
 import { MessageBroker } from "./models/messaging.interface";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
@@ -78,6 +79,38 @@ export class SchedulerConfigManager {
 			"0 9 * * 1", // Monday 9 AM UTC (weekly check)
 			{ maxRetries: 5, retryDelay: 300000 }
 		);
+
+		// Instant rate limited on every try. Need to investigate further.
+		// ==== Google Trends ====
+		// const trendsToTrack: Array<{ keyword: string; geo?: string; schedule: string; keySuffix?: string }> = [
+		// 	{ keyword: "bitcoin", geo: "US", schedule: "0 7 * * *", keySuffix: "us" }, // 7:00 AM UTC Daily for US
+		// 	{ keyword: "bitcoin", schedule: "5 7 * * *" }, // 7:05 AM UTC Daily for Worldwide (default geo)
+		// 	{ keyword: "how to buy crypto", geo: "US", schedule: "10 7 * * *", keySuffix: "us" }, // 7:10 AM UTC
+		// 	{ keyword: "how to buy crypto", schedule: "15 7 * * *" },
+		// 	{ keyword: "best crypto to buy", schedule: "20 7 * * *" },
+		// 	{ keyword: "crypto", schedule: "25 7 * * *" },
+		// 	{ keyword: "coinbase app", schedule: "30 7 * * *" }, // Trend for app name might indicate interest
+		// 	{ keyword: "binance app", schedule: "35 7 * * *" },
+		// ];
+
+		// // Register each trend with a descriptive key
+		// trendsToTrack.forEach((trend) => {
+		// 	const sourceKey = `google_trend_${trend.keyword.toLowerCase().replace(/\s+/g, "_")}${trend.keySuffix ? "_" + trend.keySuffix : ""}`;
+
+		// 	this.scheduler.registerSource({
+		// 		// Create a new GoogleTrendsSource instance.
+		// 		source: new GoogleTrendsSource(trend.keyword, trend.geo || "", "now 1-d"), // Fetch last day for daily point
+		// 		schedule: trend.schedule,
+		// 		enabled: true,
+		// 		priority: "medium", // Google Trends data is not that critical
+		// 		maxRetries: 3, // API can be flaky
+		// 		retryDelay: 5 * 60 * 1000, // 5 minutes delay on retry for Trends
+		// 		consecutiveFailures: 0,
+		// 	});
+		// 	console.log(
+		// 		`[SchedulerConfigManager] Registered Google Trends source for: ${trend.keyword} (key: ${sourceKey}), schedule: ${trend.schedule}`
+		// 	);
+		// });
 	}
 
 	public setupMarketHoursAwareSchedules(): void {
