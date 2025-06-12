@@ -37,8 +37,8 @@ services:
 
   data-collector:
     build:
-      context: ./data-collector      
-      dockerfile: data-collector.dockerfile        
+      context: .      
+      dockerfile: ./data-collector/data-collector.dockerfile        
     container_name: data-collector
     ports:
       - "3000:3000" 
@@ -52,8 +52,8 @@ services:
 
   signal-persister: 
     build:
-      context: ./signal-persister
-      dockerfile: signal-persister.dockerfile
+      context: .
+      dockerfile: ./signal-persister/signal-persister.dockerfile
     container_name: signal-persister
     env_file:
       - ./signal-persister/.env 
@@ -66,8 +66,8 @@ services:
 
   signal-query-api:
     build:
-      context: ./signal-query-api
-      dockerfile: signal-query-api.dockerfile
+      context: .
+      dockerfile: ./signal-query-api/signal-query-api.dockerfile
     container_name: signal-query-api
     ports:
       - "8080:3003"
