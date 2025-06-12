@@ -1,7 +1,6 @@
 import cron from "node-cron";
 import { DataSource } from "./datasources/Datasource";
-import { MessageBroker } from "./models/messaging.interface";
-import { Signal } from "./models/signal.interface";
+import { MessageBroker, Signal } from "@financialsignalsgatheringsystem/common";
 
 export interface ScheduledDataSource {
 	source: DataSource;

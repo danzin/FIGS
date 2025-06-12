@@ -1,6 +1,6 @@
 import axios from "axios";
 import { DataSource } from "./Datasource";
-import { Signal } from "../models/signal.interface";
+import { Signal } from "@financialsignalsgatheringsystem/common";
 import { config } from "../utils/config";
 
 export class FredSource implements DataSource {

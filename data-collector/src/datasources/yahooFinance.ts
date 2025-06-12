@@ -1,6 +1,6 @@
 import axios from "axios";
 import { DataSource } from "./Datasource";
-import { Signal } from "../models/signal.interface";
+import { Signal } from "@financialsignalsgatheringsystem/common";
 
 export class YahooFinanceSource implements DataSource {
 	public key: string;

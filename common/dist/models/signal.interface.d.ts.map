@@ -1,0 +1,1 @@
+{"version":3,"file":"signal.interface.d.ts","sourceRoot":"","sources":["../../src/models/signal.interface.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,MAAM;IACtB,IAAI,EAAE,MAAM,CAAC;IACb,SAAS,EAAE,IAAI,CAAC;IAChB,KAAK,EAAE,MAAM,CAAC;IACd,MAAM,CAAC,EAAE,MAAM,CAAC;CAChB"}
