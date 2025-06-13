@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node-dev --project tsconfig.json --respawn src/index.ts",
+    "dev": "ts-node-dev --project tsconfig.json --respawn src/index.ts", 
     "inspect": "ts-node scripts/inspect-signals.ts",
     "test": "jest"
   },

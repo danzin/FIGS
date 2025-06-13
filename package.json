@@ -10,6 +10,7 @@
     "signal-query-api"
   ],
   "scripts": {
+    "build": "tsc --build --force tsconfig.json",
     "build:all": "npm run build --workspaces --if-present"
   },
   "keywords": [],
