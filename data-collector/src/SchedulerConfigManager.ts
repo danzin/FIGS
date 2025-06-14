@@ -3,7 +3,7 @@ import { FredSource } from "./datasources/fred";
 import { CoinGeckoSource } from "./datasources/coingecko";
 import { VIXSource, SPYSource } from "./datasources/yahooFinance";
 import { FearGreedSource } from "./datasources/feargreed";
-import { MessageBroker } from "./models/messaging.interface";
+import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
 

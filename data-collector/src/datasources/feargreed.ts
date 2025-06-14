@@ -1,6 +1,6 @@
 import axios from "axios";
 import { DataSource } from "./Datasource";
-import { Signal } from "../models/signal.interface";
+import { Signal } from "@financialsignalsgatheringsystem/common";
 
 export class FearGreedSource implements DataSource {
 	public key = "fear_greed_index";

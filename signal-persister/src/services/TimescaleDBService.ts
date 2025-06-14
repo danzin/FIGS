@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { DatabaseService } from "./database.interface";
-import { Signal } from "../models/signal.interface";
+import { Signal } from "@financialsignalsgatheringsystem/common";
 
 interface DbConfig {
 	user?: string;
@@ -16,7 +16,7 @@ export class TimescaleDBService implements DatabaseService {
 	constructor(dbConfig: DbConfig) {
 		this.pool = new Pool(dbConfig);
 		this.pool.on("connect", () => console.log("[TimescaleDBService] Connected to database."));
-		this.pool.on("error", (err, client) => {
+		this.pool.on("error", (err) => {
 			console.error("[TimescaleDBService] Unexpected error on idle client", err);
 			process.exit(0);
 		});
