@@ -1,4 +1,4 @@
-import { RabbitMQService } from "./services/RabbitMQService";
+import { RabbitMQService } from "@financialsignalsgatheringsystem/common";
 import { HealthService } from "./services/HealthService";
 import { SchedulerConfigManager } from "./SchedulerConfigManager";
 import { ApiServer } from "./api/ApiServer";

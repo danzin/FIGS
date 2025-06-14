@@ -1,5 +1,5 @@
 import { config } from "./utils/config";
-import { RabbitMQService } from "./services/RabbitMQService";
+import { RabbitMQService } from "@financialsignalsgatheringsystem/common";
 import { TimescaleDBService } from "./services/TimescaleDBService";
 import { SignalProcessor } from "./SignalProcessor";
 

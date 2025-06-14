@@ -1,6 +1,5 @@
-import { RabbitMQService } from "./services/RabbitMQService";
+import { RabbitMQService, Signal } from "@financialsignalsgatheringsystem/common";
 import { TimescaleDBService } from "./services/TimescaleDBService";
-import { Signal } from "./models/signal.interface";
 
 export class SignalProcessor {
 	private rabbitMQService: RabbitMQService;

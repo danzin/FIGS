@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+     "paths": {
+      "@financialsignalsgatheringsystem/common": ["common/src"], 
+      "@financialsignalsgatheringsystem/common/*": ["common/src/*"]
+    },
+    "target": "es2021",
+    "module": "commonjs",
+    "lib": ["es2021"],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true, // For project references
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}

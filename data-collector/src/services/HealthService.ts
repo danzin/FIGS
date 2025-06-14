@@ -1,5 +1,5 @@
 import { SchedulerConfigManager } from "../SchedulerConfigManager";
-import { RabbitMQService } from "./RabbitMQService";
+import { RabbitMQService } from "@financialsignalsgatheringsystem/common";
 import { SystemHealth, ComponentHealth } from "../models/health.interface";
 import { config } from "../utils/config";
 /**
