@@ -3,14 +3,16 @@
 A backend system designed for ingesting and querying financial signals using a microservice architecture.
 
 ## 🧠 Tech Stack
+- **TypeScript**
 - **Express**
 - **NodeJS**
-- **NestJS** + **TypeScript**
+- **NestJS** 
 - **RabbitMQ** for event-based communication
 - **TimescaleDB (PostgreSQL)** for time-series data
 - **Docker** for container orchestration
 - Planned: **Redis** for caching, **AWS ECS** deployment
-
+- **Monorepo**
+  
 ## 📦 Microservices
 
 - **data-collector**: Consumes and publishes signals to RabbitMQ
