@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SignalsRepository } from '../repositories/signals.repository';
-import { SignalDto, GetSignalsQueryDto } from '../models/signal.dto';
+import { SignalDto, GetSignalsQueryDto, OhlcDto } from '../models/signal.dto';
 
 @Injectable()
 export class SignalsService {
@@ -31,6 +31,20 @@ export class SignalsService {
       throw new NotFoundException(`No latest signal found for '${signalName}'`);
     }
     return latest;
+  }
+
+  /**
+   *
+   * @param signalName Name of the signal to fetch
+   * @param params Optional. Params can be: startTime, endTime, limit, granularity, source.
+   * @returns Promise
+   */
+  async getOhlcData(signalName: string, params): Promise<OhlcDto[]> {
+    const ohlcData = await this.repo.findBucketedOHLC(signalName, params);
+    if (!ohlcData || ohlcData.length === 0) {
+      throw new NotFoundException(`No OHLC data found for '${signalName}'`);
+    }
+    return ohlcData;
   }
 
   /**

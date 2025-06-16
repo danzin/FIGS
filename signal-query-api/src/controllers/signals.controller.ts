@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SignalsService } from './../services/signals.service';
-import { GetSignalsQueryDto, SignalDto } from '../models/signal.dto';
+import { GetSignalsQueryDto, OhlcDto, SignalDto } from '../models/signal.dto';
 
 @Controller('signals')
 export class SignalsController {
@@ -31,6 +31,22 @@ export class SignalsController {
   async getLatest(@Param('name') name: string): Promise<SignalDto> {
     try {
       return await this.signalsService.getLatest(name);
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        // rethrowing, nest turns it into 404
+        throw err;
+      }
+      // bubble up
+      throw err;
+    }
+  }
+  @Get('ohlc/:name')
+  async getOhlcData(
+    @Param('name') name: string,
+    @Query() queryParams: GetSignalsQueryDto,
+  ): Promise<OhlcDto[]> {
+    try {
+      return await this.signalsService.getOhlcData(name, queryParams);
     } catch (err) {
       if (err instanceof NotFoundException) {
         // rethrowing, nest turns it into 404

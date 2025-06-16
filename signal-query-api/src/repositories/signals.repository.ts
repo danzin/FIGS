@@ -74,7 +74,7 @@ export class SignalsRepository {
     name: string,
     params: GetSignalsQueryDto,
   ): Promise<OhlcDto[]> {
-    return this.queryView('signals_hourly_ohlc', name, params);
+    return this.queryView('signals_hourly_summary', name, params);
   }
 
   /**
