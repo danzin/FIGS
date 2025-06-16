@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@financialsignalsgatheringsystem/common": "^1.0.0",
+    "lightweight-charts": "^5.0.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

@@ -49,6 +49,7 @@ services:
        condition: service_healthy
       timescaledb:
         condition: service_healthy
+    restart: on-failure
 
   signal-persister: 
     build:
@@ -73,10 +74,28 @@ services:
       - "8080:3003"
     env_file:
       - ./signal-query-api/.env
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8080/api/v1/signals || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+
     depends_on:
       timescaledb:
         condition: service_healthy
     restart: on-failure 
+
+  micro-frontend:
+    build:
+      context: .
+      dockerfile: ./micro-frontend/micro-frontend.dockerfile
+    container_name: micro-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      signal-query-api:
+        condition: service_started
+    restart: on-failure
 
 volumes: 
   timescaledb_data:
