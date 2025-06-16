@@ -11,8 +11,8 @@ import { DatabaseModule } from './database/database.module';
       load: [configuration], // Load the custom configuratin
       envFilePath: '../.env',
     }),
-    SignalsModule, // Import the feature module for signals
-    DatabaseModule, // Import the database module for TimescaleDB connection
+    SignalsModule,
+    DatabaseModule,
   ],
   controllers: [],
   providers: [],

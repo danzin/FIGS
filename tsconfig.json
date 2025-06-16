@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [  // Lists the projects in the monorepo
+    { "path": "./common" },
+    { "path": "./data-collector" },
+    { "path": "./signal-persister" },
+    { "path": "./signal-query-api" }
+   
+  ]
+}

@@ -1,4 +1,4 @@
-import { Signal } from "../models/signal.interface";
+import { Signal } from "@financialsignalsgatheringsystem/common";
 
 export interface DatabaseService {
 	connect?(): Promise<void>; // Optional if connection is managed by pool instantiation

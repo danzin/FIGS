@@ -1,13 +1,17 @@
 {
-  "name": "financialsignalgatheringsystem",
+  "name": "financialsignalgatheringsystem-monorepo",
+  "private": true,
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "workspaces": [
+    "common", 
+    "data-collector",
+    "signal-persister",
+    "signal-query-api"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon ./src/index.ts",
-    "start": "node ./src/index.ts",
-    "build": "tsc"
+    "build": "tsc --build --force tsconfig.json",
+    "build:all": "npm run build --workspaces --if-present"
   },
   "keywords": [],
   "author": "",

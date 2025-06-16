@@ -1,0 +1,28 @@
+{
+  "extends": "../tsconfig.base.json", 
+  "compilerOptions": {
+    /* Basic Options */
+    "target": "es2021",                         
+    "module": "commonjs",                        
+    "lib": ["es2021"],                           
+    "outDir": "./dist",                          
+    "rootDir": "./src",                         
+    "declaration": true,                         
+    "declarationMap": true,                      
+    "sourceMap": true,                           
+    "composite": true,                           
+
+    /* Strict Type-Checking Options */
+    "strict": true,                             
+    "esModuleInterop": true,                     
+
+    /* Module Resolution Options */
+    "moduleResolution": "node",                  
+    
+    /* Advanced Options */
+    "skipLibCheck": true,                       
+    "forceConsistentCasingInFileNames": true     
+  },
+  "include": ["src"],                          
+  "exclude": ["node_modules", "dist"]          
+}

@@ -1,0 +1,16 @@
+
+.git
+
+
+**/node_modules
+
+**/dist
+**/build
+*.tsbuildinfo
+
+.env
+*.log
+npm-debug.log*
+
+.DS_Store
+Thumbs.db
