@@ -74,5 +74,5 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
 		};
 	}, []);
 
-	return `<div ref={chartContainerRef} />`;
+	return <div ref={chartContainerRef} />;
 };

@@ -20,7 +20,7 @@ export const DashboardPage: React.FC = () => {
             setIsLoading(true);
             setError(null);
             try {
-                const data = await getOhlcData(selectedAsset, '1 hour');
+                const data = await getOhlcData(selectedAsset);
                 setChartData(data);
             } catch (err) {
                 console.error("Failed to fetch chart data:", err);

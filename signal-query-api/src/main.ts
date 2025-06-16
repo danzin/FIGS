@@ -19,7 +19,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(Number(port));
+  await app.listen(Number(port), '0.0.0.0');
   console.log(`Signal Query API is running on: ${await app.getUrl()}`);
 }
 bootstrap();
