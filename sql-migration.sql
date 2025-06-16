@@ -1,5 +1,4 @@
--- Safe Migration Script for Existing TimescaleDB Instance
--- This script preserves all existing data while upgrading the structure
+
 
 \echo 'Starting safe migration of TimescaleDB structure...'
 \echo 'Current data will be preserved throughout this process.'
@@ -267,7 +266,7 @@ FROM public.signals
 WHERE name NOT LIKE '%_price' AND name NOT LIKE '%_volume'
 ORDER BY name, time DESC;
 
--- Step 9: Optional cleanup of old continuous aggregates
+-- Step 9: Clean of old continuous aggregates
 \echo '--> Step 10: Handling old continuous aggregates...'
 \echo '    The old aggregates (signals_hourly, signals_hourly_summary) still exist.'
 \echo '    They can be safely dropped after you verify the new ones work correctly.'
