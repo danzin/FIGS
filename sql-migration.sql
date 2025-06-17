@@ -176,7 +176,7 @@ BEGIN
             s.volume
         FROM public.signals_15min_ohlc s
         WHERE s.asset = p_asset
-        AND s.open_price IS NOT NULL  -- Ensure we have actual price data
+        AND s.open_price IS NOT NULL  -- Ensure there is actual price data
         AND (p_source IS NULL OR s.source = p_source)
         ORDER BY s.bucketed_at DESC
         LIMIT p_limit;
@@ -196,9 +196,7 @@ BEGIN
         ORDER BY s.bucketed_at DESC
         LIMIT p_limit;
     END IF;
-    
-    -- Note: If no rows are returned, PostgreSQL automatically returns empty result set
-    -- This is the professional way to handle "no data found" scenarios
+
 END;
 $$ LANGUAGE plpgsql;
 
