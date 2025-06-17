@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "build": "tsc --build --force tsconfig.json",
-    "build:all": "npm run build --workspaces --if-present"
+    "build:all": "npm run build --workspaces --if-present",
+    "dev": "npm run dev --workspaces --parallel"
   },
   "keywords": [],
   "author": "",
