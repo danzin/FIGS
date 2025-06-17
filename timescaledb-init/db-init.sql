@@ -181,7 +181,6 @@ END $$;
 
 \echo '--> Step 10: Creating helper views...'
 
--- Latest prices view remains useful
 CREATE OR REPLACE VIEW public.latest_prices AS
 SELECT DISTINCT ON (regexp_replace(name, '_price$', ''))
     regexp_replace(name, '_price$', '') AS asset,
@@ -192,7 +191,6 @@ FROM public.signals
 WHERE name LIKE '%_price'
 ORDER BY regexp_replace(name, '_price$', ''), time DESC;
 
--- You might also want a latest_volumes view if needed:
 CREATE OR REPLACE VIEW public.latest_volumes AS
 SELECT DISTINCT ON (regexp_replace(name, '_volume$', ''))
     regexp_replace(name, '_volume$', '') AS asset,
@@ -213,7 +211,6 @@ FROM public.signals
 WHERE name NOT LIKE '%_price' AND name NOT LIKE '%_volume'
 ORDER BY name, time DESC;
 
--- Updated ohlc_for_charts to include volume and use datetime
 CREATE OR REPLACE VIEW public.ohlc_for_charts AS
 SELECT 
     bucketed_at AS "timestamp",
