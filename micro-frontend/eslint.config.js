@@ -26,7 +26,7 @@ export default tseslint.config(
 				// Prettier config options
 				{
 					tabWidth: 2,
-					useTabs: true,
+					useTabs: false,
 					semi: true,
 					singleQuote: false,
 					endOfLine: "auto",

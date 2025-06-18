@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import { getOhlcData } from '../api/signalsApi';
 import type { OhlcData } from '../types/OhlcData';
+import type { Interval } from '../types/Interval';
 
 const supportedAssets = [
     { label: 'Bitcoin', value: 'coingecko_bitcoin' },
@@ -9,8 +10,15 @@ const supportedAssets = [
     { label: 'Solana', value: 'coingecko_solana' },
 ];
 
+const supportedIntervals: {label: string, value: Interval}[] = [
+    { label: '15 Minutes', value: '15m' },
+    { label: '30 Minutes', value: '30m' },
+    { label: '1 Hour', value: '1h' },
+] ;
+
 export const DashboardPage: React.FC = () => {
     const [selectedAsset, setSelectedAsset] = useState(supportedAssets[0].value);
+    const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value); //Defatuls is 1h
     const [chartData, setChartData] = useState<OhlcData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -20,7 +28,7 @@ export const DashboardPage: React.FC = () => {
             setIsLoading(true);
             setError(null);
             try {
-                const data = await getOhlcData(selectedAsset);
+                const data = await getOhlcData(selectedAsset, interval);
                 setChartData(data);
             } catch (err) {
                 console.error("Failed to fetch chart data:", err);
@@ -31,7 +39,7 @@ export const DashboardPage: React.FC = () => {
         };
 
         fetchChartData();
-    }, [selectedAsset]); // Refetch data when selectedAsset changes
+    }, [selectedAsset, interval]); // Refetch data when selectedAsset changes
 
     return (
         <div>
@@ -49,7 +57,20 @@ export const DashboardPage: React.FC = () => {
                             {asset.label}
                         </option>
                     ))}
+                
                 </select>
+                <label htmlFor="interval-select">Interval:</label>
+            <select
+                id="interval-select"
+                value={interval}
+                onChange={(e) => setInterval(e.target.value as Interval)}
+            >
+                {supportedIntervals.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                    </option>
+                ))}
+            </select>
             </div>
 
             {isLoading && <p>Loading chart...</p>}
