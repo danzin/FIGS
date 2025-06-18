@@ -1,12 +1,6 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { Pool, QueryResult } from 'pg';
-import {
-  SignalDto,
-  GetSignalsQueryDto,
-  OhlcDto,
-  GetOhlcQueryDto,
-  OhlcDataDto,
-} from '../models/signal.dto';
+import { SignalDto, GetOhlcQueryDto, OhlcDataDto } from '../models/signal.dto';
 import { PG_CONNECTION } from '../database/database.constants';
 
 interface RawRow {
@@ -30,8 +24,6 @@ export class SignalsRepository {
   ): Promise<OhlcDataDto[]> {
     const { interval = '1h', source = null, limit = 1000 } = params;
 
-    // The query now simply calls the database function.
-    // This is much safer and cleaner than building SQL strings.
     const text = `SELECT * FROM public.get_ohlc_data($1, $2, $3, $4);`;
     const values = [asset, source, interval, limit];
 
@@ -75,7 +67,6 @@ export class SignalsRepository {
     signalName: string,
     limit: number = 100,
   ): Promise<any[]> {
-    // The return type will be different from a simple SignalDto
     const text = `
       SELECT bucketed_at, name, source, avg_value, min_value, max_value, sample_count
       FROM public.signals_hourly_general
@@ -91,7 +82,6 @@ export class SignalsRepository {
    * Lists all distinct base asset names (e.g., 'coingecko_bitcoin').
    */
   async listAssetNames(): Promise<string[]> {
-    // We get this from the OHLC aggregate to only show chartable assets
     const text = `SELECT DISTINCT asset FROM public.signals_hourly_ohlc ORDER BY asset;`;
     const result = await this.pool.query(text);
     return result.rows.map((r) => r.asset);
