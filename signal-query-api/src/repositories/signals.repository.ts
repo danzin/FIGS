@@ -45,16 +45,15 @@ export class SignalsRepository {
       throw error;
     }
   }
-
   /**
-   * Fetch bucketed average hourly
+   * Fetches the latest price for a given asset from the helper view.
    */
-  async findBucketedAverage(
-    name: string,
-    params: GetSignalsQueryDto,
-  ): Promise<SignalDto[]> {
-    return this.queryView('signals_hourly', name, params);
+  async findLatestPrice(asset: string): Promise<SignalDto | null> {
+    const text = `SELECT asset as name, time, price as value, source FROM public.latest_prices WHERE asset = $1;`;
+    const result = await this.pool.query(text, [asset]);
+    return result.rows[0] || null;
   }
+
   /**
    * Fetch bucketed (aggregated) OHLC data for a specific base asset.
    * The name here is the base asset, e.g. "coingecko_bitcoin".
