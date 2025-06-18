@@ -14,47 +14,36 @@ interface RawRow {
 @Injectable()
 export class SignalsRepository {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
-
   /**
-   * Fetch raw signals (no bucketing) with optional filters.
+   * Calls the get_ohlc_data database function to retrieve OHLCV data.
+   * This is the primary method for fetching chart data.
    */
-  async findRaw(
-    signalName: string,
-    params: GetSignalsQueryDto,
-  ): Promise<SignalDto[]> {
-    const { startTime, endTime, limit = 100 } = params;
-    const queryValues: any[] = [signalName];
-    const filterClauses: string[] = [];
+  async findOhlcData(
+    asset: string,
+    params: GetOhlcQueryDto,
+  ): Promise<OhlcDataDto[]> {
+    const { interval = '1h', source = null, limit = 1000 } = params;
 
-    if (startTime) {
-      queryValues.push(new Date(startTime));
-      filterClauses.push(`time >= $${queryValues.length}`);
+    // The query now simply calls the database function.
+    // This is much safer and cleaner than building SQL strings.
+    const text = `SELECT * FROM public.get_ohlc_data($1, $2, $3, $4);`;
+    const values = [asset, source, interval, limit];
+
+    try {
+      const result: QueryResult<OhlcDataDto> = await this.pool.query(
+        text,
+        values,
+      );
+      return result.rows;
+    } catch (error) {
+      if (
+        error.message.includes('Invalid interval') ||
+        error.message.includes('Limit must be')
+      ) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
     }
-    if (endTime) {
-      queryValues.push(new Date(endTime));
-      filterClauses.push(`time <= $${queryValues.length}`);
-    }
-
-    let text = `
-      SELECT time, name, value, source
-      FROM public.signals
-      WHERE name = $1
-      ${filterClauses.length ? ' AND ' + filterClauses.join(' AND ') : ''}
-      ORDER BY time DESC
-      LIMIT $${queryValues.length + 1};
-    `;
-    queryValues.push(limit);
-
-    const result: QueryResult<RawRow> = await this.pool.query(
-      text,
-      queryValues,
-    );
-    return result.rows.map((row) => ({
-      time: row.time,
-      name: row.name,
-      value: parseFloat(row.value),
-      source: row.source,
-    }));
   }
 
   /**
