@@ -1,9 +1,8 @@
 export interface OhlcData {
-	bucketed_at: string;
-	base_name: string;
-	open_price: number;
-	high_price: number;
-	low_price: number;
-	close_price: number;
-	total_volume: number;
+	timestamp: string; // The API sends the date as an ISO string
+	open: number;
+	high: number;
+	low: number;
+	close: number;
+	volume: number | null; // Volume can be null
 }

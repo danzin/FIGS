@@ -1,78 +1,158 @@
-import { createChart, LineSeries } from "lightweight-charts";
-import type { IChartApi, ISeriesApi, SeriesType, Time } from "lightweight-charts";
-import React, { useEffect, useRef } from "react";
-import type { OhlcData } from "../../types/OhlcData";
+import React, { useEffect, useRef } from 'react';
+import {
+  createChart,
+  ColorType,
+  CandlestickSeries,
+  HistogramSeries,
+} from 'lightweight-charts';
+import type {
+  IChartApi,
+  ISeriesApi,
+  Time,
+  CandlestickData,
+  HistogramData,
+} from 'lightweight-charts';
+import type { OhlcData } from '../../types/OhlcData';
 
 interface FinancialChartProps {
-	data: OhlcData[];
+  data: OhlcData[];
 }
 
 const formatDataForChart = (data: OhlcData[]) => {
-	return data
-		.map((d) => ({
-			time: (new Date(d.bucketed_at).getTime() / 1000) as Time,
-			open: d.open_price,
-			high: d.high_price,
-			low: d.low_price,
-			close: d.close_price,
-		}))
-		.sort((a: any, b: any) => a.time - b.time);
+  const candlestickData: CandlestickData[] = [];
+  const volumeData: HistogramData[] = [];
+
+  for (const d of data) {
+    const time = (new Date(d.timestamp).getTime() / 1000) as Time;
+
+    candlestickData.push({
+      time,
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+    });
+
+    if (d.volume !== null && d.volume > 0) {
+      volumeData.push({
+        time,
+        value: d.volume,
+        color: d.close >= d.open
+          ? 'rgba(38, 166, 154, 0.5)'
+          : 'rgba(239, 83, 80, 0.5)',
+      });
+    }
+  }
+
+  // Sort ascending by time
+  candlestickData.sort((a, b) => (a.time as number) - (b.time as number));
+  volumeData.sort((a, b) => (a.time as number) - (b.time as number));
+
+  return { candlestickData, volumeData };
 };
 
 export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
-	const chartContainerRef = useRef<HTMLDivElement>(null);
-	const chartRef = useRef<IChartApi | null>(null);
-	const seriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
 
-	useEffect(() => {
-		if (!chartContainerRef.current) return;
+  useEffect(() => {
+    if (!chartContainerRef.current || data.length === 0) return;
 
-		if (!chartRef.current) {
-			chartRef.current = createChart(chartContainerRef.current, {
-				width: chartContainerRef.current.clientWidth,
-				height: 500, 
-				layout: {
-					background: { color: "#ffffff" },
-					textColor: "#333",
-				},
-				grid: {
-					vertLines: { color: "#f0f0f0" },
-					horzLines: { color: "#f0f0f0" },
-				},
-				
-			});
-			seriesRef.current = chartRef.current.addSeries(LineSeries, { lineWidth: 2 });
-		}
+    // chart instance once
+    if (!chartRef.current) {
+      chartRef.current = createChart(chartContainerRef.current, {
+        width: chartContainerRef.current.clientWidth,
+        height: 600,
+        layout: {
+          background: { type: ColorType.Solid, color: '#1a1a1a' },
+          textColor: '#d1d4dc',
+        },
+        grid: {
+          vertLines: { color: '#2b2b30' },
+          horzLines: { color: '#2b2b30' },
+        },
+        timeScale: {
+          borderColor: '#485c7b',
+          timeVisible: true,
+        },
+        rightPriceScale: {
+          borderColor: '#485c7b',
+        },
+      });
 
-		// Update data when props change
-		if (data.length > 0) {
-			const formattedData = formatDataForChart(data);
-			seriesRef.current?.setData(formattedData);
-			chartRef.current?.timeScale().fitContent();
-		}
+      // Add candlestick series via addSeries
+      candlestickSeriesRef.current = chartRef.current.addSeries(
+        CandlestickSeries,
+        {
+          upColor: '#26a69a',
+          downColor: '#ef5350',
+          borderDownColor: '#ef5350',
+          borderUpColor: '#26a69a',
+          wickDownColor: '#ef5350',
+          wickUpColor: '#26a69a',
+        }
+      );
 
-		const handleResize = () => {
-			if (chartContainerRef.current && chartRef.current) {
-				chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth });
-			}
-		};
+      // Add Histogram for volume series via addSeries(only if volume data is available)
+      volumeSeriesRef.current = chartRef.current.addSeries(
+        HistogramSeries,
+        {
+          priceFormat: {
+            type: 'volume',
+          },
+          priceScaleId: 'volume_scale',
+          color: 'rgba(76, 175, 80, 0.5)',
+        }
+      );
 
-		window.addEventListener("resize", handleResize);
+      // Configure volume price scale margins
+      chartRef.current.priceScale('volume_scale').applyOptions({
+        scaleMargins: {
+          top: 0.7,
+          bottom: 0,
+        },
+      });
+    }
 
-		return () => {
-			window.removeEventListener("resize", handleResize);
-		};
-	}, [data]); // Rerun effect when data prop changes
+    // Update data when props change
+    const { candlestickData, volumeData } = formatDataForChart(data);
 
-	// Cleanup chart on component unmount
-	useEffect(() => {
-		return () => {
-			if (chartRef.current) {
-				chartRef.current.remove();
-				chartRef.current = null;
-			}
-		};
-	}, []);
+    candlestickSeriesRef.current?.setData(candlestickData);
+    volumeSeriesRef.current?.setData(volumeData);
 
-	return <div ref={chartContainerRef} />;
+    chartRef.current.timeScale().fitContent();
+
+    // Handle resize
+    const handleResize = () => {
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.resize(
+          chartContainerRef.current.clientWidth,
+          600
+        );
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [data]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      ref={chartContainerRef}
+      style={{ position: 'relative' }}
+    />
+  );
 };
