@@ -19,7 +19,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(Number(port), '0.0.0.0');
+  await app.listen(Number(port), '0.0.0.0'); // '0.0.0.0' -> That's I make it accessible from outside the container
   console.log(`Signal Query API is running on: ${await app.getUrl()}`);
 }
 bootstrap();
