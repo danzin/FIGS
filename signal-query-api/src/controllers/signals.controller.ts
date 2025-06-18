@@ -1,59 +1,31 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  NotFoundException,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { SignalsService } from './../services/signals.service';
-import { GetSignalsQueryDto, OhlcDto, SignalDto } from '../models/signal.dto';
+import { GetOhlcQueryDto, OhlcDataDto, SignalDto } from '../models/signal.dto';
 
-@Controller('signals')
+@Controller('v1')
 export class SignalsController {
   constructor(private readonly signalsService: SignalsService) {}
 
-  @Get()
-  async listAll(): Promise<string[]> {
-    return this.signalsService.listAllNames();
+  @Get('assets')
+  async listAssets(): Promise<string[]> {
+    return this.signalsService.listAssets();
   }
 
-  @Get(':name')
-  async getByName(
-    @Param('name') name: string,
-    @Query() queryParams: GetSignalsQueryDto,
-  ): Promise<SignalDto[]> {
-    console.log('Query Params:', queryParams);
-    console.log('Signal Name:', name);
-    return this.signalsService.getByName(name, queryParams);
+  @Get('assets/:asset/ohlc')
+  async getOhlc(
+    @Param('asset') asset: string,
+    @Query() queryParams: GetOhlcQueryDto,
+  ): Promise<OhlcDataDto[]> {
+    return this.signalsService.getOhlcData(asset, queryParams);
   }
 
-  @Get(':name/latest')
-  async getLatest(@Param('name') name: string): Promise<SignalDto> {
-    try {
-      return await this.signalsService.getLatest(name);
-    } catch (err) {
-      if (err instanceof NotFoundException) {
-        // rethrowing, nest turns it into 404
-        throw err;
-      }
-      // bubble up
-      throw err;
-    }
+  @Get('assets/:asset/latest')
+  async getLatestPrice(@Param('asset') asset: string): Promise<SignalDto> {
+    return this.signalsService.getLatestPrice(asset);
   }
-  @Get('ohlc/:name')
-  async getOhlcData(
-    @Param('name') name: string,
-    @Query() queryParams: GetSignalsQueryDto,
-  ): Promise<OhlcDto[]> {
-    try {
-      return await this.signalsService.getOhlcData(name, queryParams);
-    } catch (err) {
-      if (err instanceof NotFoundException) {
-        // rethrowing, nest turns it into 404
-        throw err;
-      }
-      // bubble up
-      throw err;
-    }
+
+  @Get('signals') // For general signals
+  async listGeneralSignals(): Promise<string[]> {
+    return this.signalsService.listGeneralSignals();
   }
 }
