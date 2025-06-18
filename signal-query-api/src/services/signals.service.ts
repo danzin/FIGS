@@ -1,12 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SignalsRepository } from '../repositories/signals.repository';
-import {
-  SignalDto,
-  GetSignalsQueryDto,
-  OhlcDto,
-  GetOhlcQueryDto,
-  OhlcDataDto,
-} from '../models/signal.dto';
+import { SignalDto, GetOhlcQueryDto, OhlcDataDto } from '../models/signal.dto';
 
 @Injectable()
 export class SignalsService {
