@@ -1,56 +1,55 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SignalsRepository } from '../repositories/signals.repository';
-import { SignalDto, GetSignalsQueryDto, OhlcDto } from '../models/signal.dto';
+import {
+  SignalDto,
+  GetSignalsQueryDto,
+  OhlcDto,
+  GetOhlcQueryDto,
+  OhlcDataDto,
+} from '../models/signal.dto';
 
 @Injectable()
 export class SignalsService {
   constructor(private readonly repo: SignalsRepository) {}
 
   /**
-   * Fetch either raw or bucketed signals, depending on queryParams.granularity.
+   * Gets OHLCV data for charting. This will be the main method used by your frontend chart.
    */
-  async getByName(
-    signalName: string,
-    queryParams: GetSignalsQueryDto,
-  ): Promise<SignalDto[]> {
-    if (queryParams.granularity) {
-      // Bucketed query
-      return this.repo.findBucketed(signalName, queryParams);
-    } else {
-      // Raw query
-      return this.repo.findRaw(signalName, queryParams);
+  async getOhlcData(
+    asset: string,
+    queryParams: GetOhlcQueryDto,
+  ): Promise<OhlcDataDto[]> {
+    const data = await this.repo.findOhlcData(asset, queryParams);
+    if (!data || data.length === 0) {
+      throw new NotFoundException(
+        `No OHLC data found for asset '${asset}' with the given criteria.`,
+      );
     }
+    return data;
   }
 
   /**
-   * Get the single latest data point.
+   * Get the latest price for a single asset.
    */
-  async getLatest(signalName: string): Promise<SignalDto> {
-    const latest = await this.repo.findLatest(signalName);
+  async getLatestPrice(asset: string): Promise<SignalDto> {
+    const latest = await this.repo.findLatestPrice(asset);
     if (!latest) {
-      throw new NotFoundException(`No latest signal found for '${signalName}'`);
+      throw new NotFoundException(`No latest price found for asset '${asset}'`);
     }
     return latest;
   }
 
   /**
-   *
-   * @param signalName Name of the signal to fetch
-   * @param params Optional. Params can be: startTime, endTime, limit, granularity, source.
-   * @returns Promise
+   * List all available asset names that have OHLC data.
    */
-  async getOhlcData(signalName: string, params): Promise<OhlcDto[]> {
-    const ohlcData = await this.repo.findBucketedOHLC(signalName, params);
-    if (!ohlcData || ohlcData.length === 0) {
-      throw new NotFoundException(`No OHLC data found for '${signalName}'`);
-    }
-    return ohlcData;
+  async listAssets(): Promise<string[]> {
+    return this.repo.listAssetNames();
   }
 
   /**
-   * List all distinct signal names.
+   * List all other general (non-asset) signal names.
    */
-  async listAllNames(): Promise<string[]> {
-    return this.repo.listSignalNames();
+  async listGeneralSignals(): Promise<string[]> {
+    return this.repo.listGeneralSignalNames();
   }
 }
