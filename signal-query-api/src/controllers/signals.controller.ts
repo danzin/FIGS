@@ -16,6 +16,7 @@ export class SignalsController {
     @Param('asset') asset: string,
     @Query() queryParams: GetOhlcQueryDto,
   ): Promise<OhlcDataDto[]> {
+    console.log('Received query params:', queryParams);
     return this.signalsService.getOhlcData(asset, queryParams);
   }
 

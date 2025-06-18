@@ -51,8 +51,8 @@ export class OhlcDto {
 
 export class GetOhlcQueryDto {
   @IsOptional()
-  @IsIn(['15m', '1h']) // Validate against the intervals the function supprots
-  interval?: '15m' | '1h' = '1h';
+  @IsIn(['15m', '1h', '30m']) // Validate against the intervals the function supprots
+  interval?: '15m' | '1h' | '30m';
 
   @IsOptional()
   @IsString()

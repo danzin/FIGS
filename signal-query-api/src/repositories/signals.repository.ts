@@ -3,14 +3,6 @@ import { Pool, QueryResult } from 'pg';
 import { SignalDto, GetOhlcQueryDto, OhlcDataDto } from '../models/signal.dto';
 import { PG_CONNECTION } from '../database/database.constants';
 
-interface RawRow {
-  time: Date;
-  time_bucket_alias: Date | null;
-  name: string;
-  value: string;
-  source: string;
-}
-
 @Injectable()
 export class SignalsRepository {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
