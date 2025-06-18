@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsDate,
+  IsIn,
   IsISO8601,
   IsNotEmpty,
   IsNumber,
@@ -46,6 +47,45 @@ export class OhlcDto {
   low_price: number;
   close_price: number;
   total_volume: number;
+}
+
+export class GetOhlcQueryDto {
+  @IsOptional()
+  @IsIn(['15m', '1h']) // Validate against the intervals the function supprots
+  interval?: '15m' | '1h' = '1h';
+
+  @IsOptional()
+  @IsString()
+  source?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(10000)
+  limit?: number = 1000;
+}
+
+export class OhlcDataDto {
+  @Type(() => Date)
+  @IsDate()
+  timestamp: Date;
+
+  @IsNumber()
+  open: number;
+
+  @IsNumber()
+  high: number;
+
+  @IsNumber()
+  low: number;
+
+  @IsNumber()
+  close: number;
+
+  @IsNumber()
+  @IsOptional() // Volume might be null if no volume data was present in the bucket
+  volume?: number;
 }
 
 export class VwapDto {

@@ -1,6 +1,12 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { Pool, QueryResult } from 'pg';
-import { SignalDto, GetSignalsQueryDto, OhlcDto } from '../models/signal.dto';
+import {
+  SignalDto,
+  GetSignalsQueryDto,
+  OhlcDto,
+  GetOhlcQueryDto,
+  OhlcDataDto,
+} from '../models/signal.dto';
 import { PG_CONNECTION } from '../database/database.constants';
 
 interface RawRow {
