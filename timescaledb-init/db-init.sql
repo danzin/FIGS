@@ -124,7 +124,46 @@ GROUP BY
     source
 WITH NO DATA;
 
-\echo '--> Step 7: Creating indexes on continuous aggregates...'
+\echo '--> Step 7: Creating 30-minute OHLC continuous aggregate with volume support...'
+
+CREATE MATERIALIZED VIEW public.signals_30min_ohlc
+WITH (timescaledb.continuous) AS
+SELECT
+    time_bucket('30 minutes', time) AS bucketed_at,
+    regexp_replace(name, '_(price|volume)$', '') AS asset,
+    source,
+    -- OHLC calculations (only for price signals)
+    first(
+        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END, 
+        time
+    ) FILTER (WHERE name LIKE '%_price') AS open_price,
+    max(
+        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
+    ) AS high_price,
+    min(
+        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
+    ) AS low_price,
+    last(
+        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END, 
+        time
+    ) FILTER (WHERE name LIKE '%_price') AS close_price,
+    -- Volume calculation (most recent volume reading)
+    last(
+        CASE WHEN name LIKE '%_volume' THEN value ELSE NULL END, 
+        time
+    ) FILTER (WHERE name LIKE '%_volume') AS volume,
+    -- Metadata
+    count(*) FILTER (WHERE name LIKE '%_price') AS price_samples
+FROM public.signals
+WHERE name LIKE '%_price' OR name LIKE '%_volume'
+GROUP BY 
+    time_bucket('30 minutes', time),
+    regexp_replace(name, '_(price|volume)$', ''),
+    source
+WITH NO DATA;
+
+
+\echo '--> Step 8: Creating indexes on continuous aggregates...'
 
 -- Indexes for general signals aggregate
 CREATE INDEX IF NOT EXISTS idx_signals_hourly_general_name_time 
@@ -143,7 +182,12 @@ CREATE INDEX IF NOT EXISTS idx_signals_15min_ohlc_asset_time
 CREATE INDEX IF NOT EXISTS idx_signals_15min_ohlc_time 
     ON public.signals_15min_ohlc (bucketed_at DESC);
 
-\echo '--> Step 8: Adding refresh policies...'
+CREATE INDEX IF NOT EXISTS idx_signals_30min_ohlc_asset_time 
+    ON public.signals_30min_ohlc (asset, bucketed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_signals_15min_ohlc_time 
+    ON public.signals_30min_ohlc (bucketed_at DESC);
+
+\echo '--> Step 9: Adding refresh policies...'
 
 SELECT add_continuous_aggregate_policy(
     'public.signals_hourly_general',
@@ -166,7 +210,14 @@ SELECT add_continuous_aggregate_policy(
     schedule_interval => INTERVAL '5 minutes'
 );
 
-\echo '--> Step 9: Adding compression policies...'
+SELECT add_continuous_aggregate_policy(
+    'public.signals_30min_ohlc',
+    start_offset => INTERVAL '1 day 12 hours',
+    end_offset   => INTERVAL '15 minutes',
+    schedule_interval => INTERVAL '5 minutes'
+);
+
+\echo '--> Step 10: Adding compression policies...'
 
 DO $$
 BEGIN
@@ -244,12 +295,12 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     -- Validate input parameters
-    IF p_limit IS NULL OR p_limit <= 0 OR p_limit > 10000 THEN
+    IF p_limit <= 0 OR p_limit > 10000 THEN
         RAISE EXCEPTION 'Limit must be between 1 and 10000, got: %', p_limit;
     END IF;
     
-    IF p_interval NOT IN ('15m', '1h') THEN
-        RAISE EXCEPTION 'Invalid interval. Supported: 15m, 1h. Got: %', p_interval;
+    IF p_interval NOT IN ('15m', '30m', '1h') THEN
+        RAISE EXCEPTION 'Invalid interval. Supported: 15m, 30m, 1h. Got: %', p_interval;
     END IF;
 
     -- Return data based on interval
@@ -264,8 +315,23 @@ BEGIN
             s.volume
         FROM public.signals_15min_ohlc s
         WHERE s.asset = p_asset
-        AND s.open_price IS NOT NULL
+        AND s.open_price IS NOT NULL  -- Ensure there is actual price data
         AND (p_source IS NULL OR s.source = p_source)
+        ORDER BY s.bucketed_at DESC
+        LIMIT p_limit;
+    ELSIF p_interval = '30m' THEN
+        RETURN QUERY
+        SELECT 
+            s.bucketed_at,
+            s.open_price,
+            s.high_price,
+            s.low_price,
+            s.close_price,
+            s.volume
+        FROM public.signals_30min_ohlc s
+        WHERE s.asset = p_asset
+          AND s.open_price IS NOT NULL
+          AND (p_source IS NULL OR s.source = p_source)
         ORDER BY s.bucketed_at DESC
         LIMIT p_limit;
     ELSE
@@ -279,23 +345,25 @@ BEGIN
             s.volume
         FROM public.signals_hourly_ohlc s
         WHERE s.asset = p_asset
-        AND s.open_price IS NOT NULL
+        AND s.open_price IS NOT NULL 
         AND (p_source IS NULL OR s.source = p_source)
         ORDER BY s.bucketed_at DESC
         LIMIT p_limit;
     END IF;
+
 END;
 $$ LANGUAGE plpgsql;
+
 
 \echo ''
 \echo 'Database initialization completed successfully!'
 \echo ''
 \echo 'Summary of created objects:'
 \echo '- ✓ Hypertable: public.signals (7-day chunks)'
-\echo '- ✓ Continuous aggregates: signals_hourly_general, signals_hourly_ohlc (with volume), signals_15min_ohlc (with volume)'
+\echo '- ✓ Continuous aggregates: signals_hourly_general, signals_hourly_ohlc (with volume), signals_15min_ohlc (with volume), signals_30min_ohlc (with volume)'
 \echo '- ✓ Helper views: latest_prices, latest_volumes, latest_signals, ohlc_for_charts'
 \echo '- ✓ API function: get_ohlc_data(asset, source, interval, limit) with error handling'
-\echo '- ✓ Refresh policies: 5-10 minute intervals'
+\echo '- ✓ Refresh policies: 5-10-30 minute intervals'
 \echo '- ✓ Compression policy: 30-day compression on raw table'
 \echo '- ✓ Performance indexes created'
 \echo ''

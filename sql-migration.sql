@@ -171,6 +171,7 @@ SELECT add_continuous_aggregate_policy(
 
 CALL refresh_continuous_aggregate('public.signals_hourly_ohlc', NULL, NULL);
 CALL refresh_continuous_aggregate('public.signals_15min_ohlc', NULL, NULL);
+CALL refresh_continuous_aggregate('public.signals_30min_ohlc', NULL, NULL);
 
 \echo '--> Step 8: Creating TimescaleDB-optimized view...'
 
@@ -189,7 +190,7 @@ FROM public.signals_hourly_ohlc
 WHERE open_price IS NOT NULL  -- Only return rows with actual price data
 ORDER BY bucketed_at DESC;
 
-\echo '--> Step 9: Creating professional API function...'
+\echo '--> Step 9: Creating helper API function...'
 
 CREATE OR REPLACE FUNCTION get_ohlc_data(
     p_asset TEXT,
