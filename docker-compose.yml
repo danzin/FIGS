@@ -38,7 +38,7 @@ services:
   data-collector:
     build:
       context: .      
-      dockerfile: ./data-collector/data-collector.dockerfile        
+      dockerfile: ./data-collector/data-collector.dockerfile
     container_name: data-collector
     ports:
       - "3000:3000" 
@@ -74,12 +74,6 @@ services:
       - "8080:3003"
     env_file:
       - ./signal-query-api/.env
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8080/api/v1/signals || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-
     depends_on:
       timescaledb:
         condition: service_healthy
