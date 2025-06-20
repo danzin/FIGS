@@ -43,44 +43,83 @@ export const DashboardPage: React.FC = () => {
   }, [selectedAsset, interval]); // Refetch data when selectedAsset changes
 
   return (
-    <div>
-      <h1>Financial Signals Dashboard</h1>
-      
-      <div style={{ marginBottom: '20px' }}>
-        <label htmlFor="asset-select">Select Asset: </label>
-        <select 
-          id="asset-select"
-          value={selectedAsset}
-          onChange={(e) => setSelectedAsset(e.target.value)}
-        >
-          {supportedAssets.map(asset => (
-            <option key={asset.value} value={asset.value}>
-              {asset.label}
-            </option>
-            ))}
-          
-        </select>
-        <label htmlFor="interval-select">Interval:</label>
-
-        <select
-          id="interval-select"
-          value={interval}
-          onChange={(e) => setInterval(e.target.value as Interval)}
-        >
-          {supportedIntervals.map(opt => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        
+    <div className="min-h-screen bg-gray-900 text-white p-4 ">
+      <div className="mb-6">
+        <h1 className='text-3xl font-bold'>FIGS Dashboard</h1>
       </div>
+        {/* Controls */}
+        <div className="flex flex-wrap gap-6 items-center">
+          <div className="flex items-center gap-2">
+            <label 
+              htmlFor="asset-select" 
+              className="text-sm font-medium text-gray-300"
+            >
+              Select Asset:
+            </label>
+            <select
+              id="asset-select"
+              value={selectedAsset}
+              onChange={(e) => setSelectedAsset(e.target.value)}
+              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg 
+                         focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
+                         hover:bg-gray-700 transition-colors"
+            >
+              {supportedAssets.map(asset => (
+                <option key={asset.value} value={asset.value}>
+                  {asset.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        <div className="flex items-center gap-2">
+            <label 
+              htmlFor="interval-select" 
+              className="text-sm font-medium text-gray-300"
+            >
+              Interval:
+            </label>
+            <select
+              id="interval-select"
+              value={interval}
+              onChange={(e) => setInterval(e.target.value as Interval)}
+              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg 
+                         focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
+                         hover:bg-gray-700 transition-colors"
+            >
+              {supportedIntervals.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      {isLoading && <p>Loading chart...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {!isLoading && !error && (
-          <FinancialChart data={chartData} />
-      )}
+       {/* Chart Section */}
+      <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
+        {isLoading && (
+          <div className="flex items-center justify-center h-96">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              <p className="text-gray-300">Loading chart...</p>
+            </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="flex items-center justify-center h-96">
+            <p className="text-red-400 bg-red-900/20 px-4 py-2 rounded-lg border border-red-800">
+              {error}
+            </p>
+          </div>
+        )}
+        
+        {!isLoading && !error && (
+          <div className="h-96 lg:h-[600px]">
+            <FinancialChart data={chartData} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

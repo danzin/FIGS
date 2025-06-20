@@ -1,9 +1,8 @@
-import './App.css'
 import { DashboardPage } from './pages/DashboardPage'
 
 function App() {
   return (
-    <div className="App">
+    <div className='w-full min-h-screen'>
       <DashboardPage/>
     </div>
   )
