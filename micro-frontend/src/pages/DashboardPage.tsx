@@ -44,11 +44,35 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 ">
+      { /* Header */}
       <div className="mb-6">
         <h1 className='text-3xl font-bold'>FIGS Dashboard</h1>
+
       </div>
-        {/* Controls */}
-        <div className="flex flex-wrap gap-6 items-center">
+      
+      <div className="flex flex-col space-y-6 ">
+      {/* Metrics bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {/* Example MetricCard components; TODO: Create the metrics card component */}
+          <div className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center">
+            <span className="text-xs text-gray-400">Fear & Greed</span>
+            <span className="mt-1 text-lg font-semibold">45</span>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center">
+            <span className="text-xs text-gray-400">SPY Price</span>
+            <span className="mt-1 text-lg font-semibold">$430</span>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center">
+            <span className="text-xs text-gray-400">VIX</span>
+            <span className="mt-1 text-lg font-semibold">18.2</span>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center">
+            <span className="text-xs text-gray-400">BTC Dominance</span>
+            <span className="mt-1 text-lg font-semibold">48%</span>
+          </div>
+        </div>
+        {/* Chart section */}
+        <div className="flex-row flex-wrap gap-6 items-center">
           <div className="flex items-center gap-2">
             <label 
               htmlFor="asset-select" 
@@ -61,8 +85,8 @@ export const DashboardPage: React.FC = () => {
               value={selectedAsset}
               onChange={(e) => setSelectedAsset(e.target.value)}
               className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg 
-                         focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
-                         hover:bg-gray-700 transition-colors"
+                          focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
+                          hover:bg-gray-700 transition-colors"
             >
               {supportedAssets.map(asset => (
                 <option key={asset.value} value={asset.value}>
@@ -70,8 +94,6 @@ export const DashboardPage: React.FC = () => {
                 </option>
               ))}
             </select>
-          </div>
-        <div className="flex items-center gap-2">
             <label 
               htmlFor="interval-select" 
               className="text-sm font-medium text-gray-300"
@@ -83,8 +105,8 @@ export const DashboardPage: React.FC = () => {
               value={interval}
               onChange={(e) => setInterval(e.target.value as Interval)}
               className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg 
-                         focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
-                         hover:bg-gray-700 transition-colors"
+                          focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
+                          hover:bg-gray-700 transition-colors"
             >
               {supportedIntervals.map(opt => (
                 <option key={opt.value} value={opt.value}>
@@ -93,33 +115,35 @@ export const DashboardPage: React.FC = () => {
               ))}
             </select>
           </div>
-        </div>
 
-       {/* Chart Section */}
-      <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
-        {isLoading && (
-          <div className="flex items-center justify-center h-96">
-            <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-              <p className="text-gray-300">Loading chart...</p>
-            </div>
+          { /* Chart Container */}
+          <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
+            {isLoading && (
+              <div className="flex items-center justify-center h-96">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  <p className="text-gray-300">Loading chart...</p>
+                </div>
+              </div>
+            )}
+            
+            {error && (
+              <div className="flex items-center justify-center h-96">
+                <p className="text-red-400 bg-red-900/20 px-4 py-2 rounded-lg border border-red-800">
+                  {error}
+                </p>
+              </div>
+            )}
+            
+            {!isLoading && !error && (
+              <div className="h-96 lg:h-[600px]">
+                <FinancialChart data={chartData} />
+              </div>
+            )}
           </div>
-        )}
-        
-        {error && (
-          <div className="flex items-center justify-center h-96">
-            <p className="text-red-400 bg-red-900/20 px-4 py-2 rounded-lg border border-red-800">
-              {error}
-            </p>
-          </div>
-        )}
-        
-        {!isLoading && !error && (
-          <div className="h-96 lg:h-[600px]">
-            <FinancialChart data={chartData} />
-          </div>
-        )}
+        </div>
       </div>
+
     </div>
   );
 };
