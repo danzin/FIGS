@@ -51,6 +51,7 @@ export const DashboardPage: React.FC = () => {
       </div>
       
       <div className="flex flex-col space-y-6 ">
+
       {/* Metrics bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {/* Example MetricCard components; TODO: Create the metrics card component */}
@@ -71,7 +72,8 @@ export const DashboardPage: React.FC = () => {
             <span className="mt-1 text-lg font-semibold">48%</span>
           </div>
         </div>
-        {/* Chart section */}
+
+      {/* Chart section */}
         <div className="flex-row flex-wrap gap-6 items-center">
           <div className="flex items-center gap-2">
             <label 
