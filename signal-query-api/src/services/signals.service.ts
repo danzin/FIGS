@@ -55,17 +55,13 @@ export class SignalsService {
   ): Promise<Record<string, SignalDto>> {
     const signals = await this.repo.findLatestByNames(names);
 
-    // Convert the array of signals into a key-value map for easier frontend consumption.
     const signalsMap: Record<string, SignalDto> = {};
     for (const signal of signals) {
       signalsMap[signal.name] = signal;
     }
 
-    // Optionally, check if all requested signals were found
     for (const requestedName of names) {
       if (!signalsMap[requestedName]) {
-        // You could either ignore it or add a placeholder
-        // For now, we'll just not include it in the response.
         console.warn(
           `[SignalsService] No latest value found for requested signal: ${requestedName}`,
         );
