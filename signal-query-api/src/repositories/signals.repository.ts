@@ -87,4 +87,27 @@ export class SignalsRepository {
     const result = await this.pool.query(text);
     return result.rows.map((r) => r.name);
   }
+
+  async findLatestByNames(signalNames: string[]): Promise<SignalDto[]> {
+    if (!signalNames || signalNames.length === 0) {
+      return [];
+    }
+
+    const text = `
+      SELECT name, time, value, source
+      FROM public.latest_signals
+      WHERE name = ANY($1::text[]);
+    `;
+
+    try {
+      const result = await this.pool.query(text, [signalNames]);
+      return result.rows;
+    } catch (error) {
+      console.error(
+        `[SignalsRepository] Error fetching latest signals by names:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }
