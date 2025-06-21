@@ -88,6 +88,10 @@ export class SignalsRepository {
     return result.rows.map((r) => r.name);
   }
 
+  /**
+   * Fetches the latest non-price signals by their names.
+   * This is used for dashboard widgets that need the latest values of specific signals.
+   */
   async findLatestByNames(signalNames: string[]): Promise<SignalDto[]> {
     if (!signalNames || signalNames.length === 0) {
       return [];
