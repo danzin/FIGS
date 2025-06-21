@@ -10,7 +10,11 @@ import {
   Matches,
   Max,
   Min,
+  IsArray,
+  ArrayNotEmpty,
+  ArrayUnique,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 const VALID_GRANS = [
   '1 minute',
@@ -121,4 +125,15 @@ export class GetSignalsQueryDto {
   @IsOptional()
   @IsString()
   source?: string;
+}
+
+export class GetLatestSignalsQueryDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsString({ each: true })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.split(',') : value,
+  )
+  names: string[];
 }
