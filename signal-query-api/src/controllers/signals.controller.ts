@@ -1,6 +1,11 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { SignalsService } from './../services/signals.service';
-import { GetOhlcQueryDto, OhlcDataDto, SignalDto } from '../models/signal.dto';
+import {
+  GetLatestSignalsQueryDto,
+  GetOhlcQueryDto,
+  OhlcDataDto,
+  SignalDto,
+} from '../models/signal.dto';
 
 @Controller('v1')
 export class SignalsController {
@@ -28,5 +33,12 @@ export class SignalsController {
   @Get('signals') // For general signals
   async listGeneralSignals(): Promise<string[]> {
     return this.signalsService.listGeneralSignals();
+  }
+
+  @Get('signals/latest') // Latest general signals
+  async getLatestSignals(
+    @Query() queryParams: GetLatestSignalsQueryDto,
+  ): Promise<Record<string, SignalDto>> {
+    return this.signalsService.getLatestSignalsByNames(queryParams.names);
   }
 }
