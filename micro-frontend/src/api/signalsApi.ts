@@ -12,6 +12,7 @@ export const getOhlcData = async (baseName: string, interval: Interval): Promise
 	return response.data;
 };
 
+//eg, request 'api/v1/signals/latest/?names=fear_greed_index,FRED_M2SL'
 export const getLatestMacroSignals = async (signalNames: string[]): Promise<Record<string, Signal>> => {
 	const response = await apiClient.get<Record<string, Signal>>("/signals/latest", {
 		params: {
