@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import { getOhlcData } from '../api/signalsApi';
-import type { OhlcData } from '../types/OhlcData';
-import type { Interval } from '../types/Interval';
+import type { OhlcData, Interval } from '../types/OhlcData';
 
 const supportedAssets = [
   { label: 'Bitcoin', value: 'coingecko_bitcoin' },
