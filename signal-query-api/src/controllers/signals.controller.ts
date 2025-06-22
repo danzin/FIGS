@@ -11,6 +11,18 @@ import {
 export class SignalsController {
   constructor(private readonly signalsService: SignalsService) {}
 
+  @Get('signals') // For general signals
+  async listGeneralSignals(): Promise<string[]> {
+    return this.signalsService.listGeneralSignals();
+  }
+
+  @Get('signals/latest') // Latest general signals
+  async getLatestSignals(
+    @Query() queryParams: GetLatestSignalsQueryDto,
+  ): Promise<Record<string, SignalDto>> {
+    return this.signalsService.getLatestSignalsByNames(queryParams.names);
+  }
+
   @Get('assets')
   async listAssets(): Promise<string[]> {
     return this.signalsService.listAssets();
@@ -28,17 +40,5 @@ export class SignalsController {
   @Get('assets/:asset/latest')
   async getLatestPrice(@Param('asset') asset: string): Promise<SignalDto> {
     return this.signalsService.getLatestPrice(asset);
-  }
-
-  @Get('signals') // For general signals
-  async listGeneralSignals(): Promise<string[]> {
-    return this.signalsService.listGeneralSignals();
-  }
-
-  @Get('signals/latest') // Latest general signals
-  async getLatestSignals(
-    @Query() queryParams: GetLatestSignalsQueryDto,
-  ): Promise<Record<string, SignalDto>> {
-    return this.signalsService.getLatestSignalsByNames(queryParams.names);
   }
 }

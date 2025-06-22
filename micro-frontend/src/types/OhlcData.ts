@@ -6,3 +6,12 @@ export interface OhlcData {
 	close: number;
 	volume: number | null; // Volume can be null
 }
+
+export type Interval = "15m" | "30m" | "1h" | "1d";
+
+export interface Signal {
+	name: string;
+	time: string;
+	value: number;
+	source: string;
+}
