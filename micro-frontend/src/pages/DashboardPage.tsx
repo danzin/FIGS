@@ -14,11 +14,11 @@ const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '30 Minutes', value: '30m' },
   { label: '1 Hour', value: '1h' },
   { label: '1 Day', value: '1d' },
-] ;
+];
 
 export const DashboardPage: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState(supportedAssets[0].value);
-  const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value); //Defatuls is 1h
+  const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
   const [chartData, setChartData] = useState<OhlcData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
