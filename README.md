@@ -1,6 +1,6 @@
 # Financial Insights Gathering System (FIGS)
 
-A backend system designed for ingesting and querying financial signals using a microservice architecture.
+A system designed for ingesting and querying financial signals using a microservice architecture.
 
 ## 🧠 Tech Stack
 - **TypeScript**
