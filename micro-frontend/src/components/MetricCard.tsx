@@ -26,9 +26,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         {unit !== '$' && <span className="text-lg">{unit}</span>}
       </span>
       {displayTime && (
-         <span className="text-xs text-gray-500 mt-1">
-            {displayTime}
-         </span>
+        <span className="text-xs text-gray-500 mt-1">
+          {displayTime}
+        </span>
       )}
     </div>
   );
