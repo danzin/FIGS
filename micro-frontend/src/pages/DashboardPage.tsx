@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import { getOhlcData } from '../api/signalsApi';
-import type { OhlcData, Interval } from '../types/OhlcData';
+import type { OhlcData, Interval, Signal } from '../types/OhlcData';
+import { useMetricsData } from '../hooks/useMetricsData';
+import { MetricCard } from '../components/MetricCard';
 
 const supportedAssets = [
   { label: 'Bitcoin', value: 'coingecko_bitcoin' },
@@ -22,6 +24,8 @@ export const DashboardPage: React.FC = () => {
   const [chartData, setChartData] = useState<OhlcData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { metrics, isLoading: metricsLoading, error: metricsError } = useMetricsData();
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -53,23 +57,46 @@ export const DashboardPage: React.FC = () => {
 
       {/* Metrics bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {/* Example MetricCard components; TODO: Create the metrics card component */}
-          <div className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center">
-            <span className="text-xs text-gray-400">Fear & Greed</span>
-            <span className="mt-1 text-lg font-semibold">45</span>
-          </div>
-          <div className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center">
-            <span className="text-xs text-gray-400">SPY Price</span>
-            <span className="mt-1 text-lg font-semibold">$430</span>
-          </div>
-          <div className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center">
-            <span className="text-xs text-gray-400">VIX</span>
-            <span className="mt-1 text-lg font-semibold">18.2</span>
-          </div>
-          <div className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center">
-            <span className="text-xs text-gray-400">BTC Dominance</span>
-            <span className="mt-1 text-lg font-semibold">48%</span>
-          </div>
+          {metricsLoading ? (
+            // Show loading placeholders
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center animate-pulse">
+                <div className="h-3 bg-gray-600 rounded w-16 mb-2"></div>
+                <div className="h-6 bg-gray-600 rounded w-12"></div>
+              </div>
+            ))
+          ) : metricsError ? (
+            // Show error state
+            <div className="col-span-full bg-red-900/20 border border-red-800 p-4 rounded-2xl">
+              <p className="text-red-400 text-sm text-center">{metricsError}</p>
+            </div>
+          ) : (
+            // Show actual metric cards
+            <>
+              <MetricCard 
+                label="Fear & Greed" 
+                signal={metrics.fearGreed as Signal}
+                precision={0}
+              />
+              <MetricCard 
+                label="VIX Level" 
+                signal={metrics.vix as Signal}
+                precision={2}
+              />
+              <MetricCard 
+                label="BTC Dominance" 
+                signal={metrics.btcDominance as Signal}
+                unit="%"
+                precision={1}
+              />
+              <MetricCard 
+                label="Unemployment" 
+                signal={metrics.unemployment as Signal}
+                unit="%"
+                precision={1}
+              />
+            </>
+          )}
         </div>
 
       {/* Chart section */}
