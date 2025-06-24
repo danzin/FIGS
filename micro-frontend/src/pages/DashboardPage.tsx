@@ -58,7 +58,6 @@ export const DashboardPage: React.FC = () => {
       {/* Metrics bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {metricsLoading ? (
-            // Show loading placeholders
             Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center animate-pulse">
                 <div className="h-3 bg-gray-600 rounded w-16 mb-2"></div>
@@ -66,12 +65,10 @@ export const DashboardPage: React.FC = () => {
               </div>
             ))
           ) : metricsError ? (
-            // Show error state
             <div className="col-span-full bg-red-900/20 border border-red-800 p-4 rounded-2xl">
               <p className="text-red-400 text-sm text-center">{metricsError}</p>
             </div>
           ) : (
-            // Show actual metric cards
             <>
               <MetricCard 
                 label="Fear & Greed" 
