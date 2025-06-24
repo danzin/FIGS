@@ -56,7 +56,7 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col space-y-6 ">
 
       {/* Metrics bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-2/3">
           {metricsLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center animate-pulse">

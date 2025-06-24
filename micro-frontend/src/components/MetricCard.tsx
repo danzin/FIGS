@@ -18,7 +18,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   const displayTime = signal?.time ? new Date(signal.time).toLocaleTimeString() : '';
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg shadow-md flex flex-col items-center justify-center text-center h-full">
+    <div className="bg-gray-800 p-4 rounded-lg shadow-md flex flex-col flex-1 min-w-0 items-center justify-center text-center h-full">
       <span className="text-sm text-gray-400">{label}</span>
       <span className="mt-1 text-2xl font-semibold">
         {unit === '$' && <span className="text-lg align-top">{unit}</span>}
