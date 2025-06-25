@@ -8,7 +8,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port') || 3003;
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api');
 
   // Enable global validation pipes
   app.useGlobalPipes(
@@ -19,7 +19,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(Number(port));
+  await app.listen(Number(port), '0.0.0.0'); // '0.0.0.0' -> That's I make it accessible from outside the container
   console.log(`Signal Query API is running on: ${await app.getUrl()}`);
 }
 bootstrap();
