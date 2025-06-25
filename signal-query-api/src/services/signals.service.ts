@@ -1,42 +1,73 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SignalsRepository } from '../repositories/signals.repository';
-import { SignalDto, GetSignalsQueryDto } from '../models/signal.dto';
+import { SignalDto, GetOhlcQueryDto, OhlcDataDto } from '../models/signal.dto';
 
 @Injectable()
 export class SignalsService {
   constructor(private readonly repo: SignalsRepository) {}
 
   /**
-   * Fetch either raw or bucketed signals, depending on queryParams.granularity.
+   * Gets OHLCV data for charting. This will be the main method used by your frontend chart.
    */
-  async getByName(
-    signalName: string,
-    queryParams: GetSignalsQueryDto,
-  ): Promise<SignalDto[]> {
-    if (queryParams.granularity) {
-      // Bucketed query
-      return this.repo.findBucketed(signalName, queryParams);
-    } else {
-      // Raw query
-      return this.repo.findRaw(signalName, queryParams);
+  async getOhlcData(
+    asset: string,
+    queryParams: GetOhlcQueryDto,
+  ): Promise<OhlcDataDto[]> {
+    const data = await this.repo.findOhlcData(asset, queryParams);
+    if (!data || data.length === 0) {
+      throw new NotFoundException(
+        `No OHLC data found for asset '${asset}' with the given criteria.`,
+      );
     }
+    return data;
   }
 
   /**
-   * Get the single latest data point.
+   * Get the latest price for a single asset.
    */
-  async getLatest(signalName: string): Promise<SignalDto> {
-    const latest = await this.repo.findLatest(signalName);
+  async getLatestPrice(asset: string): Promise<SignalDto> {
+    const latest = await this.repo.findLatestPrice(asset);
     if (!latest) {
-      throw new NotFoundException(`No latest signal found for '${signalName}'`);
+      throw new NotFoundException(`No latest price found for asset '${asset}'`);
     }
     return latest;
   }
 
   /**
-   * List all distinct signal names.
+   * List all available asset names that have OHLC data.
    */
-  async listAllNames(): Promise<string[]> {
-    return this.repo.listSignalNames();
+  async listAssets(): Promise<string[]> {
+    return this.repo.listAssetNames();
+  }
+
+  /**
+   * List all other general (non-asset) signal names.
+   */
+  async listGeneralSignals(): Promise<string[]> {
+    return this.repo.listGeneralSignalNames();
+  }
+
+  /**
+   * Fetches the latest non-price signals (BTC.D, VIX Index, Fear&Greed etc) for the dashboard.
+   */
+  async getLatestSignalsByNames(
+    names: string[],
+  ): Promise<Record<string, SignalDto>> {
+    const signals = await this.repo.findLatestByNames(names);
+
+    const signalsMap: Record<string, SignalDto> = {};
+    for (const signal of signals) {
+      signalsMap[signal.name] = signal;
+    }
+
+    for (const requestedName of names) {
+      if (!signalsMap[requestedName]) {
+        console.warn(
+          `[SignalsService] No latest value found for requested signal: ${requestedName}`,
+        );
+      }
+    }
+
+    return signalsMap;
   }
 }
