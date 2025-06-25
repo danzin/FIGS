@@ -38,7 +38,7 @@ services:
   data-collector:
     build:
       context: .      
-      dockerfile: ./data-collector/data-collector.dockerfile        
+      dockerfile: ./data-collector/data-collector.dockerfile
     container_name: data-collector
     ports:
       - "3000:3000" 
@@ -49,6 +49,7 @@ services:
        condition: service_healthy
       timescaledb:
         condition: service_healthy
+    restart: on-failure
 
   signal-persister: 
     build:
@@ -77,6 +78,18 @@ services:
       timescaledb:
         condition: service_healthy
     restart: on-failure 
+
+  micro-frontend:
+    build:
+      context: .
+      dockerfile: ./micro-frontend/micro-frontend.dockerfile
+    container_name: micro-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      signal-query-api:
+        condition: service_started
+    restart: on-failure
 
 volumes: 
   timescaledb_data:

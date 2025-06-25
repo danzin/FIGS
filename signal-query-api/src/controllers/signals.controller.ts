@@ -1,43 +1,44 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  NotFoundException,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { SignalsService } from './../services/signals.service';
-import { GetSignalsQueryDto, SignalDto } from '../models/signal.dto';
+import {
+  GetLatestSignalsQueryDto,
+  GetOhlcQueryDto,
+  OhlcDataDto,
+  SignalDto,
+} from '../models/signal.dto';
 
-@Controller('signals')
+@Controller('v1')
 export class SignalsController {
   constructor(private readonly signalsService: SignalsService) {}
 
-  @Get()
-  async listAll(): Promise<string[]> {
-    return this.signalsService.listAllNames();
+  @Get('signals') // For general signals
+  async listGeneralSignals(): Promise<string[]> {
+    return this.signalsService.listGeneralSignals();
   }
 
-  @Get(':name')
-  async getByName(
-    @Param('name') name: string,
-    @Query() queryParams: GetSignalsQueryDto,
-  ): Promise<SignalDto[]> {
-    console.log('Query Params:', queryParams);
-    console.log('Signal Name:', name);
-    return this.signalsService.getByName(name, queryParams);
+  @Get('signals/latest') // Latest general signals
+  async getLatestSignals(
+    @Query() queryParams: GetLatestSignalsQueryDto,
+  ): Promise<Record<string, SignalDto>> {
+    return this.signalsService.getLatestSignalsByNames(queryParams.names);
   }
 
-  @Get(':name/latest')
-  async getLatest(@Param('name') name: string): Promise<SignalDto> {
-    try {
-      return await this.signalsService.getLatest(name);
-    } catch (err) {
-      if (err instanceof NotFoundException) {
-        // rethrowing, nest turns it into 404
-        throw err;
-      }
-      // bubble up
-      throw err;
-    }
+  @Get('assets')
+  async listAssets(): Promise<string[]> {
+    return this.signalsService.listAssets();
+  }
+
+  @Get('assets/:asset/ohlc')
+  async getOhlc(
+    @Param('asset') asset: string,
+    @Query() queryParams: GetOhlcQueryDto,
+  ): Promise<OhlcDataDto[]> {
+    console.log('Received query params:', queryParams);
+    return this.signalsService.getOhlcData(asset, queryParams);
+  }
+
+  @Get('assets/:asset/latest')
+  async getLatestPrice(@Param('asset') asset: string): Promise<SignalDto> {
+    return this.signalsService.getLatestPrice(asset);
   }
 }
