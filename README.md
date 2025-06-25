@@ -47,3 +47,6 @@ The full docker build:
 
 ![image](https://github.com/user-attachments/assets/fc3f486f-3c77-47b0-8b0e-1c795f48034a)
 
+![image](https://github.com/user-attachments/assets/18f7dba1-5174-43c7-9694-b1dbfe7ddbae)
+
+
