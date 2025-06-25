@@ -31,4 +31,9 @@ A system designed for ingesting and querying financial signals using a microserv
 
 ```bash
 docker compose up --build
+```
+
+![image](https://github.com/user-attachments/assets/54b48019-b414-4111-a57f-b07c99bcf3e3)
+
+![image](https://github.com/user-attachments/assets/fc3f486f-3c77-47b0-8b0e-1c795f48034a)
 
