@@ -6,7 +6,8 @@ A system designed for ingesting and querying financial signals using a microserv
 - **TypeScript**
 - **Express**
 - **NodeJS**
-- **NestJS** 
+- **NestJS**
+- **React, Vite, TailwindCSS** for the frontend. 
 - **RabbitMQ** for event-based communication
 - **TimescaleDB (PostgreSQL)** for time-series data
 - **Docker** for container orchestration
