@@ -12,7 +12,11 @@ A system designed for ingesting and querying financial signals using a microserv
 - **TimescaleDB (PostgreSQL)** for time-series data
 - **Docker** for container orchestration
 - **Monorepo**
-- Planned: **Redis** for caching, **AWS ECS** deployment
+- Planned:
+  - Additional microservice for scraping data unreachable through an API
+  - Possibly adding another DB(PostgreSQL or MongoDB) for handling non-timeseries data
+  - **Redis** for caching
+  - **AWS ECS** deployment, 
   
 ## 📦 Microservices
 
