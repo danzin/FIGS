@@ -38,7 +38,8 @@
 docker compose up --build
 ```
 
-The frontend is currently minimalistic, only displaying a few signals with a price chart:
+The frontend is currently minimalistic, only displaying a few signals with a price chart. 
+As I add more data to work with, more data will be displayed.
 
 ![image](https://github.com/user-attachments/assets/54b48019-b414-4111-a57f-b07c99bcf3e3)
 
