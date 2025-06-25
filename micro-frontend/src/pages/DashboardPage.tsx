@@ -94,7 +94,6 @@ export const DashboardPage: React.FC = () => {
                 unit="%"
                 precision={1}
                 description='U.S. Unemployment Rate'
-
 />
             </>
           )}
