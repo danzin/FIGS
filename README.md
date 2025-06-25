@@ -10,8 +10,8 @@ A system designed for ingesting and querying financial signals using a microserv
 - **RabbitMQ** for event-based communication
 - **TimescaleDB (PostgreSQL)** for time-series data
 - **Docker** for container orchestration
-- Planned: **Redis** for caching, **AWS ECS** deployment
 - **Monorepo**
+- Planned: **Redis** for caching, **AWS ECS** deployment
   
 ## 📦 Microservices
 
