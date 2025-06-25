@@ -1,6 +1,6 @@
 # Financial Insights Gathering System (FIGS)
 
-## 📌 Project Scope / Vision
+## 📌 Project Vision
  FIGS is a modular system for aggregating, persisting, and querying financial signals — primarily focused on the crypto market. It aims to surface actionable insights by combining structured data (e.g., price feeds) with unstructured signals (e.g., app store rankings, social sentiment, and search trends etc).
 
 ## 🧠 Tech Stack
