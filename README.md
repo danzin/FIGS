@@ -1,6 +1,7 @@
 # Financial Insights Gathering System (FIGS)
 
-A system designed for ingesting and querying financial signals using a microservice architecture.
+## 📌 Project Scope / Vision
+ FIGS is a modular system for aggregating, persisting, and querying financial signals — primarily focused on the crypto market. It aims to surface actionable insights by combining structured data (e.g., price feeds) with unstructured signals (e.g., app store rankings, social sentiment, and search trends etc).
 
 ## 🧠 Tech Stack
 - **TypeScript**
@@ -37,7 +38,11 @@ A system designed for ingesting and querying financial signals using a microserv
 docker compose up --build
 ```
 
+The frontend is currently minimalistic, only displaying a few signals with a price chart:
+
 ![image](https://github.com/user-attachments/assets/54b48019-b414-4111-a57f-b07c99bcf3e3)
+
+The full docker build:
 
 ![image](https://github.com/user-attachments/assets/fc3f486f-3c77-47b0-8b0e-1c795f48034a)
 
