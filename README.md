@@ -23,7 +23,7 @@
 
 - **data-collector**: Consumes and publishes signals to RabbitMQ
 - **signal-persister**: Consumes and writes signals to TimescaleDB
-- **signal-query-api**: Serves raw + aggregated signal queries from TimsescaleDB
+- **signal-query-api**: Serves raw + aggregated signal queries from TimescaleDB
 - **micro-frontend**: Displays data from signal-query-api
 
 ## 📊 Features
