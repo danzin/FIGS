@@ -18,6 +18,7 @@ A system designed for ingesting and querying financial signals using a microserv
 - **data-collector**: Consumes and publishes signals to RabbitMQ
 - **signal-persister**: Consumes and writes signals to TimescaleDB
 - **signal-query-api**: Serves raw + aggregated signal queries from TimsescaleDB
+- **micro-frontend**: Displays data from signal-query-api
 
 ## 📊 Features
 
