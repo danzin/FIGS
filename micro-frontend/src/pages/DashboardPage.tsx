@@ -71,7 +71,7 @@ export const DashboardPage: React.FC = () => {
           ) : (
             <>
               <MetricCard 
-                label="Fear & Greed" 
+                label="Fear&Greed Index" 
                 signal={metrics.fearGreed as Signal}
                 precision={0}
               />
