@@ -56,7 +56,7 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col space-y-6 ">
 
       {/* Metrics bar */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-2/3">
+        <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full sm:w-2/3">
           {metricsLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center animate-pulse">
@@ -79,19 +79,23 @@ export const DashboardPage: React.FC = () => {
                 label="VIX Level" 
                 signal={metrics.vix as Signal}
                 precision={2}
+                description='Volatility of the U.S. stock market'
               />
               <MetricCard 
                 label="BTC Dominance" 
                 signal={metrics.btcDominance as Signal}
                 unit="%"
                 precision={1}
+                description='BTC.D'
               />
               <MetricCard 
                 label="Unemployment" 
                 signal={metrics.unemployment as Signal}
                 unit="%"
                 precision={1}
-              />
+                description='U.S. Unemployment Rate'
+
+/>
             </>
           )}
         </div>
