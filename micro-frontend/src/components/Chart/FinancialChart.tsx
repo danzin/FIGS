@@ -61,7 +61,7 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
   useEffect(() => {
     if (!chartContainerRef.current || data.length === 0) return;
 
-    const { width, height } = chartContainerRef.current.getBoundingClientRect();
+    const { width, height } = chartContainerRef.current.getBoundingClientRect(); //fluid width and height on init on each resize
     const isMobile = width < 640;
 
     // chart instance once
@@ -141,6 +141,8 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
 
 
     // Handle resize
+    // Resize Observer handles resizing much better than window resize events 
+    // it watches the chart's wrapper container and resizes the chart accordingly
     const resizeObs = new ResizeObserver(entries => {
     for (let ent of entries) {
       const { width: w, height: h } = ent.contentRect;
