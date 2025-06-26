@@ -164,7 +164,7 @@ export const DashboardPage: React.FC = () => {
             )}
             
             {!isLoading && !error && (
-              <div className="h-96 lg:h-[600px]">
+              <div className="w-full h-[50vh] md:h-[600px]">
                 <FinancialChart data={chartData} />
               </div>
             )}
