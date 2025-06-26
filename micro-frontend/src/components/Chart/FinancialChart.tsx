@@ -4,6 +4,7 @@ import {
   ColorType,
   CandlestickSeries,
   HistogramSeries,
+  CrosshairMode,
 } from 'lightweight-charts';
 import type {
   IChartApi,
@@ -60,25 +61,39 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
   useEffect(() => {
     if (!chartContainerRef.current || data.length === 0) return;
 
+    const { width, height } = chartContainerRef.current.getBoundingClientRect();
+    const isMobile = width < 640;
+
     // chart instance once
     if (!chartRef.current) {
       chartRef.current = createChart(chartContainerRef.current, {
-        width: chartContainerRef.current.clientWidth,
-        height: 600,
+        width,
+        height,
         layout: {
           background: { type: ColorType.Solid, color: '#1a1a1a' },
           textColor: '#d1d4dc',
         },
         grid: {
-          vertLines: { color: '#2b2b30' },
+          vertLines: { color: isMobile ? 'transparent' : '#2b2b30' },
           horzLines: { color: '#2b2b30' },
         },
         timeScale: {
           borderColor: '#485c7b',
           timeVisible: true,
+          barSpacing: isMobile ? 4 : 12,
+          minBarSpacing: 2,
+          rightOffset: 3,
+          lockVisibleTimeRangeOnResize: true,
+        },
+        crosshair: {
+          mode: isMobile ? CrosshairMode.Normal : CrosshairMode.Magnet,
+        },
+        localization: {
+          dateFormat: isMobile ? 'MM/dd' : 'MMM dd, yyyy',
         },
         rightPriceScale: {
           borderColor: '#485c7b',
+          autoScale: true,
         },
       });
 
@@ -110,9 +125,10 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
       // Configure volume price scale margins
       chartRef.current.priceScale('volume_scale').applyOptions({
         scaleMargins: {
-          top: 0.7,
+          top: 0.9,
           bottom: 0,
         },
+        autoScale: true,
       });
     }
 
@@ -121,21 +137,20 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
 
     candlestickSeriesRef.current?.setData(candlestickData);
     volumeSeriesRef.current?.setData(volumeData);
-
     chartRef.current.timeScale().fitContent();
 
+
     // Handle resize
-    const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.resize(
-          chartContainerRef.current.clientWidth,
-          600
-        );
+        const resizeObs = new ResizeObserver(entries => {
+      for (let ent of entries) {
+        const { width: w, height: h } = ent.contentRect;
+        chartRef.current?.resize(w, h);
       }
-    };
-    window.addEventListener('resize', handleResize);
+    });
+    resizeObs.observe(chartContainerRef.current);
+
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObs.disconnect();
     };
   }, [data]);
 
@@ -152,7 +167,7 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
   return (
     <div
       ref={chartContainerRef}
-      style={{ position: 'relative' }}
+      className='relative w-full h-[50vh] md:h-[600px]'
     />
   );
 };
