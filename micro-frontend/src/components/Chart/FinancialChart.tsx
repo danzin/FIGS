@@ -141,11 +141,11 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
 
 
     // Handle resize
-        const resizeObs = new ResizeObserver(entries => {
-      for (let ent of entries) {
-        const { width: w, height: h } = ent.contentRect;
-        chartRef.current?.resize(w, h);
-      }
+    const resizeObs = new ResizeObserver(entries => {
+    for (let ent of entries) {
+      const { width: w, height: h } = ent.contentRect;
+      chartRef.current?.resize(w, h);
+    }
     });
     resizeObs.observe(chartContainerRef.current);
 
