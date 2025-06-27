@@ -1,10 +1,9 @@
 services:
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3
     container_name: rabbitmq
     ports:
       - "5672:5672" # AMQP protocol port
-      - "15672:15672" # Management UI
     environment:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: pass
@@ -14,8 +13,16 @@ services:
       timeout: 5s
       retries: 5
     restart: on-failure
-
-
+    # Ensure RabbitMQ doesn't go nuts
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations: 
+          cpus: '0.1'
+          memory: 128M
+  
   timescaledb:
     image: timescale/timescaledb:latest-pg17
     container_name: timescaledb
@@ -34,6 +41,11 @@ services:
       timeout: 5s
       retries: 5
     restart: on-failure 
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
 
   data-collector:
     build:
@@ -50,6 +62,11 @@ services:
       timescaledb:
         condition: service_healthy
     restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
 
   signal-persister: 
     build:
@@ -64,6 +81,11 @@ services:
       timescaledb:
         condition: service_healthy
     restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
 
   signal-query-api:
     build:
@@ -78,6 +100,11 @@ services:
       timescaledb:
         condition: service_healthy
     restart: on-failure 
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   micro-frontend:
     build:
@@ -90,7 +117,12 @@ services:
       signal-query-api:
         condition: service_started
     restart: on-failure
-
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+          
 volumes: 
   timescaledb_data:
   
