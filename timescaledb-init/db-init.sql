@@ -368,7 +368,7 @@ BEGIN
     END IF;
 
 
-    -- Construct the query string using format() for safe identifier injection.
+    -- Construct the query string using format() for safe identifier injection, always good practice.
     query := format(
         'SELECT
             s.bucketed_at,
