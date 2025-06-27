@@ -4,11 +4,11 @@ import { TimescaleDBService } from "./services/TimescaleDBService";
 import { SignalProcessor } from "./SignalProcessor";
 
 async function main() {
-	console.log("[PersisterApp] Initializing...");
+	console.log("[SignalPersisterApp] Initializing...");
 
 	// Validate essential configurations
 	if (!config.RABBITMQ_URL || !config.DB_HOST) {
-		console.error("[PersisterApp] Missing critical configuration. Exiting.");
+		console.error("[SignalPersisterApp] Missing critical configuration. Exiting.");
 		process.exit(1);
 	}
 
