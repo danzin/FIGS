@@ -30,18 +30,20 @@ async function main() {
 
 	try {
 		await signalProcessor.start();
-		console.log("[PersisterApp] Signal Persister is running. To exit press CTRL+C");
+		console.log("[SignalPersisterApp] Signal Persister is running. To exit press CTRL+C");
 	} catch (error) {
-		console.error("[PersisterApp] Failed to start application:", error);
-		await signalProcessor.stop().catch((err) => console.error("[PersisterApp] Error during shutdown:", err));
+		console.error("[SignalPersisterApp] Failed to start application:", error);
+		await signalProcessor.stop().catch((err) => console.error("[SignalPersisterApp] Error during shutdown:", err));
 		process.exit(1);
 	}
 
 	// Graceful shutdown
 	const gracefulShutdown = async (signal: string) => {
-		console.log(`\n[PersisterApp] Caught ${signal}, shutting down gracefully...`);
-		await signalProcessor.stop().catch((err) => console.error("[PersisterApp] Error during graceful shutdown:", err));
-		console.log("[PersisterApp] Shutdown complete.");
+		console.log(`\n[SignalPersisterApp] Caught ${signal}, shutting down gracefully...`);
+		await signalProcessor
+			.stop()
+			.catch((err) => console.error("[SignalPersisterApp] Error during graceful shutdown:", err));
+		console.log("[SignalPersisterApp] Shutdown complete.");
 		process.exit(0);
 	};
 
@@ -50,6 +52,6 @@ async function main() {
 }
 
 main().catch((error) => {
-	console.error("[PersisterApp] Unhandled fatal error in main:", error);
+	console.error("[SignalPersisterApp] Unhandled fatal error in main:", error);
 	process.exit(1);
 });
