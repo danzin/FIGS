@@ -141,7 +141,8 @@ export class RabbitMQService implements MessageBroker {
 	public async consume(
 		queueName: string,
 		exchangeName: string,
-		onMessageCallback: (signal: Signal) => Promise<void>, // Callback now directly takes Signal
+		// Inside the SignalProcessor class, handleIncomingSignal() is passed as the callback.
+		onMessageCallback: (signal: Signal) => Promise<void>, // Callback now directly takes Signal.
 		options?: Options.Consume
 	): Promise<string | null> {
 		// Returns consumerTag or null
