@@ -164,10 +164,11 @@ export class RabbitMQService implements MessageBroker {
 					if (msg) {
 						let signal: Signal | null = null;
 						try {
-							signal = JSON.parse(msg.content.toString()) as Signal;
+							signal = JSON.parse(msg.content.toString()) as Signal; // Parse the message content from Buffer back to Signal
 							if (typeof signal.timestamp === "string") {
-								signal.timestamp = new Date(signal.timestamp);
+								signal.timestamp = new Date(signal.timestamp); // Ensure timestamp is a Date object
 							}
+							// Validate the Signal
 							if (
 								!signal.name ||
 								!(signal.timestamp instanceof Date) ||
