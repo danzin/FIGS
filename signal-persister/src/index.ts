@@ -8,7 +8,7 @@ async function main() {
 
 	// Validate essential configurations
 	if (!config.RABBITMQ_URL || !config.DB_HOST) {
-		console.error("[SignalPersisterApp] Missing critical configuration. Exiting.");
+		console.error("[SignalPersisterApp] Missing critical RabbitMQ and Database configuration. Exiting.");
 		process.exit(1);
 	}
 
