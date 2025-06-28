@@ -4,6 +4,9 @@ import { Signal } from "../models/signal.interface";
 /** Apparently in v0.10.7 of amqplib types,
  * amqp.connect() now resolves to a ChannelModel, not a Connection.
  * A ChannelModel is essentially a lightweight connection + channel factory */
+
+// This service provides a RabbitMQ client implementation for the MessageBroker interface.
+// It handles connection management, message publishing, and consumption with automatic reconnection logic.
 export class RabbitMQService implements MessageBroker {
 	private channelModel: ChannelModel | null = null;
 	private channel: Channel | null = null;
