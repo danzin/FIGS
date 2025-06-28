@@ -156,7 +156,7 @@ export class RabbitMQService implements MessageBroker {
 			await this.channel.bindQueue(q.queue, exchangeName, "");
 			console.log(`[RabbitMQService] Queue '${q.queue}' bound to exchange '${exchangeName}'`);
 
-			this.channel.prefetch(1);
+			this.channel.prefetch(1); // Only allow one unacknowledged message at a time
 
 			const { consumerTag } = await this.channel.consume(
 				q.queue,
