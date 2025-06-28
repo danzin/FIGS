@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+// Utility function to get env variables with a check.
 function getEnv(key: string, required: boolean = true): string | undefined {
 	const value = process.env[key];
 	if (required && !value) {
