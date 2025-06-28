@@ -124,7 +124,7 @@ export class RabbitMQService implements MessageBroker {
 				throw new Error("[RabbitMQService] Channel not available after connection attempt. Cannot publish.");
 			}
 		}
-		const payload = Buffer.from(JSON.stringify(message));
+		const payload = Buffer.from(JSON.stringify(message)); // RabbitMQ transmits frames of binary data, channel.sendToQueue() and channel.publish() expect a Buffer
 		const success = this.channel.publish(exchangeName, routingKey, payload, { persistent: true, ...options });
 		if (success) {
 			console.log(`[RabbitMQService] Published to ${exchangeName}: ${message.name}`);
