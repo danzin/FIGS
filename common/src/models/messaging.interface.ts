@@ -8,6 +8,6 @@ export interface MessageBroker {
 		exchangeName: string,
 		onMessage: (message: any) => Promise<void>,
 		options?: Options.Consume
-	): Promise<string | null>; // 'any' can be Signal later
+	): Promise<string | null>;
 	close(): Promise<void>;
 }
