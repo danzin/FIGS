@@ -45,7 +45,7 @@ export class SchedulerConfigManager {
 
 		if (config.API_NINJAS_KEY) {
 			this.registerMediumFrequencySource(
-				new ApiNinjasCommoditySource(config.API_NINJAS_KEY, "oil"),
+				new ApiNinjasCommoditySource(config.API_NINJAS_KEY, "brent_crude_oil"),
 				"0 * * * *", // Top of every hour
 				{ maxRetries: 3, retryDelay: 60000 }
 			);

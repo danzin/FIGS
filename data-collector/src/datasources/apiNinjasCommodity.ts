@@ -7,9 +7,9 @@ export class ApiNinjasCommoditySource implements DataSource {
 	private readonly apiKey: string;
 	private readonly commodityName: string;
 
-	constructor(apiKey: string, commodityName: "oil" | "gold" | "silver" | string) {
+	constructor(apiKey: string, commodityName: "Brent Crude Oil" | "gold" | "silver" | string) {
 		if (!apiKey) {
-			throw new Error("[ApiNinjasCommoditySource] API key is required.");
+			throw new Error("[ApiNinjasCommoditySource] API key is required and was not provided.");
 		}
 		this.apiKey = apiKey;
 		this.commodityName = commodityName.toLowerCase();
@@ -31,14 +31,16 @@ export class ApiNinjasCommoditySource implements DataSource {
 
 			// API-Ninjas returns an array even for a single unit
 			const data = response.data?.[0];
+			console.log(`[ApiNinjasCommoditySource] Response data for '${this.commodityName}':`, data);
+			if (!data) return null;
 
-			if (!data || typeof data.price === "undefined") {
-				console.warn(`[ApiNinjasCommoditySource] No price data returned for '${this.commodityName}'`);
-				return null;
+			const value = Number(data.price);
+			let timestamp: Date;
+			if (typeof data.timestamp === "number") {
+				timestamp = new Date(data.timestamp * 1000);
+			} else {
+				timestamp = new Date(data.timestamp);
 			}
-
-			const value = parseFloat(data.price);
-			const timestamp = new Date(data.timestamp * 1000);
 
 			if (isNaN(value)) {
 				console.warn(`[ApiNinjasCommoditySource] Invalid price value for '${this.commodityName}': ${data.price}`);
@@ -49,10 +51,12 @@ export class ApiNinjasCommoditySource implements DataSource {
 				console.warn(`[ApiNinjasCommoditySource] Invalid timestamp for '${this.commodityName}': ${data.timestamp}`);
 				return null;
 			}
-
+			console.log(
+				`[ApiNinjasCommoditySource] Fetched price for '${this.commodityName}': ${value} at ${timestamp.toISOString()}`
+			);
 			return {
 				name: this.key,
-				timestamp: timestamp,
+				timestamp,
 				value: value,
 				source: "API Ninjas",
 			};
