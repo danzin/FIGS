@@ -1,7 +1,7 @@
 import { SignalScheduler, ScheduledDataSource } from "./SignalScheduler";
 import { FredSource } from "./datasources/fred";
 import { CoinGeckoSource } from "./datasources/coingecko";
-import { VIXSource, SPYSource } from "./datasources/yahooFinance";
+import { VIXSource, SPYSource, BrentCrudeOilSource } from "./datasources/yahooFinance";
 import { FearGreedSource } from "./datasources/feargreed";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
@@ -43,21 +43,9 @@ export class SchedulerConfigManager {
 		// Market indices and volatility (market hours sensitive)
 		//registerMediumFrequencySource Registers them for the long term!!!!!!
 
-		if (config.API_NINJAS_KEY) {
-			this.registerMediumFrequencySource(
-				new ApiNinjasCommoditySource(config.API_NINJAS_KEY, "brent_crude_oil"),
-				"0 * * * *", // Top of every hour
-				{ maxRetries: 3, retryDelay: 60000 }
-			);
-		} else {
-			console.warn(
-				"[SchedulerConfigManager] API_NINJAS_KEY not found in environment. Skipping commodity price sources."
-			);
-		}
 		this.registerMediumFrequencySource(new VIXSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
-
 		this.registerMediumFrequencySource(new SPYSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
-
+		this.registerHighFrequencySource(new BrentCrudeOilSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 		// Bitcoin dominance (changes slowly but important)
 		this.registerMediumFrequencySource(
 			new CoinGeckoSource("bitcoin", "dominance"),
