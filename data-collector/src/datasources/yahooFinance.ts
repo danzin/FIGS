@@ -15,8 +15,11 @@ export class YahooFinanceSource implements DataSource {
 
 	async fetch(): Promise<Signal | null> {
 		try {
-			// Using Yahoo Finance's v8 finance API endpoint
 			const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${this.symbol}`, {
+				params: {
+					interval: "1d",
+					range: "1d",
+				},
 				headers: {
 					"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
 				},
@@ -30,39 +33,82 @@ export class YahooFinanceSource implements DataSource {
 			}
 
 			const meta = result.meta;
-			const timestamps = result.timestamp;
-			const quotes = result.indicators?.quote?.[0];
-
-			if (!meta || !timestamps || !quotes) {
-				console.warn(`Incomplete data structure for ${this.symbol} from Yahoo Finance`);
+			if (!meta) {
+				console.warn(`No meta data available for ${this.symbol} from Yahoo Finance`);
 				return null;
 			}
 
-			// Get the most recent data point
-			const latestIndex = timestamps.length - 1;
-			const latestTimestamp = new Date(timestamps[latestIndex] * 1000);
+			console.log(`[YahooFinanceSource] Meta data for ${this.symbol}:`, {
+				regularMarketPrice: meta.regularMarketPrice,
+				regularMarketTime: meta.regularMarketTime,
+				regularMarketVolume: meta.regularMarketVolume,
+				instrumentType: meta.instrumentType,
+			});
 
 			let value: number;
+			let timestamp: Date;
+
+			timestamp = new Date(meta.regularMarketTime * 1000);
+
 			switch (this.metric) {
 				case "price":
-					// Use regularMarketPrice from meta for current price, fallback to latest close
-					value = meta.regularMarketPrice || quotes.close[latestIndex];
+					if (typeof meta.regularMarketPrice === "number" && !isNaN(meta.regularMarketPrice)) {
+						value = meta.regularMarketPrice;
+						console.log(`[YahooFinanceSource] Using regularMarketPrice for ${this.symbol}: ${value}`);
+					} else {
+						// Fallback to historical data if available
+						const timestamps = result.timestamp;
+						const quotes = result.indicators?.quote?.[0];
+
+						if (timestamps && quotes && quotes.close && timestamps.length > 0) {
+							const latestIndex = timestamps.length - 1;
+							value = quotes.close[latestIndex];
+							timestamp = new Date(timestamps[latestIndex] * 1000);
+							console.log(`[YahooFinanceSource] Using historical close price for ${this.symbol}: ${value}`);
+						} else {
+							console.warn(`No price data available for ${this.symbol}`);
+							return null;
+						}
+					}
 					break;
+
 				case "volume":
-					value = quotes.volume[latestIndex];
+					if (typeof meta.regularMarketVolume === "number" && !isNaN(meta.regularMarketVolume)) {
+						value = meta.regularMarketVolume;
+						console.log(`[YahooFinanceSource] Using regularMarketVolume for ${this.symbol}: ${value}`);
+					} else {
+						const timestamps = result.timestamp;
+						const quotes = result.indicators?.quote?.[0];
+
+						if (timestamps && quotes && quotes.volume && timestamps.length > 0) {
+							const latestIndex = timestamps.length - 1;
+							value = quotes.volume[latestIndex];
+							timestamp = new Date(timestamps[latestIndex] * 1000);
+							console.log(`[YahooFinanceSource] Using historical volume for ${this.symbol}: ${value}`);
+						} else {
+							console.warn(`No volume data available for ${this.symbol}`);
+							return null;
+						}
+					}
 					break;
+
 				default:
 					throw new Error(`Unknown metric: ${this.metric}`);
 			}
 
+			// Final validation
 			if (typeof value !== "number" || isNaN(value) || value === null) {
 				console.warn(`Invalid ${this.metric} value for ${this.symbol}: ${value}`);
 				return null;
 			}
 
+			console.log(
+				`[YahooFinanceSource] Successfully fetched ${this.metric} for ${this.symbol}: ${value} at ${timestamp.toISOString()}`
+			);
+
 			return {
 				name: this.key,
-				timestamp: latestTimestamp,
+				timestamp,
 				value,
 				source: "Yahoo Finance",
 			};
@@ -92,5 +138,49 @@ export class SPYSource extends YahooFinanceSource {
 	constructor() {
 		super("SPY", "price");
 		this.key = "spy_price";
+	}
+}
+
+export class BrentCrudeOilSource implements DataSource {
+	public key: string;
+	private static readonly BRENT_SYMBOLS = ["BZ=F", "BZT=F", "^SGICBRB"];
+	private sources: YahooFinanceSource[];
+	private currentSourceIndex = 0;
+
+	constructor() {
+		this.key = "brent_crude_oil_price";
+
+		// Separate source for each symbol
+		this.sources = BrentCrudeOilSource.BRENT_SYMBOLS.map((symbol) => new YahooFinanceSource(symbol, "price"));
+	}
+
+	async fetch(): Promise<Signal | null> {
+		// Try each source in order starting with the last successful one
+		for (let i = 0; i < this.sources.length; i++) {
+			const sourceIndex = (this.currentSourceIndex + i) % this.sources.length;
+			const source = this.sources[sourceIndex];
+			const symbol = BrentCrudeOilSource.BRENT_SYMBOLS[sourceIndex];
+			try {
+				console.log(`[BrentCrudeOilSource] Trying symbol: ${symbol}`);
+				const result = await source.fetch();
+
+				if (result) {
+					result.name = this.key;
+
+					if (sourceIndex !== this.currentSourceIndex) {
+						console.log(`[BrentCrudeOilSource] Successfully switched to symbol: ${symbol}`);
+						this.currentSourceIndex = sourceIndex;
+					}
+
+					return result;
+				} else {
+					console.warn(`[BrentCrudeOilSource] ${symbol} returned null result`);
+				}
+			} catch (error) {
+				console.warn(`[BrentCrudeOilSource] Failed to fetch from ${symbol}:`, error);
+			}
+		}
+		console.error(`[BrentCrudeOilSource] All Brent crude oil symbols failed`);
+		return null;
 	}
 }
