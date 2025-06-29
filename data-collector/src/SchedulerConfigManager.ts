@@ -43,6 +43,17 @@ export class SchedulerConfigManager {
 		// Market indices and volatility (market hours sensitive)
 		//registerMediumFrequencySource Registers them for the long term!!!!!!
 
+		if (config.API_NINJAS_KEY) {
+			this.registerMediumFrequencySource(
+				new ApiNinjasCommoditySource(config.API_NINJAS_KEY, "oil"),
+				"0 * * * *", // Top of every hour
+				{ maxRetries: 3, retryDelay: 60000 }
+			);
+		} else {
+			console.warn(
+				"[SchedulerConfigManager] API_NINJAS_KEY not found in environment. Skipping commodity price sources."
+			);
+		}
 		this.registerMediumFrequencySource(new VIXSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 
 		this.registerMediumFrequencySource(new SPYSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
