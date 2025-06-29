@@ -35,6 +35,7 @@
 ## 🚀 Running Locally
 
 ```bash
+npm install
 docker compose up --build
 ```
 
