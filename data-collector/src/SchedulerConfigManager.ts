@@ -6,6 +6,7 @@ import { FearGreedSource } from "./datasources/feargreed";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
+import { ApiNinjasCommoditySource } from "./datasources/apiNinjasCommodity";
 
 export class SchedulerConfigManager {
 	private scheduler: SignalScheduler;
@@ -41,6 +42,7 @@ export class SchedulerConfigManager {
 		// MEDIUM FREQUENCY -  1 hour
 		// Market indices and volatility (market hours sensitive)
 		//registerMediumFrequencySource Registers them for the long term!!!!!!
+
 		this.registerMediumFrequencySource(new VIXSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 
 		this.registerMediumFrequencySource(new SPYSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
