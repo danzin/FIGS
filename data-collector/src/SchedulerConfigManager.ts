@@ -6,7 +6,6 @@ import { FearGreedSource } from "./datasources/feargreed";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
-import { ApiNinjasCommoditySource } from "./datasources/apiNinjasCommodity";
 
 export class SchedulerConfigManager {
 	private scheduler: SignalScheduler;
