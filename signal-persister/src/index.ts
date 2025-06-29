@@ -8,10 +8,11 @@ async function main() {
 
 	// Validate essential configurations
 	if (!config.RABBITMQ_URL || !config.DB_HOST) {
-		console.error("[SignalPersisterApp] Missing critical configuration. Exiting.");
+		console.error("[SignalPersisterApp] Missing critical RabbitMQ and Database configuration. Exiting.");
 		process.exit(1);
 	}
 
+	// Initialize services
 	const rabbitMQService = new RabbitMQService(config.RABBITMQ_URL);
 	const timescaleDBService = new TimescaleDBService({
 		host: config.DB_HOST,
@@ -21,6 +22,7 @@ async function main() {
 		database: config.DB_NAME,
 	});
 
+	// Create the SignalProcessor instance with the services and queue/exchange names
 	const signalProcessor = new SignalProcessor(
 		rabbitMQService,
 		timescaleDBService,

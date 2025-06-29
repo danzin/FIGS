@@ -4,6 +4,9 @@ import { Signal } from "../models/signal.interface";
 /** Apparently in v0.10.7 of amqplib types,
  * amqp.connect() now resolves to a ChannelModel, not a Connection.
  * A ChannelModel is essentially a lightweight connection + channel factory */
+
+// This service provides a RabbitMQ client implementation for the MessageBroker interface.
+// It handles connection management, message publishing, and consumption with automatic reconnection logic.
 export class RabbitMQService implements MessageBroker {
 	private channelModel: ChannelModel | null = null;
 	private channel: Channel | null = null;
@@ -124,7 +127,7 @@ export class RabbitMQService implements MessageBroker {
 				throw new Error("[RabbitMQService] Channel not available after connection attempt. Cannot publish.");
 			}
 		}
-		const payload = Buffer.from(JSON.stringify(message));
+		const payload = Buffer.from(JSON.stringify(message)); // RabbitMQ transmits frames of binary data, channel.sendToQueue() and channel.publish() expect a Buffer
 		const success = this.channel.publish(exchangeName, routingKey, payload, { persistent: true, ...options });
 		if (success) {
 			console.log(`[RabbitMQService] Published to ${exchangeName}: ${message.name}`);
@@ -138,7 +141,8 @@ export class RabbitMQService implements MessageBroker {
 	public async consume(
 		queueName: string,
 		exchangeName: string,
-		onMessageCallback: (signal: Signal) => Promise<void>, // Callback now directly takes Signal
+		// Inside the SignalProcessor class, handleIncomingSignal() is passed as the callback.
+		onMessageCallback: (signal: Signal) => Promise<void>, // Callback now directly takes Signal.
 		options?: Options.Consume
 	): Promise<string | null> {
 		// Returns consumerTag or null
@@ -156,7 +160,7 @@ export class RabbitMQService implements MessageBroker {
 			await this.channel.bindQueue(q.queue, exchangeName, "");
 			console.log(`[RabbitMQService] Queue '${q.queue}' bound to exchange '${exchangeName}'`);
 
-			this.channel.prefetch(1);
+			this.channel.prefetch(1); // Only allow one unacknowledged message at a time
 
 			const { consumerTag } = await this.channel.consume(
 				q.queue,
@@ -164,10 +168,11 @@ export class RabbitMQService implements MessageBroker {
 					if (msg) {
 						let signal: Signal | null = null;
 						try {
-							signal = JSON.parse(msg.content.toString()) as Signal;
+							signal = JSON.parse(msg.content.toString()) as Signal; // Parse the message content from Buffer back to Signal
 							if (typeof signal.timestamp === "string") {
-								signal.timestamp = new Date(signal.timestamp);
+								signal.timestamp = new Date(signal.timestamp); // Ensure timestamp is a Date object
 							}
+							// Validate the Signal
 							if (
 								!signal.name ||
 								!(signal.timestamp instanceof Date) ||
