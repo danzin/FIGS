@@ -21,3 +21,13 @@ export const getLatestMacroSignals = async (signalNames: string[]): Promise<Reco
 	});
 	return response.data;
 };
+
+export const getLatestAssetPrice = async (assetNames: string[]): Promise<Record<string, Signal>> => {
+	const response = await apiClient.get<Record<string, Signal>>("/assets/latest", {
+		params: {
+			assets: assetNames.join(","),
+		},
+	});
+	console.log("getLatestAssetPrice response:", response);
+	return response.data;
+};

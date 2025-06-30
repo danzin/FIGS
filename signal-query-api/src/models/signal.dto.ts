@@ -43,6 +43,23 @@ export class SignalDto {
   source: string;
 }
 
+export class PriceDTO {
+  @IsString()
+  @IsNotEmpty()
+  asset: string;
+
+  @Type(() => Date) // Transform incoming string to Date
+  @IsDate()
+  time: Date; // In DB it's timestamptz, here it's Date
+
+  @IsNumber()
+  price: number;
+
+  @IsString()
+  @IsNotEmpty()
+  source: string;
+}
+
 export class OhlcDto {
   time: Date;
   name: string;
@@ -136,4 +153,15 @@ export class GetLatestSignalsQueryDto {
     typeof value === 'string' ? value.split(',') : value,
   )
   names: string[];
+}
+
+export class GetLatestPricesQueryDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsString({ each: true })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.split(',') : value,
+  )
+  assets: string[];
 }

@@ -1,6 +1,11 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { Pool, QueryResult } from 'pg';
-import { SignalDto, GetOhlcQueryDto, OhlcDataDto } from '../models/signal.dto';
+import {
+  SignalDto,
+  GetOhlcQueryDto,
+  OhlcDataDto,
+  PriceDTO,
+} from '../models/signal.dto';
 import { PG_CONNECTION } from '../database/database.constants';
 
 @Injectable()
@@ -39,7 +44,7 @@ export class SignalsRepository {
    * Fetches the latest price for a given asset from the helper view.
    */
   async findLatestPrice(asset: string): Promise<SignalDto | null> {
-    const text = `SELECT asset as name, time, price as value, source FROM public.latest_prices WHERE asset = $1;`;
+    const text = `SELECT * as name, time, price as value, source FROM public.latest_prices WHERE asset = $1;`;
     const result = await this.pool.query(text, [asset]);
     return result.rows[0] || null;
   }
@@ -92,7 +97,7 @@ export class SignalsRepository {
    * Fetches the latest non-price signals by their names.
    * This is used for dashboard widgets that need the latest values of specific signals.
    */
-  async findLatestByNames(signalNames: string[]): Promise<SignalDto[]> {
+  async findLatestSignalsByNames(signalNames: string[]): Promise<SignalDto[]> {
     if (!signalNames || signalNames.length === 0) {
       return [];
     }
@@ -109,6 +114,33 @@ export class SignalsRepository {
     } catch (error) {
       console.error(
         `[SignalsRepository] Error fetching latest signals by names:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches the latest non-price signals by their names.
+   * This is used for dashboard widgets that need the latest values of specific signals.
+   */
+  async findLatestPricesByNames(priceNames: string[]): Promise<PriceDTO[]> {
+    if (!priceNames || priceNames.length === 0) {
+      return [];
+    }
+
+    const text = `
+      SELECT asset, time, price, source
+      FROM public.latest_prices
+      WHERE asset = ANY($1::text[]);
+    `;
+
+    try {
+      const result = await this.pool.query(text, [priceNames]);
+      return result.rows;
+    } catch (error) {
+      console.error(
+        `[SignalsRepository] Error fetching latest prices by names:`,
         error,
       );
       throw error;

@@ -1,15 +1,25 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { SignalsService } from './../services/signals.service';
 import {
+  GetLatestPricesQueryDto,
   GetLatestSignalsQueryDto,
   GetOhlcQueryDto,
   OhlcDataDto,
+  PriceDTO,
   SignalDto,
 } from '../models/signal.dto';
 
 @Controller('v1')
 export class SignalsController {
   constructor(private readonly signalsService: SignalsService) {}
+
+  @Get('assets/latest') // Latest asset prices
+  // Example request: /api/v1/assets/latest?assets=brent_crude_oil
+  async getLatestPrice(
+    @Query() queryParams: GetLatestPricesQueryDto,
+  ): Promise<Record<string, PriceDTO>> {
+    return this.signalsService.getLatestPricesByNames(queryParams.assets);
+  }
 
   @Get('signals') // For general signals
   async listGeneralSignals(): Promise<string[]> {
@@ -35,10 +45,5 @@ export class SignalsController {
   ): Promise<OhlcDataDto[]> {
     console.log('Received query params:', queryParams);
     return this.signalsService.getOhlcData(asset, queryParams);
-  }
-
-  @Get('assets/:asset/latest')
-  async getLatestPrice(@Param('asset') asset: string): Promise<SignalDto> {
-    return this.signalsService.getLatestPrice(asset);
   }
 }
