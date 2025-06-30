@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import { getOhlcData } from '../api/signalsApi';
 import type { OhlcData, Interval, Signal } from '../types/OhlcData';
-import { useMetricsData } from '../hooks/useMetricsData';
+import { useSignalsData } from '../hooks/useSIgnalsData';
 import { MetricCard } from '../components/MetricCard';
+import { useLatestPriceData } from '../hooks/useLatestPriceData';
 
 const supportedAssets = [
   { label: 'Bitcoin', value: 'coingecko_bitcoin' },
@@ -25,7 +26,12 @@ export const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { metrics, isLoading: metricsLoading, error: metricsError } = useMetricsData();
+  const { metrics, isLoading: metricsLoading, error: metricsError } = useSignalsData();
+  const { prices, isLoading: pricesLoading, error: pricesError } = useLatestPriceData();
+
+  const isLoadingAssets   = metricsLoading || pricesLoading
+  const errorMessage = metricsError || pricesError
+  
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -57,14 +63,14 @@ export const DashboardPage: React.FC = () => {
 
       {/* Metrics bar */}
         <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full sm:w-2/3">
-          {metricsLoading ? (
+          {isLoadingAssets ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center animate-pulse">
                 <div className="h-3 bg-gray-600 rounded w-16 mb-2"></div>
                 <div className="h-6 bg-gray-600 rounded w-12"></div>
               </div>
             ))
-          ) : metricsError ? (
+          ) : errorMessage ? (
             <div className="col-span-full bg-red-900/20 border border-red-800 p-4 rounded-2xl">
               <p className="text-red-400 text-sm text-center">{metricsError}</p>
             </div>
@@ -94,7 +100,14 @@ export const DashboardPage: React.FC = () => {
                 unit="%"
                 precision={1}
                 description='U.S. Unemployment Rate'
-/>
+              />
+              <MetricCard 
+                label="Crude Oil" 
+                signal={prices.brentCrudeOil as Signal}
+                unit="$"
+                precision={2}
+                description='Brent Crude Oil Price'
+              />
             </>
           )}
         </div>
