@@ -32,7 +32,6 @@ export const useLatestPriceData = (): UsePriceDataReturn => {
 		try {
 			setError(null);
 			const response = await getLatestAssetPrice(PRICE_SIGNAL_NAMES);
-
 			setPrices({
 				brentCrudeOil: response["brent_crude_oil"] || null,
 			});
@@ -57,7 +56,6 @@ export const useLatestPriceData = (): UsePriceDataReturn => {
 			}
 		};
 	}, []);
-
 	return {
 		prices,
 		isLoading,

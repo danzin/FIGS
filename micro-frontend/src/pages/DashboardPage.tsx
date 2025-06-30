@@ -31,7 +31,7 @@ export const DashboardPage: React.FC = () => {
 
   const isLoadingAssets   = metricsLoading || pricesLoading
   const errorMessage = metricsError || pricesError
-
+  
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -104,7 +104,7 @@ export const DashboardPage: React.FC = () => {
               <MetricCard 
                 label="Crude Oil" 
                 signal={prices.brentCrudeOil as Signal}
-                unit="USD"
+                unit="$"
                 precision={2}
                 description='Brent Crude Oil Price'
               />

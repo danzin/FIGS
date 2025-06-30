@@ -50,7 +50,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
       <div>
         <span className="mt-1 text-2xl font-semibold">
-          {unit === '$' && <span className="text-lg align-top">{unit}</span>}
+          {unit === '$' && <span className="text-lg">{unit}</span>}
           {displayValue}
           {unit !== '$' && <span className="text-lg">{unit}</span>}
         </span>

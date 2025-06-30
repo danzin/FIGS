@@ -15,3 +15,10 @@ export interface Signal {
 	value: number;
 	source: string;
 }
+
+export interface PriceDTO {
+	asset: string;
+	time: string;
+	price: number;
+	source: string;
+}
