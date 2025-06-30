@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { OhlcData, Signal, Interval } from "../types/OhlcData";
+import type { OhlcData, Signal, Interval, PriceDTO } from "../types/OhlcData";
 
 const apiClient = axios.create({
 	baseURL: "/api/v1",
@@ -20,4 +20,25 @@ export const getLatestMacroSignals = async (signalNames: string[]): Promise<Reco
 		},
 	});
 	return response.data;
+};
+
+export const getLatestAssetPrice = async (assetNames: string[]): Promise<Record<string, Signal>> => {
+	const response = await apiClient.get<Record<string, PriceDTO>>("/assets/latest", {
+		params: {
+			assets: assetNames.join(","),
+		},
+	});
+
+	// Transform PriceDTO to Signal format
+	const transformedData: Record<string, Signal> = {};
+	Object.entries(response.data).forEach(([key, priceData]) => {
+		transformedData[key] = {
+			name: priceData.asset,
+			time: priceData.time,
+			value: priceData.price, // price becomes value
+			source: priceData.source,
+		};
+	});
+
+	return transformedData;
 };

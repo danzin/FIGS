@@ -20,7 +20,7 @@ const METRICS_SIGNAL_NAMES = ["fear_greed_index", "vix_level", "coingecko_bitcoi
 
 const REFRESH_INTERVAL = 60 * 60 * 1000;
 
-export const useMetricsData = (): UseMetricsDataReturn => {
+export const useSignalsData = (): UseMetricsDataReturn => {
 	const [metrics, setMetrics] = useState<MetricsData>({
 		fearGreed: null,
 		vix: null,

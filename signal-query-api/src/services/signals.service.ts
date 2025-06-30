@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SignalsRepository } from '../repositories/signals.repository';
-import { SignalDto, GetOhlcQueryDto, OhlcDataDto } from '../models/signal.dto';
+import {
+  SignalDto,
+  GetOhlcQueryDto,
+  OhlcDataDto,
+  PriceDTO,
+} from '../models/signal.dto';
+import { request } from 'http';
 
 @Injectable()
 export class SignalsService {
@@ -53,7 +59,7 @@ export class SignalsService {
   async getLatestSignalsByNames(
     names: string[],
   ): Promise<Record<string, SignalDto>> {
-    const signals = await this.repo.findLatestByNames(names);
+    const signals = await this.repo.findLatestSignalsByNames(names);
 
     const signalsMap: Record<string, SignalDto> = {};
     for (const signal of signals) {
@@ -64,6 +70,30 @@ export class SignalsService {
       if (!signalsMap[requestedName]) {
         console.warn(
           `[SignalsService] No latest value found for requested signal: ${requestedName}`,
+        );
+      }
+    }
+
+    return signalsMap;
+  }
+
+  /**
+   * Fetches the latest price signals (brent crude oil etc) for the dashboard.
+   */
+  async getLatestPricesByNames(
+    assets: string[],
+  ): Promise<Record<string, PriceDTO>> {
+    const signals = await this.repo.findLatestPricesByNames(assets);
+
+    const signalsMap: Record<string, PriceDTO> = {};
+    for (const signal of signals) {
+      signalsMap[signal.asset] = signal;
+    }
+
+    for (const requestedAsset of assets) {
+      if (!signalsMap[requestedAsset]) {
+        console.warn(
+          `[SignalsService] No latest value found for requested price: ${requestedAsset}`,
         );
       }
     }
