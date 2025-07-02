@@ -16,7 +16,7 @@ interface UseMetricsDataReturn {
 	lastUpdated: Date | null;
 }
 
-const METRICS_SIGNAL_NAMES = ["fear_greed_index", "vix_level", "coingecko_bitcoin_dominance", "FRED_UNRATE"];
+const METRICS_SIGNAL_NAMES = ["fear_greed_index", "vix_level", "bitcoin_dominance", "FRED_UNRATE"];
 
 const REFRESH_INTERVAL = 60 * 60 * 1000;
 
@@ -42,7 +42,7 @@ export const useSignalsData = (): UseMetricsDataReturn => {
 			setMetrics({
 				fearGreed: response["fear_greed_index"] || null,
 				vix: response["vix_level"] || null,
-				btcDominance: response["coingecko_bitcoin_dominance"] || null,
+				btcDominance: response["bitcoin_dominance"] || null,
 				unemployment: response["FRED_UNRATE"] || null,
 			});
 

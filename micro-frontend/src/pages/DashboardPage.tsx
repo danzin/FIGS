@@ -7,9 +7,9 @@ import { MetricCard } from '../components/MetricCard';
 import { useLatestPriceData } from '../hooks/useLatestPriceData';
 
 const supportedAssets = [
-  { label: 'Bitcoin', value: 'coingecko_bitcoin' },
-  { label: 'Ethereum', value: 'coingecko_ethereum' },
-  { label: 'Solana', value: 'coingecko_solana' },
+  { label: 'Bitcoin', value: 'bitcoin' },
+  { label: 'Ethereum', value: 'ethereum' },
+  { label: 'Solana', value: 'solana' },
 ];
 
 const supportedIntervals: {label: string, value: Interval}[] = [

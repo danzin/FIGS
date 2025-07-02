@@ -10,7 +10,7 @@ export class CoinGeckoSource implements DataSource {
 	constructor(coinId: string, metric: "price" | "market_cap" | "volume" | "dominance") {
 		this.coinId = coinId;
 		this.metric = metric;
-		this.key = `coingecko_${coinId}_${metric}`;
+		this.key = `${coinId}_${metric}`;
 	}
 
 	async fetch(): Promise<Signal | null> {

@@ -76,7 +76,7 @@ export class SignalsRepository {
   }
 
   /**
-   * Lists all distinct base asset names (e.g., 'coingecko_bitcoin').
+   * Lists all distinct base asset names (e.g., 'bitcoin').
    */
   async listAssetNames(): Promise<string[]> {
     const text = `SELECT DISTINCT asset FROM public.signals_hourly_ohlc ORDER BY asset;`;

@@ -9,9 +9,7 @@ const apiClient = axios.create({
 });
 
 export const getOhlcData = async (baseName: string, interval: Interval): Promise<OhlcData[]> => {
-	const response = await apiClient.get<OhlcData[]>(`/assets/${baseName}/ohlc/`, {
-		params: { interval },
-	});
+	const response = await apiClient.get<OhlcData[]>(`/assets/${baseName}/ohlc/`, { params: { interval: interval } });
 	return response.data;
 };
 
