@@ -5,6 +5,7 @@ import {
   GetOhlcQueryDto,
   OhlcDataDto,
   PriceDTO,
+  AssetDTO,
 } from '../models/signal.dto';
 import { PG_CONNECTION } from '../database/database.constants';
 
@@ -19,10 +20,14 @@ export class SignalsRepository {
     asset: string,
     params: GetOhlcQueryDto,
   ): Promise<OhlcDataDto[]> {
-    const { interval = '1h', source = null, limit = 1000 } = params;
+    // Destructure ONLY the parameters your DB function needs
+    const { interval = '1h', limit = 1000 } = params;
 
-    const text = `SELECT * FROM public.get_ohlc_data($1, $2, $3, $4);`;
-    const values = [asset, source, interval, limit];
+    // The query now calls the function with the correct number of placeholders
+    const text = `SELECT * FROM public.get_ohlc_data($1, $2, $3);`;
+
+    // Pass only the corresponding values
+    const values = [asset, interval, limit];
 
     try {
       const result: QueryResult<OhlcDataDto> = await this.pool.query(
@@ -78,10 +83,10 @@ export class SignalsRepository {
   /**
    * Lists all distinct base asset names (e.g., 'bitcoin').
    */
-  async listAssetNames(): Promise<string[]> {
-    const text = `SELECT DISTINCT asset FROM public.signals_hourly_ohlc ORDER BY asset;`;
+  async listAssets(): Promise<AssetDTO[]> {
+    const text = `SELECT symbol, name, category FROM public.get_assets();`;
     const result = await this.pool.query(text);
-    return result.rows.map((r) => r.asset);
+    return result.rows;
   }
 
   /**
@@ -144,6 +149,46 @@ export class SignalsRepository {
         error,
       );
       throw error;
+    }
+  }
+
+  async findLatestDashboardData(
+    priceAssets: string[],
+    indicatorNames: string[],
+  ): Promise<{ prices: PriceDTO[]; indicators: SignalDto[] }> {
+    // We can run both queries in a single transaction for consistency
+    const client = await this.pool.connect();
+    try {
+      // Query 1: Get latest prices for the requested assets
+      const priceQuery = `
+        SELECT asset, time, price, source
+        FROM public.latest_prices
+        WHERE asset = ANY($1::text[]);
+      `;
+      const priceResult = await client.query(priceQuery, [priceAssets]);
+
+      // Query 2: Get latest values for the requested indicators
+      const indicatorQuery = `
+        SELECT name, time, value, source
+        FROM public.latest_signals
+        WHERE name = ANY($1::text[]);
+      `;
+      const indicatorResult = await client.query(indicatorQuery, [
+        indicatorNames,
+      ]);
+
+      return {
+        prices: priceResult.rows,
+        indicators: indicatorResult.rows,
+      };
+    } catch (error) {
+      console.error(
+        `[SignalsRepository] Error fetching latest dashboard data:`,
+        error,
+      );
+      throw error;
+    } finally {
+      client.release();
     }
   }
 }

@@ -5,6 +5,8 @@ import {
   GetOhlcQueryDto,
   OhlcDataDto,
   PriceDTO,
+  AssetDTO,
+  IndicatorDTO,
 } from '../models/signal.dto';
 import { request } from 'http';
 
@@ -42,10 +44,33 @@ export class SignalsService {
   /**
    * List all available asset names that have OHLC data.
    */
-  async listAssets(): Promise<string[]> {
-    return this.repo.listAssetNames();
+  async listAssets(): Promise<AssetDTO[]> {
+    return this.repo.listAssets();
   }
 
+  // NEW & CONSOLIDATED: The primary method for the dashboard's top bar.
+  async getLatestDashboardData(
+    assets: string[],
+    indicators: string[],
+  ): Promise<{
+    prices: Record<string, PriceDTO>;
+    indicators: Record<string, IndicatorDTO>;
+  }> {
+    const { prices, indicators: indicatorData } =
+      await this.repo.findLatestDashboardData(assets, indicators);
+
+    // Map results to objects for easy frontend access
+    const priceMap = prices.reduce((acc, p) => ({ ...acc, [p.asset]: p }), {});
+    const indicatorMap = indicatorData.reduce(
+      (acc, i) => ({ ...acc, [i.name]: i }),
+      {},
+    );
+
+    return {
+      prices: priceMap,
+      indicators: indicatorMap,
+    };
+  }
   /**
    * List all other general (non-asset) signal names.
    */

@@ -59,6 +59,36 @@ export class PriceDTO {
   @IsNotEmpty()
   source: string;
 }
+export class IndicatorDTO {
+  @IsString()
+  @IsNotEmpty()
+  name: string; // e.g., 'fear_greed_index', 'vix_level'
+
+  @Type(() => Date) // Transform incoming string to Date
+  @IsDate()
+  time: Date; // In DB it's timestamptz, here it's Date
+
+  @IsNumber()
+  value: number;
+
+  @IsString()
+  @IsNotEmpty()
+  source: string;
+}
+
+export class AssetDTO {
+  @IsString()
+  @IsNotEmpty()
+  symbol: string; // e.g., 'bitcoin', 'ethereum'
+
+  @IsString()
+  @IsNotEmpty()
+  name: string; // e.g., 'Bitcoin', 'Ethereum'
+
+  @IsString()
+  @IsNotEmpty()
+  category: string; // e.g., 'cryptocurrency', 'stock'
+}
 
 export class OhlcDto {
   time: Date;
@@ -164,4 +194,22 @@ export class GetLatestPricesQueryDto {
     typeof value === 'string' ? value.split(',') : value,
   )
   assets: string[];
+}
+
+export class GetDashboardDataQueryDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.split(',') : value,
+  )
+  assets: string[]; // e.g., assets=bitcoin,spy,brent_crude_oil
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.split(',') : value,
+  )
+  indicators: string[]; // e.g., indicators=fear_greed_index,vix_level
 }
