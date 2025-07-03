@@ -1,0 +1,1 @@
+{"version":3,"file":"feargreed.d.ts","sourceRoot":"","sources":["../../src/datasources/feargreed.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,UAAU,EAAE,MAAM,cAAc,CAAC;AAC1C,OAAO,EAAE,MAAM,EAAE,MAAM,yCAAyC,CAAC;AAEjE,qBAAa,eAAgB,YAAW,UAAU;IAC1C,GAAG,SAAsB;IAE1B,KAAK,IAAI,OAAO,CAAC,MAAM,GAAG,IAAI,CAAC;CA0CrC"}

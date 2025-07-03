@@ -1,0 +1,69 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TimescaleDBService = void 0;
+const pg_1 = require("pg");
+class TimescaleDBService {
+    constructor(dbConfig) {
+        this.pool = new pg_1.Pool(dbConfig);
+        this.pool.on("connect", () => console.log("[TimescaleDBService] Connected to database."));
+        this.pool.on("error", (err) => {
+            console.error("[TimescaleDBService] Unexpected error on idle client", err);
+            process.exit(0);
+        });
+    }
+    async connect() {
+        try {
+            await this.pool.query("SELECT NOW()");
+            console.log("[TimescaleDBService] Database connection test successful.");
+        }
+        catch (error) {
+            console.error("[TimescaleDBService] Database connection test failed.", error);
+            throw error;
+        }
+    }
+    /**
+     * Inserts asset-specific data (price or volume) into the market_data table.
+     */
+    async insertMarketData(point) {
+        const text = `
+      INSERT INTO public.market_data (time, asset_symbol, type, value, source)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT DO NOTHING; -- Or your preferred conflict resolution
+    `;
+        try {
+            await this.pool.query(text, [point.time, point.asset_symbol, point.type, point.value, point.source]);
+            // console.log(`[DB] Inserted market data: ${point.asset_symbol} ${point.type}`);
+        }
+        catch (error) {
+            console.error(`[DB] Error inserting market data for ${point.asset_symbol}:`, error);
+            throw error;
+        }
+    }
+    /**
+     * Inserts a general indicator into the market_indicators table.
+     * This uses ON CONFLICT...DO UPDATE to always store the latest value for a given indicator name.
+     */
+    async insertIndicator(point) {
+        const text = `
+      INSERT INTO public.market_indicators (name, time, value, source)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (name) DO UPDATE SET
+        time = EXCLUDED.time,
+        value = EXCLUDED.value,
+        source = EXCLUDED.source;
+    `;
+        try {
+            await this.pool.query(text, [point.name, point.time, point.value, point.source]);
+            // console.log(`[DB] Inserted/Updated indicator: ${point.name}`);
+        }
+        catch (error) {
+            console.error(`[DB] Error inserting indicator ${point.name}:`, error);
+            throw error;
+        }
+    }
+    async disconnect() {
+        await this.pool.end();
+        console.log("[TimescaleDBService] Database pool has ended.");
+    }
+}
+exports.TimescaleDBService = TimescaleDBService;

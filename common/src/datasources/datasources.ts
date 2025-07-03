@@ -1,4 +1,4 @@
-import { DataSourceResult } from "../models/data.interface";
+import { DataSourceResult } from "../models/data";
 
 export interface DataSource {
 	// The unique key for the source instance (e.g., 'coingecko_bitcoin_price')

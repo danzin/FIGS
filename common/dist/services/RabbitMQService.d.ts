@@ -16,7 +16,7 @@ export declare class RabbitMQService implements MessageBroker {
     private handleConnectionLoss;
     private scheduleReconnect;
     publish(exchangeName: string, routingKey: string, message: Signal, options?: Options.Publish): Promise<void>;
-    consume(queueName: string, exchangeName: string, onMessageCallback: (signal: Signal) => Promise<void>, // Callback now directly takes Signal
+    consume(queueName: string, exchangeName: string, onMessageCallback: (signal: Signal) => Promise<void>, // Callback now directly takes Signal.
     options?: Options.Consume): Promise<string | null>;
     close(): Promise<void>;
     isConnected(): boolean;

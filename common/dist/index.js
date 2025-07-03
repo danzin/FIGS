@@ -17,4 +17,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./models/signal.interface"), exports);
 __exportStar(require("./models/messaging.interface"), exports);
 __exportStar(require("./services/RabbitMQService"), exports);
+__exportStar(require("./datasources/datasources"), exports);
+__exportStar(require("./models/data"), exports);
+__exportStar(require("./models/indicatorDataPoint"), exports);
+__exportStar(require("./models/marketDataPoint"), exports);
 //# sourceMappingURL=index.js.map

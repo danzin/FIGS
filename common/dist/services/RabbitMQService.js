@@ -8,6 +8,8 @@ const amqplib_1 = __importDefault(require("amqplib"));
 /** Apparently in v0.10.7 of amqplib types,
  * amqp.connect() now resolves to a ChannelModel, not a Connection.
  * A ChannelModel is essentially a lightweight connection + channel factory */
+// This service provides a RabbitMQ client implementation for the MessageBroker interface.
+// It handles connection management, message publishing, and consumption with automatic reconnection logic.
 class RabbitMQService {
     constructor(url) {
         this.channelModel = null;
@@ -110,7 +112,7 @@ class RabbitMQService {
                 throw new Error("[RabbitMQService] Channel not available after connection attempt. Cannot publish.");
             }
         }
-        const payload = Buffer.from(JSON.stringify(message));
+        const payload = Buffer.from(JSON.stringify(message)); // RabbitMQ transmits frames of binary data, channel.sendToQueue() and channel.publish() expect a Buffer
         const success = this.channel.publish(exchangeName, routingKey, payload, { persistent: true, ...options });
         if (success) {
             console.log(`[RabbitMQService] Published to ${exchangeName}: ${message.name}`);
@@ -119,7 +121,9 @@ class RabbitMQService {
             console.warn(`[RabbitMQService] Publish buffer full for ${exchangeName}. Message for ${message.name} might be dropped or queued by client.`);
         }
     }
-    async consume(queueName, exchangeName, onMessageCallback, // Callback now directly takes Signal
+    async consume(queueName, exchangeName, 
+    // Inside the SignalProcessor class, handleIncomingSignal() is passed as the callback.
+    onMessageCallback, // Callback now directly takes Signal.
     options) {
         // Returns consumerTag or null
         if (!this.channel) {
@@ -134,15 +138,16 @@ class RabbitMQService {
             const q = await this.channel.assertQueue(queueName, { durable: true });
             await this.channel.bindQueue(q.queue, exchangeName, "");
             console.log(`[RabbitMQService] Queue '${q.queue}' bound to exchange '${exchangeName}'`);
-            this.channel.prefetch(1);
+            this.channel.prefetch(1); // Only allow one unacknowledged message at a time
             const { consumerTag } = await this.channel.consume(q.queue, async (msg) => {
                 if (msg) {
                     let signal = null;
                     try {
-                        signal = JSON.parse(msg.content.toString());
+                        signal = JSON.parse(msg.content.toString()); // Parse the message content from Buffer back to Signal
                         if (typeof signal.timestamp === "string") {
-                            signal.timestamp = new Date(signal.timestamp);
+                            signal.timestamp = new Date(signal.timestamp); // Ensure timestamp is a Date object
                         }
+                        // Validate the Signal
                         if (!signal.name ||
                             !(signal.timestamp instanceof Date) ||
                             isNaN(signal.timestamp.getTime()) ||
