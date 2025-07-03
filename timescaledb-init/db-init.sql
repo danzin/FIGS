@@ -1,422 +1,348 @@
+-- ====================================================================
+--  FIGS Database Initialization Script v3.1
+--  Improved version with better data handling and performance
+-- ====================================================================
+
 \echo 'Beginning database initialization...'
 
+-- Step 1: Create Extensions
 \echo '--> Step 1: Creating extensions...'
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
--- Raw signals 
-\echo '--> Step 2: Creating raw signals hypertable (public.signals)...'
-CREATE TABLE IF NOT EXISTS public.signals (
+-- Step 2: Core Tables
+\echo '--> Step 2: Creating core tables (assets, market_data, market_indicators)...'
+
+-- The `assets` table stores metadata about each trackable asset.
+CREATE TABLE IF NOT EXISTS public.assets (
+    id SERIAL PRIMARY KEY,
+    symbol TEXT NOT NULL UNIQUE,          -- e.g., 'bitcoin', 'ethereum', 'spy'
+    name TEXT NOT NULL,                   -- e.g., 'Bitcoin', 'Ethereum', 'SPDR S&P 500 ETF'
+    category TEXT DEFAULT 'crypto',       -- 'crypto', 'stock', 'commodity', 'index'
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- The `market_data` table stores time-series data related to specific assets (price and volume).
+CREATE TABLE IF NOT EXISTS public.market_data (
     time TIMESTAMPTZ NOT NULL,
-    name TEXT NOT NULL,
+    asset_symbol TEXT NOT NULL REFERENCES public.assets(symbol) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('price', 'volume')),
     value DOUBLE PRECISION NOT NULL,
-    source TEXT NOT NULL
+    source TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Add unique constraint to prevent duplicate entries
+    CONSTRAINT unique_market_data_entry UNIQUE (time, asset_symbol, type, source)
 );
+SELECT create_hypertable('public.market_data', 'time', if_not_exists => TRUE);
 
--- Gypertable
-SELECT create_hypertable(
-    'public.signals',
-    'time',
-    if_not_exists => TRUE,
-    chunk_time_interval => INTERVAL '7 days'
+-- The `market_indicators` table stores general, non-asset-specific time-series data.
+-- FIXED: Removed UNIQUE constraint on name to allow historical data
+CREATE TABLE IF NOT EXISTS public.market_indicators (
+    time TIMESTAMPTZ NOT NULL,
+    name TEXT NOT NULL,                   -- e.g., 'fear_greed_index', 'vix_level', 'btc_dominance'
+    value DOUBLE PRECISION NOT NULL,
+    source TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Add unique constraint to prevent duplicate entries
+    CONSTRAINT unique_market_indicator_entry UNIQUE (time, name, source)
 );
+SELECT create_hypertable('public.market_indicators', 'time', if_not_exists => TRUE);
 
--- Indexes on the raw data table
-\echo '--> Step 3: Creating indexes on raw signals table...'
-CREATE INDEX IF NOT EXISTS idx_signals_name_time_desc ON public.signals (name, time DESC);
-CREATE INDEX IF NOT EXISTS idx_signals_time_desc ON public.signals (time DESC);
-CREATE INDEX IF NOT EXISTS idx_signals_source ON public.signals(source);
-CREATE INDEX IF NOT EXISTS idx_signals_price_volume ON public.signals (name, time) 
-    WHERE name LIKE '%_price' OR name LIKE '%_volume';
+-- Step 3: Indexes for Performance
+\echo '--> Step 3: Creating performance indexes...'
+CREATE INDEX IF NOT EXISTS idx_market_data_asset_time ON public.market_data (asset_symbol, time DESC);
+CREATE INDEX IF NOT EXISTS idx_market_data_asset_type_time ON public.market_data (asset_symbol, type, time DESC);
+CREATE INDEX IF NOT EXISTS idx_market_data_source ON public.market_data (source);
+CREATE INDEX IF NOT EXISTS idx_market_indicators_name_time ON public.market_indicators (name, time DESC);
+CREATE INDEX IF NOT EXISTS idx_market_indicators_source ON public.market_indicators (source);
 
--- Create the Hourly Continuous Aggregate for general/non-price stats
-\echo '--> Step 4: Creating hourly continuous aggregate for non-price signals...'
-CREATE MATERIALIZED VIEW IF NOT EXISTS public.signals_hourly_general
-WITH (timescaledb.continuous) AS
+-- Step 4: Continuous Aggregates for OHLCV Data
+\echo '--> Step 4: Creating OHLCV continuous aggregates...'
+
+-- IMPROVED: Better handling of multiple data points in same bucket
+-- Use last() for more recent data, improved volume prioritization
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.market_data_15m WITH (timescaledb.continuous) AS
 SELECT
-    time_bucket('1 hour', time) AS bucketed_at,
-    name,
-    source,
-    avg(value) AS avg_value,
-    min(value) AS min_value,
-    max(value) AS max_value,
-    first(value, time) AS first_value,
-    last(value, time) AS last_value,
-    count(*) AS sample_count
-FROM public.signals
-WHERE name NOT LIKE '%_price' AND name NOT LIKE '%_volume'
-GROUP BY bucketed_at, name, source
-WITH NO DATA;
+    time_bucket('15 minutes', time) AS bucket, 
+    asset_symbol,
+    array_agg(DISTINCT source) AS sources,
+    
+    -- OHLC using first/last for better accuracy
+    first(value, time) FILTER (WHERE type = 'price') AS open,
+    max(value) FILTER (WHERE type = 'price') AS high,
+    min(value) FILTER (WHERE type = 'price') AS low,
+    last(value, time) FILTER (WHERE type = 'price') AS close,
+    
+    -- IMPROVED: Volume prioritization with fallback to latest
+    COALESCE(
+        last(value, time) FILTER (WHERE type = 'volume' AND source = 'CoinGecko'),
+        last(value, time) FILTER (WHERE type = 'volume' AND source = 'Kraken'),
+        last(value, time) FILTER (WHERE type = 'volume')
+    ) AS volume
+FROM public.market_data 
+GROUP BY bucket, asset_symbol;
 
-\echo '--> Step 5: Creating hourly OHLC+volume continuous aggregate...'
-CREATE MATERIALIZED VIEW IF NOT EXISTS public.signals_hourly_ohlc
-WITH (timescaledb.continuous) AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.market_data_1h WITH (timescaledb.continuous) AS
 SELECT
-    time_bucket('1 hour', time) AS bucketed_at,
-    regexp_replace(name, '_(price|volume)$', '') AS asset,
-    source,
-    -- OHLC calculations (only for price signals)
-    first(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END,
-        time
-    ) FILTER (WHERE name LIKE '%_price') AS open_price,
-    max(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
-    ) AS high_price,
-    min(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
-    ) AS low_price,
-    last(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END,
-        time
-    ) FILTER (WHERE name LIKE '%_price') AS close_price,
-    -- Volume calculation: most recent volume reading in bucket
-    last(
-        CASE WHEN name LIKE '%_volume' THEN value ELSE NULL END,
-        time
-    ) FILTER (WHERE name LIKE '%_volume') AS volume,
-    -- Metadata
-    count(*) FILTER (WHERE name LIKE '%_price') AS price_samples,
-    stddev(value) FILTER (WHERE name LIKE '%_price') AS price_volatility
-FROM public.signals
-WHERE name LIKE '%_price' OR name LIKE '%_volume'
-GROUP BY 
-    time_bucket('1 hour', time),
-    regexp_replace(name, '_(price|volume)$', ''),
-    source
-WITH NO DATA;
+    time_bucket('1 hour', time) AS bucket, 
+    asset_symbol,
+    array_agg(DISTINCT source) AS sources,
+    
+    first(value, time) FILTER (WHERE type = 'price') AS open,
+    max(value) FILTER (WHERE type = 'price') AS high,
+    min(value) FILTER (WHERE type = 'price') AS low,
+    last(value, time) FILTER (WHERE type = 'price') AS close,
+    
+    COALESCE(
+        last(value, time) FILTER (WHERE type = 'volume' AND source = 'CoinGecko'),
+        last(value, time) FILTER (WHERE type = 'volume' AND source = 'Kraken'),
+        last(value, time) FILTER (WHERE type = 'volume')
+    ) AS volume
+FROM public.market_data 
+GROUP BY bucket, asset_symbol;
 
-\echo '--> Step 6: Creating 15-minute OHLC+volume continuous aggregate...'
-CREATE MATERIALIZED VIEW IF NOT EXISTS public.signals_15min_ohlc
-WITH (timescaledb.continuous) AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.market_data_1d WITH (timescaledb.continuous) AS
 SELECT
-    time_bucket('15 minutes', time) AS bucketed_at,
-    regexp_replace(name, '_(price|volume)$', '') AS asset,
-    source,
-    -- OHLC calculations (only for price signals)
-    first(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END,
-        time
-    ) FILTER (WHERE name LIKE '%_price') AS open_price,
-    max(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
-    ) AS high_price,
-    min(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
-    ) AS low_price,
-    last(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END,
-        time
-    ) FILTER (WHERE name LIKE '%_price') AS close_price,
-    -- Volume calculation (most recent volume reading)
-    last(
-        CASE WHEN name LIKE '%_volume' THEN value ELSE NULL END,
-        time
-    ) FILTER (WHERE name LIKE '%_volume') AS volume,
-    -- Metadata
-    count(*) FILTER (WHERE name LIKE '%_price') AS price_samples
-FROM public.signals
-WHERE name LIKE '%_price' OR name LIKE '%_volume'
-GROUP BY 
-    time_bucket('15 minutes', time),
-    regexp_replace(name, '_(price|volume)$', ''),
-    source
-WITH NO DATA;
+    time_bucket('1 day', time) AS bucket, 
+    asset_symbol,
+    array_agg(DISTINCT source) AS sources,
+    
+    first(value, time) FILTER (WHERE type = 'price') AS open,
+    max(value) FILTER (WHERE type = 'price') AS high,
+    min(value) FILTER (WHERE type = 'price') AS low,
+    last(value, time) FILTER (WHERE type = 'price') AS close,
+    
+    COALESCE(
+        last(value, time) FILTER (WHERE type = 'volume' AND source = 'CoinGecko'),
+        last(value, time) FILTER (WHERE type = 'volume' AND source = 'Kraken'),
+        last(value, time) FILTER (WHERE type = 'volume')
+    ) AS volume
+FROM public.market_data 
+GROUP BY bucket, asset_symbol;
 
-\echo '--> Step 7: Creating 30-minute OHLC continuous aggregate with volume support...'
-CREATE MATERIALIZED VIEW public.signals_30min_ohlc
-WITH (timescaledb.continuous) AS
-SELECT
-    time_bucket('30 minutes', time) AS bucketed_at,
-    regexp_replace(name, '_(price|volume)$', '') AS asset,
-    source,
-    -- OHLC calculations (only for price signals)
-    first(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END, 
-        time
-    ) FILTER (WHERE name LIKE '%_price') AS open_price,
-    max(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
-    ) AS high_price,
-    min(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
-    ) AS low_price,
-    last(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END, 
-        time
-    ) FILTER (WHERE name LIKE '%_price') AS close_price,
-    -- Volume calculation (most recent volume reading)
-    last(
-        CASE WHEN name LIKE '%_volume' THEN value ELSE NULL END, 
-        time
-    ) FILTER (WHERE name LIKE '%_volume') AS volume,
-    -- Metadata
-    count(*) FILTER (WHERE name LIKE '%_price') AS price_samples
-FROM public.signals
-WHERE name LIKE '%_price' OR name LIKE '%_volume'
-GROUP BY 
-    time_bucket('30 minutes', time),
-    regexp_replace(name, '_(price|volume)$', ''),
-    source
-WITH NO DATA;
+-- Indexes for aggregates
+CREATE INDEX IF NOT EXISTS idx_market_data_15m_asset_bucket ON public.market_data_15m (asset_symbol, bucket DESC);
+CREATE INDEX IF NOT EXISTS idx_market_data_1h_asset_bucket ON public.market_data_1h (asset_symbol, bucket DESC);
+CREATE INDEX IF NOT EXISTS idx_market_data_1d_asset_bucket ON public.market_data_1d (asset_symbol, bucket DESC);
 
-\echo '--> Step 8: Creating 1-day OHLC continuous aggregate with volume support...'
+-- Step 5: Add Refresh Policies
+\echo '--> Step 5: Adding refresh policies...'
+SELECT add_continuous_aggregate_policy('market_data_15m', 
+    start_offset => INTERVAL '1 day', 
+    end_offset => INTERVAL '15 minutes', 
+    schedule_interval => INTERVAL '5 minutes');
+    
+SELECT add_continuous_aggregate_policy('market_data_1h', 
+    start_offset => INTERVAL '7 days', 
+    end_offset => INTERVAL '1 hour', 
+    schedule_interval => INTERVAL '15 minutes');
+    
+SELECT add_continuous_aggregate_policy('market_data_1d', 
+    start_offset => INTERVAL '30 days', 
+    end_offset => INTERVAL '4 hours', 
+    schedule_interval => INTERVAL '1 hour');
 
-CREATE MATERIALIZED VIEW public.signals_1day_ohlc
-WITH (timescaledb.continuous) AS
-SELECT
-    time_bucket('1 day', time) AS bucketed_at,
-    regexp_replace(name, '_(price|volume)$', '') AS asset,
-    source,
-    -- OHLC calculations (only for price signals)
-    first(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END, 
-        time
-    ) FILTER (WHERE name LIKE '%_price') AS open_price,
-    max(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
-    ) AS high_price,
-    min(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END
-    ) AS low_price,
-    last(
-        CASE WHEN name LIKE '%_price' THEN value ELSE NULL END, 
-        time
-    ) FILTER (WHERE name LIKE '%_price') AS close_price,
-    -- Volume calculation (most recent volume reading)
-    last(
-        CASE WHEN name LIKE '%_volume' THEN value ELSE NULL END, 
-        time
-    ) FILTER (WHERE name LIKE '%_volume') AS volume,
-    -- Metadata
-    count(*) FILTER (WHERE name LIKE '%_price') AS price_samples
-FROM public.signals
-WHERE name LIKE '%_price' OR name LIKE '%_volume'
-GROUP BY 
-    time_bucket('1 day', time),
-    regexp_replace(name, '_(price|volume)$', ''),
-    source
-WITH NO DATA;
+-- Step 6: Create API Helper Functions
+\echo '--> Step 6: Creating API helper functions...'
 
-\echo '--> Step 9: Creating indexes on continuous aggregates...'
-
--- Indexes for general signals aggregate
-CREATE INDEX IF NOT EXISTS idx_signals_hourly_general_name_time 
-    ON public.signals_hourly_general (name, bucketed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_signals_hourly_general_time 
-    ON public.signals_hourly_general (bucketed_at DESC);
-
--- Indexes for OHLC+V aggregates
-CREATE INDEX IF NOT EXISTS idx_signals_hourly_ohlc_asset_time 
-    ON public.signals_hourly_ohlc (asset, bucketed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_signals_hourly_ohlc_time 
-    ON public.signals_hourly_ohlc (bucketed_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_signals_15min_ohlc_asset_time 
-    ON public.signals_15min_ohlc (asset, bucketed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_signals_15min_ohlc_time 
-    ON public.signals_15min_ohlc (bucketed_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_signals_30min_ohlc_asset_time 
-    ON public.signals_30min_ohlc (asset, bucketed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_signals_30min_ohlc_time 
-    ON public.signals_30min_ohlc (bucketed_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_signals_1day_ohlc_asset_time 
-    ON public.signals_1day_ohlc (asset, bucketed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_signals_1day_ohlc_time 
-    ON public.signals_1day_ohlc (bucketed_at DESC);
-
-\echo '--> Step 10: Adding refresh policies...'
-
-SELECT add_continuous_aggregate_policy(
-    'public.signals_hourly_general',
-    start_offset => INTERVAL '2 days',
-    end_offset   => INTERVAL '30 minutes',
-    schedule_interval => INTERVAL '10 minutes'
-);
-
-SELECT add_continuous_aggregate_policy(
-    'public.signals_hourly_ohlc',
-    start_offset => INTERVAL '2 days',
-    end_offset   => INTERVAL '30 minutes',
-    schedule_interval => INTERVAL '5 minutes'
-);
-
-SELECT add_continuous_aggregate_policy(
-    'public.signals_15min_ohlc',
-    start_offset => INTERVAL '1 day',
-    end_offset   => INTERVAL '15 minutes',
-    schedule_interval => INTERVAL '5 minutes'
-);
-
-SELECT add_continuous_aggregate_policy(
-    'public.signals_30min_ohlc',
-    start_offset => INTERVAL '1 day 12 hours',
-    end_offset   => INTERVAL '15 minutes',
-    schedule_interval => INTERVAL '5 minutes'
-);
-
-SELECT add_continuous_aggregate_policy(
-    'public.signals_1day_ohlc',
-    start_offset => INTERVAL '3 days', 
-    end_offset   => INTERVAL '1 hour', 
-    schedule_interval => INTERVAL '1 hour' 
-);
-
-\echo '--> Step 10: Adding compression policies...'
-
-DO $$
-BEGIN
-    BEGIN
-        PERFORM add_compression_policy('public.signals', INTERVAL '30 days');
-        RAISE NOTICE 'Added compression policy for signals table';
-    EXCEPTION 
-        WHEN OTHERS THEN
-            RAISE NOTICE 'Compression not available or already exists for signals table';
-    END;
-END $$;
-
-\echo '--> Step 11: Creating helper views...'
-
-CREATE OR REPLACE VIEW public.latest_prices AS
-SELECT DISTINCT ON (regexp_replace(name, '_price$', ''))
-    regexp_replace(name, '_price$', '') AS asset,
-    time,
-    value AS price,
-    source
-FROM public.signals
-WHERE name LIKE '%_price'
-ORDER BY regexp_replace(name, '_price$', ''), time DESC;
-
-CREATE OR REPLACE VIEW public.latest_volumes AS
-SELECT DISTINCT ON (regexp_replace(name, '_volume$', ''))
-    regexp_replace(name, '_volume$', '') AS asset,
-    time,
-    value AS volume,
-    source
-FROM public.signals
-WHERE name LIKE '%_volume'
-ORDER BY regexp_replace(name, '_volume$', ''), time DESC;
-
-CREATE OR REPLACE VIEW public.latest_signals AS
-SELECT DISTINCT ON (name)
-    name,
-    time,
-    value,
-    source
-FROM public.signals
-WHERE name NOT LIKE '%_price' AND name NOT LIKE '%_volume'
-ORDER BY name, time DESC;
-
-CREATE OR REPLACE VIEW public.ohlc_for_charts AS
-SELECT 
-    bucketed_at AS "timestamp",
-    asset,
-    source,
-    open_price AS "open",
-    high_price AS "high",
-    low_price AS "low",
-    close_price AS "close",
-    volume,
-    price_samples
-FROM public.signals_hourly_ohlc
-WHERE open_price IS NOT NULL  -- Only return rows with actual price data
-ORDER BY bucketed_at DESC;
-
-\echo '--> Step 11: Creating API helper function...'
-
+-- IMPROVED: Better error handling and validation
 CREATE OR REPLACE FUNCTION get_ohlc_data(
-    p_asset TEXT,
-    p_source TEXT DEFAULT NULL,
-    p_interval TEXT DEFAULT '1h',
+    p_asset_symbol TEXT, 
+    p_interval TEXT, 
     p_limit INTEGER DEFAULT 1000
 )
 RETURNS TABLE (
-    "timestamp" TIMESTAMPTZ,
-    "open" DOUBLE PRECISION,
-    "high" DOUBLE PRECISION,
-    "low" DOUBLE PRECISION,
-    "close" DOUBLE PRECISION,
+    "timestamp" TIMESTAMPTZ, 
+    "open" DOUBLE PRECISION, 
+    "high" DOUBLE PRECISION, 
+    "low" DOUBLE PRECISION, 
+    "close" DOUBLE PRECISION, 
     "volume" DOUBLE PRECISION
 ) AS $$
 DECLARE
-    -- Variable to hold the dynamically constructed query
-    query TEXT;
-    -- Variable to hold the name of the CAGG table to query
-    table_name TEXT;
+    view_name TEXT;
 BEGIN
-    -- Validate input parameters
-    IF p_limit IS NULL OR p_limit <= 0 OR p_limit > 10000 THEN
-        RAISE EXCEPTION 'Limit must be between 1 and 10000, got: %', p_limit;
+    -- Validate inputs
+    IF p_limit <= 0 OR p_limit > 10000 THEN
+        RAISE EXCEPTION 'Limit must be between 1 and 10000. Got: %', p_limit;
     END IF;
-
-    -- Map the interval string to a valid, existing table name.
-
+    
+    -- Check if asset exists
+    IF NOT EXISTS (SELECT 1 FROM public.assets WHERE symbol = p_asset_symbol AND is_active = true) THEN
+        RAISE EXCEPTION 'Asset not found or inactive: %', p_asset_symbol;
+    END IF;
+    
     SELECT
         CASE
-            WHEN p_interval = '15m' THEN 'signals_15min_ohlc'
-            WHEN p_interval = '30m' THEN 'signals_30min_ohlc'
-            WHEN p_interval = '1h'  THEN 'signals_hourly_ohlc'
-            WHEN p_interval = '1d'  THEN 'signals_1day_ohlc'
+            WHEN p_interval = '15m' THEN 'market_data_15m'
+            WHEN p_interval = '1h'  THEN 'market_data_1h'
+            WHEN p_interval = '1d'  THEN 'market_data_1d'
             ELSE NULL
         END
-    INTO table_name;
+    INTO view_name;
 
-    -- If the interval doesn't match any known table, raise an error.
-    IF table_name IS NULL THEN
-        RAISE EXCEPTION 'Invalid interval. Supported: 15m, 30m, 1h, 1d. Got: %', p_interval;
+    IF view_name IS NULL THEN
+        RAISE EXCEPTION 'Invalid interval. Supported: 15m, 1h, 1d. Got: %', p_interval;
     END IF;
 
-
-    -- Construct the query string using format() for safe identifier injection, always good practice.
-    query := format(
-        'SELECT
-            s.bucketed_at,
-            s.open_price,
-            s.high_price,
-            s.low_price,
-            s.close_price,
-            s.volume
-        FROM %I s
-        WHERE s.asset = $1
-          AND s.open_price IS NOT NULL
-          AND ($2 IS NULL OR s.source = $2)
-        ORDER BY s.bucketed_at DESC
-        LIMIT $3;',
-        table_name 
-    );
-
-    -- Execute the dynamic query and return the results.
-    RETURN QUERY EXECUTE query
-    USING p_asset, p_source, p_limit;
-
+    RETURN QUERY EXECUTE format(
+        'SELECT s.bucket, s.open, s.high, s.low, s.close, s.volume
+         FROM public.%I s
+         WHERE s.asset_symbol = $1 AND s.open IS NOT NULL
+         ORDER BY s.bucket DESC
+         LIMIT $2;',
+        view_name
+    )
+    USING p_asset_symbol, p_limit;
 END;
 $$ LANGUAGE plpgsql;
 
+-- IMPROVED: Get latest indicators with optional filtering
+CREATE OR REPLACE FUNCTION get_latest_indicators(p_indicator_name TEXT DEFAULT NULL)
+RETURNS TABLE (
+    "name" TEXT, 
+    "time" TIMESTAMPTZ, 
+    "value" DOUBLE PRECISION, 
+    "source" TEXT
+) AS $$
+BEGIN
+    IF p_indicator_name IS NULL THEN
+        RETURN QUERY
+        SELECT DISTINCT ON (mi.name) mi.name, mi.time, mi.value, mi.source
+        FROM public.market_indicators mi
+        ORDER BY mi.name, mi.time DESC;
+    ELSE
+        RETURN QUERY
+        SELECT mi.name, mi.time, mi.value, mi.source
+        FROM public.market_indicators mi
+        WHERE mi.name = p_indicator_name
+        ORDER BY mi.time DESC
+        LIMIT 1;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
 
-\echo ''
+-- IMPROVED: Get assets with latest price info
+CREATE OR REPLACE FUNCTION get_assets()
+RETURNS TABLE (
+    "symbol" TEXT, 
+    "name" TEXT, 
+    "category" TEXT,
+    "latest_price" DOUBLE PRECISION,
+    "latest_price_time" TIMESTAMPTZ
+) AS $$
+BEGIN
+    RETURN QUERY 
+    SELECT 
+        a.symbol, 
+        a.name, 
+        a.category,
+        latest_data.price,
+        latest_data.time
+    FROM public.assets a
+    LEFT JOIN LATERAL (
+        SELECT md.value AS price, md.time
+        FROM public.market_data md
+        WHERE md.asset_symbol = a.symbol AND md.type = 'price'
+        ORDER BY md.time DESC
+        LIMIT 1
+    ) latest_data ON true
+    WHERE a.is_active = true 
+    ORDER BY a.name;
+END;
+$$ LANGUAGE plpgsql;
+
+-- IMPROVED: Helper functions for data insertion with conflict handling
+CREATE OR REPLACE FUNCTION insert_market_data(
+    p_time TIMESTAMPTZ,
+    p_asset_symbol TEXT,
+    p_price DOUBLE PRECISION,
+    p_volume DOUBLE PRECISION DEFAULT NULL,
+    p_source TEXT DEFAULT 'unknown'
+)
+RETURNS VOID AS $$
+BEGIN
+    -- Insert price data
+    INSERT INTO public.market_data (time, asset_symbol, type, value, source)
+    VALUES (p_time, p_asset_symbol, 'price', p_price, p_source)
+    ON CONFLICT (time, asset_symbol, type, source) DO UPDATE SET
+        value = EXCLUDED.value,
+        created_at = NOW();
+    
+    -- Insert volume data if provided
+    IF p_volume IS NOT NULL THEN
+        INSERT INTO public.market_data (time, asset_symbol, type, value, source)
+        VALUES (p_time, p_asset_symbol, 'volume', p_volume, p_source)
+        ON CONFLICT (time, asset_symbol, type, source) DO UPDATE SET
+            value = EXCLUDED.value,
+            created_at = NOW();
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION insert_market_indicator(
+    p_time TIMESTAMPTZ,
+    p_name TEXT,
+    p_value DOUBLE PRECISION,
+    p_source TEXT DEFAULT 'unknown'
+)
+RETURNS VOID AS $$
+BEGIN
+    INSERT INTO public.market_indicators (time, name, value, source)
+    VALUES (p_time, p_name, p_value, p_source)
+    ON CONFLICT (time, name, source) DO UPDATE SET
+        value = EXCLUDED.value,
+        created_at = NOW();
+END;
+$$ LANGUAGE plpgsql;
+
+-- Step 7: Insert Sample Data
+\echo '--> Step 7: Inserting sample assets...'
+INSERT INTO public.assets (symbol, name, category) VALUES
+    ('bitcoin', 'Bitcoin', 'crypto'), 
+    ('ethereum', 'Ethereum', 'crypto'),
+    ('solana', 'Solana', 'crypto'), 
+    ('render', 'Render Token', 'crypto'),
+    ('spy', 'SPDR S&P 500 ETF', 'index'),
+    ('brent_crude_oil', 'Brent Crude Oil', 'commodity'),
+    ('vix', 'CBOE Volatility Index', 'index')
+ON CONFLICT (symbol) DO NOTHING;
+
+-- Step 8: Create useful views for debugging
+\echo '--> Step 8: Creating debug views...'
+
+-- View to see latest data for each asset
+CREATE OR REPLACE VIEW latest_asset_data AS
+SELECT DISTINCT ON (asset_symbol, type)
+    asset_symbol,
+    type,
+    value,
+    time,
+    source
+FROM public.market_data
+ORDER BY asset_symbol, type, time DESC;
+
+-- View to see data quality metrics
+CREATE OR REPLACE VIEW data_quality_metrics AS
+SELECT 
+    asset_symbol,
+    type,
+    COUNT(*) as total_records,
+    COUNT(DISTINCT source) as source_count,
+    MIN(time) as earliest_data,
+    MAX(time) as latest_data,
+    array_agg(DISTINCT source) as sources
+FROM public.market_data
+GROUP BY asset_symbol, type;
+
 \echo 'Database initialization completed successfully!'
-\echo ''
-\echo 'Summary of created objects:'
-\echo '- ✓ Hypertable: public.signals (7-day chunks)'
-\echo '- ✓ Continuous aggregates: signals_hourly_general, signals_hourly_ohlc (with volume), signals_15min_ohlc (with volume), signals_30min_ohlc (with volume), signals_1day_ohlc (with volume)'
-\echo '- ✓ Helper views: latest_prices, latest_volumes, latest_signals, ohlc_for_charts'
-\echo '- ✓ API function: get_ohlc_data(asset, source, interval, limit) with error handling'
-\echo '- ✓ Refresh policies: 5-10-30 minute intervals'
-\echo '- ✓ Compression policy: 30-day compression on raw table'
-\echo '- ✓ Performance indexes created'
-\echo ''
-\echo 'Usage examples:'
-\echo '-- Get Bitcoin hourly OHLC+V data:'
-\echo "SELECT * FROM get_ohlc_data('coingecko_bitcoin') LIMIT 24;"
-\echo ''
-\echo '-- Get Ethereum 15-minute OHLC+V data:'
-\echo "SELECT * FROM get_ohlc_data('coingecko_ethereum', 'CoinGecko', '15m', 100);"
-\echo ''
-\echo '-- Direct query for charts:'
-\echo "SELECT timestamp, open, high, low, close, volume FROM ohlc_for_charts WHERE asset = 'coingecko_bitcoin' LIMIT 100;"
-\echo ''
-\echo '-- Latest price and volume:'
-\echo "SELECT * FROM latest_prices;"
-\echo "SELECT * FROM latest_volumes;"
-
+\echo 'You can now use:'
+\echo '  - get_ohlc_data(asset, interval, limit)'
+\echo '  - get_assets()'
+\echo '  - get_latest_indicators(name)'
+\echo '  - insert_market_data(time, asset, price, volume, source)'
+\echo '  - insert_market_indicator(time, name, value, source)'
