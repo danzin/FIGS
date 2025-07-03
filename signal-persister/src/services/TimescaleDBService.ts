@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { DatabaseService } from "./database.interface";
-import { Signal } from "@financialsignalsgatheringsystem/common";
+import { MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 interface DbConfig {
 	user?: string;
@@ -32,39 +32,43 @@ export class TimescaleDBService implements DatabaseService {
 		}
 	}
 
-	public async insertSignal(signal: Signal): Promise<void> {
-		if (
-			!signal ||
-			signal.value === null ||
-			typeof signal.value === "undefined" ||
-			isNaN(Number(signal.value)) ||
-			!signal.source
-		) {
-			console.warn(
-				`[TimescaleDBService] Skipping insertion of invalid signal (value issue): ${JSON.stringify(signal)}`
-			);
-			return;
-		}
-
-		if (!(signal.timestamp instanceof Date) || isNaN(signal.timestamp.getTime())) {
-			console.warn(
-				`[TimescaleDBService] Skipping insertion of invalid signal (timestamp issue): ${JSON.stringify(signal)}`
-			);
-			return;
-		}
-
-		const query = `
-            INSERT INTO public.signals (time, name, value, source)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (name, time) DO UPDATE SET 
-                source = EXCLUDED.source
+	/**
+	 * Inserts asset-specific data (price or volume) into the market_data table.
+	 */
+	public async insertMarketData(point: MarketDataPoint): Promise<void> {
+		const text = `
+      INSERT INTO public.market_data (time, asset_symbol, type, value, source)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT DO NOTHING; -- Or your preferred conflict resolution
     `;
 		try {
-			await this.pool.query(query, [signal.timestamp, signal.name, signal.value, signal.source]);
-			console.log(`[TimescaleDBService] Inserted/Updated signal: ${signal.name} @ ${signal.timestamp.toISOString()}`);
+			await this.pool.query(text, [point.time, point.asset_symbol, point.type, point.value, point.source]);
+			// console.log(`[DB] Inserted market data: ${point.asset_symbol} ${point.type}`);
 		} catch (error) {
-			console.error(`[TimescaleDBService] Error inserting signal ${signal.name}:`, error);
-			throw error; // the caller (consumer) can handle this, possibly by nack-ing the message
+			console.error(`[DB] Error inserting market data for ${point.asset_symbol}:`, error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Inserts a general indicator into the market_indicators table.
+	 * This uses ON CONFLICT...DO UPDATE to always store the latest value for a given indicator name.
+	 */
+	public async insertIndicator(point: IndicatorDataPoint): Promise<void> {
+		const text = `
+      INSERT INTO public.market_indicators (name, time, value, source)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (name) DO UPDATE SET
+        time = EXCLUDED.time,
+        value = EXCLUDED.value,
+        source = EXCLUDED.source;
+    `;
+		try {
+			await this.pool.query(text, [point.name, point.time, point.value, point.source]);
+			// console.log(`[DB] Inserted/Updated indicator: ${point.name}`);
+		} catch (error) {
+			console.error(`[DB] Error inserting indicator ${point.name}:`, error);
+			throw error;
 		}
 	}
 

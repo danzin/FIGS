@@ -1,5 +1,5 @@
 import { SchedulerConfigManager } from "../../SchedulerConfigManager";
-import { CoinGeckoSource } from "../../datasources/coingecko";
+import { CoinGeckoSource } from "../../datasources/CoinGeckoMarketDataSource";
 import { AddTickerRequest, AddTickerResponse, TickerListResponse, ValidationResponse } from "../types/ticker.types";
 export class TickerService {
 	constructor(private schedulerManager: SchedulerConfigManager) {}

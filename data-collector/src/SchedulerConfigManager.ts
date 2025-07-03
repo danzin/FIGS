@@ -1,6 +1,7 @@
 import { SignalScheduler, ScheduledDataSource } from "./SignalScheduler";
 import { FredSource } from "./datasources/fred";
-import { CoinGeckoSource } from "./datasources/coingecko";
+import { CoinGeckoMarketDataSource } from "./datasources/CoinGeckoMarketDataSource";
+import { CoinGeckoIndicatorSource } from "./datasources/CoinGeckoIndicatorSource";
 import { VIXSource, SPYSource, BrentCrudeOilSource } from "./datasources/yahooFinance";
 import { FearGreedSource } from "./datasources/feargreed";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
@@ -17,16 +18,16 @@ export class SchedulerConfigManager {
 	public setupDefaultSchedules(): void {
 		// HIGH FREQUENCY - testing different frequencies.
 		this.registerHighFrequencySource(
-			new CoinGeckoSource("bitcoin", "price"),
+			new CoinGeckoMarketDataSource("bitcoin"),
 			"*/15 * * * *", // Every 15 minutes
 			{ maxRetries: 2, retryDelay: 30000 }
 		);
 
-		this.registerHighFrequencySource(new CoinGeckoSource("ethereum", "price"), "*/15 * * * *", {
+		this.registerHighFrequencySource(new CoinGeckoMarketDataSource("ethereum"), "*/15 * * * *", {
 			maxRetries: 2,
 			retryDelay: 30000,
 		});
-		this.registerHighFrequencySource(new CoinGeckoSource("solana", "price"), "*/15 * * * *", {
+		this.registerHighFrequencySource(new CoinGeckoMarketDataSource("solana"), "*/15 * * * *", {
 			maxRetries: 2,
 			retryDelay: 30000,
 		});
@@ -47,13 +48,13 @@ export class SchedulerConfigManager {
 		this.registerHighFrequencySource(new BrentCrudeOilSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 		// Bitcoin dominance (changes slowly but important)
 		this.registerMediumFrequencySource(
-			new CoinGeckoSource("bitcoin", "dominance"),
+			new CoinGeckoIndicatorSource("btc_dominance"),
 			"0 */2 * * *", // Every 2 hours
 			{ maxRetries: 2, retryDelay: 120000 }
 		);
 
 		// Trading volumes (hourly is sufficient)
-		this.registerMediumFrequencySource(new CoinGeckoSource("bitcoin", "volume"), "0 */1 * * *", {
+		this.registerMediumFrequencySource(new CoinGeckoIndicatorSource("btc_volume"), "0 */1 * * *", {
 			maxRetries: 2,
 			retryDelay: 120000,
 		});
