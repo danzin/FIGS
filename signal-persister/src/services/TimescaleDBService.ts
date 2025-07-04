@@ -36,14 +36,23 @@ export class TimescaleDBService implements DatabaseService {
 	 * Inserts asset-specific data (price or volume) into the market_data table.
 	 */
 	public async insertMarketData(point: MarketDataPoint): Promise<void> {
-		const text = `
-      INSERT INTO public.market_data (time, asset_symbol, type, value, source)
-      VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT DO NOTHING; -- Or your preferred conflict resolution
-    `;
+		const insertMarketText = `
+			INSERT INTO public.market_data
+				(time, asset_symbol, "type", value, source)
+			VALUES
+				($1, $2, $3, $4, $5)
+			ON CONFLICT (time, name, source) DO NOTHING;
+			`;
 		try {
-			await this.pool.query(text, [point.time, point.asset_symbol, point.type, point.value, point.source]);
+			const res = await this.pool.query(insertMarketText, [
+				point.time,
+				point.asset_symbol,
+				point.type,
+				point.value,
+				point.source,
+			]);
 			// console.log(`[DB] Inserted market data: ${point.asset_symbol} ${point.type}`);
+			console.log(`[DB] market_data rowCount=${res.rowCount}`);
 		} catch (error) {
 			console.error(`[DB] Error inserting market data for ${point.asset_symbol}:`, error);
 			throw error;
@@ -56,13 +65,10 @@ export class TimescaleDBService implements DatabaseService {
 	 */
 	public async insertIndicator(point: IndicatorDataPoint): Promise<void> {
 		const text = `
-      INSERT INTO public.market_indicators (name, time, value, source)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (name) DO UPDATE SET
-        time = EXCLUDED.time,
-        value = EXCLUDED.value,
-        source = EXCLUDED.source;
-    `;
+			INSERT INTO public.market_indicators (time, name, value, source)
+			VALUES ($1,$2,$3,$4)
+			ON CONFLICT (name) DO NOTHING
+			`;
 		try {
 			await this.pool.query(text, [point.name, point.time, point.value, point.source]);
 			// console.log(`[DB] Inserted/Updated indicator: ${point.name}`);
