@@ -1,6 +1,6 @@
 import axios from "axios";
 import { DataSource } from "./Datasource";
-import { Signal } from "@financialsignalsgatheringsystem/common";
+import { IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 export class FredSource implements DataSource {
 	public key: string;
@@ -11,7 +11,7 @@ export class FredSource implements DataSource {
 		this.series_id = series_id;
 		this.key = `FRED_${series_id}`;
 	}
-	async fetch(): Promise<Signal | null> {
+	async fetch(): Promise<IndicatorDataPoint | null> {
 		try {
 			const response = await axios.get("https://api.stlouisfed.org/fred/series/observations", {
 				headers: {
@@ -50,7 +50,7 @@ export class FredSource implements DataSource {
 			}
 			return {
 				name: this.key,
-				timestamp: new Date(latestObservation.date),
+				time: new Date(latestObservation.date),
 				value: parseFloat(latestObservation.value),
 				source: "FRED",
 			};

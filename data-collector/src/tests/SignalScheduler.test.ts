@@ -23,7 +23,7 @@ class MockDataSource implements DataSource {
 	fetch: jest.Mock<
 		Promise<{
 			name: string;
-			timestamp: Date;
+			time: Date;
 			value: number;
 			source: string;
 		}>

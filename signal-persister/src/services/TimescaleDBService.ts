@@ -42,7 +42,7 @@ export class TimescaleDBService implements DatabaseService {
         (time, asset_symbol, "type", value, source)
       VALUES
         ($1, $2, $3, $4, $5)
-      ON CONFLICT (time, asset_symbol, source) DO NOTHING;
+      
     `;
 
 		try {
@@ -81,17 +81,11 @@ export class TimescaleDBService implements DatabaseService {
 
 	/**
 	 * Inserts a general indicator into the market_indicators table.
-	 * This uses ON CONFLICT...DO UPDATE to always store the latest value for a given indicator name.
 	 */
 	public async insertIndicator(point: IndicatorDataPoint): Promise<void> {
 		const text = `
       INSERT INTO public.market_indicators (time, name, value, source)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (name) DO UPDATE SET
-        time = EXCLUDED.time,
-        value = EXCLUDED.value,
-        source = EXCLUDED.source,
-        created_at = NOW()
+			VALUES ($1, $2, $3, $4)
     `;
 
 		try {

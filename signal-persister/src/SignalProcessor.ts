@@ -22,10 +22,6 @@ export class SignalProcessor {
 
 	public async start(): Promise<void> {
 		try {
-			await this.rabbitMQService.connect();
-			// await this.dbService.connect(); // explicit connection test
-			console.log("[SignalProcessor] Services connected.");
-
 			await this.rabbitMQService.consume(
 				this.queueName,
 				this.exchangeName,
@@ -40,43 +36,39 @@ export class SignalProcessor {
 
 	private async handleIncomingMessage(payload: unknown): Promise<void> {
 		try {
-			// The payload could be a single object or an array of objects
-			const dataPoints = Array.isArray(payload) ? payload : [payload];
+			// Handle both single objects and arrays
+			const messages = Array.isArray(payload) ? payload : [payload];
 
-			for (const point of dataPoints) {
-				// Use a type guard to determine which service method to call
-				if (this.isMarketDataPoint(point)) {
-					await this.dbService.insertMarketData(point);
-				} else if (this.isIndicatorDataPoint(point)) {
-					await this.dbService.insertIndicator(point);
+			for (const message of messages) {
+				if (this.isMarketDataPoint(message)) {
+					await this.dbService.insertMarketData(message);
+				} else if (this.isIndicatorDataPoint(message)) {
+					await this.dbService.insertIndicator(message);
 				} else {
-					console.warn("[SignalProcessor] Received unknown data point structure:", point);
+					console.warn("[SignalProcessor] Unknown message type:", message);
 				}
 			}
 		} catch (error) {
 			console.error("[SignalProcessor] Error handling message:", error);
-			// Re-throw to ensure RabbitMQ nacks the message
 			throw error;
 		}
 	}
 
-	private isMarketDataPoint(point: MarketDataPoint): point is MarketDataPoint {
+	private isMarketDataPoint(message: MarketDataPoint): message is MarketDataPoint {
 		return (
-			point &&
-			typeof point.asset_symbol === "string" &&
-			(point.type === "price" || point.type === "volume") &&
-			typeof point.value === "number"
+			message && typeof message.asset_symbol === "string" && (message.type === "price" || message.type === "volume")
 		);
 	}
 
-	private isIndicatorDataPoint(point: IndicatorDataPoint): point is IndicatorDataPoint {
-		return point && typeof point.name === "string" && typeof point.value === "number" && !("asset_symbol" in point); // Differentiate from market data
+	private isIndicatorDataPoint(message: IndicatorDataPoint): message is IndicatorDataPoint {
+		return (
+			message && typeof message.name === "string" && typeof message.value === "number" && !("asset_symbol" in message)
+		);
 	}
 
 	public async stop(): Promise<void> {
 		console.log("[SignalProcessor] Stopping...");
 		await this.rabbitMQService.close();
-		await this.dbService.disconnect();
 		console.log("[SignalProcessor] Stopped.");
 	}
 }

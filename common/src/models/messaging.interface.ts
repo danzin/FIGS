@@ -1,8 +1,7 @@
-import { Signal, MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
+import { SupportedMessage } from "@financialsignalsgatheringsystem/common";
 import { Options } from "amqplib";
 
 // Union type for all supported message types
-type SupportedMessage = Signal | MarketDataPoint | IndicatorDataPoint;
 
 export interface MessageBroker {
 	/**
@@ -36,7 +35,7 @@ export interface MessageBroker {
 	consume(
 		queueName: string,
 		exchangeName: string,
-		onMessageCallback: (signal: Signal) => Promise<void>,
+		onMessageCallback: (msg: SupportedMessage) => Promise<void>,
 		options?: Options.Consume
 	): Promise<string | null>;
 

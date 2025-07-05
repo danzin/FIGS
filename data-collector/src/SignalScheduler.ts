@@ -279,7 +279,7 @@ export class SignalScheduler {
 
 			if (this.validateIndicatorDataPoint(result)) {
 				try {
-					await this.messageBroker.publish("indicators", "", result);
+					await this.messageBroker.publish("market_indicators", "", result);
 					publishCount++;
 					console.log(`[SignalScheduler] Published IndicatorDataPoint: ${result.name} = ${result.value}`);
 				} catch (error) {
