@@ -1,1 +1,0 @@
-{"version":3,"file":"indicatorDataPoint.d.ts","sourceRoot":"","sources":["../../src/models/indicatorDataPoint.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,kBAAkB;IAClC,IAAI,EAAE,IAAI,CAAC;IACX,IAAI,EAAE,MAAM,CAAC;IACb,KAAK,EAAE,MAAM,CAAC;IACd,MAAM,EAAE,MAAM,CAAC;CACf"}

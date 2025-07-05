@@ -1,1 +1,0 @@
-{"version":3,"file":"signals.module.js","sourceRoot":"","sources":["../../src/signals/signals.module.ts"],"names":[],"mappings":";;;;;;;;;AAAA,2CAAwC;AACxC,0EAAsE;AACtE,iEAA6D;AAC7D,2EAAuE;AAMhE,IAAM,aAAa,GAAnB,MAAM,aAAa;CAAG,CAAA;AAAhB,sCAAa;wBAAb,aAAa;IAJzB,IAAA,eAAM,EAAC;QACN,WAAW,EAAE,CAAC,sCAAiB,CAAC;QAChC,SAAS,EAAE,CAAC,gCAAc,EAAE,sCAAiB,CAAC;KAC/C,CAAC;GACW,aAAa,CAAG"}
