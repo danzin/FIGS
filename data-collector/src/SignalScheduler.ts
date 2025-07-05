@@ -288,38 +288,11 @@ export class SignalScheduler {
 			} else {
 				console.warn(`[SignalScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, result);
 			}
-		}
-		// Handle legacy Signal
-		else if (this.isSignal(result)) {
-			console.log(`[SignalScheduler] Processing legacy Signal from ${sourceKey}`);
-
-			if (this.validateSignal(result)) {
-				try {
-					await this.messageBroker.publish("signals", "", result);
-					publishCount++;
-					console.log(`[SignalScheduler] Published Signal: ${result.name} = ${result.value}`);
-				} catch (error) {
-					console.error(`[SignalScheduler] Failed to publish Signal:`, error);
-				}
-			} else {
-				console.warn(`[SignalScheduler] Invalid Signal from ${sourceKey}:`, result);
-			}
 		} else {
 			console.error(`[SignalScheduler] Unknown result type from ${sourceKey}:`, typeof result, result);
 		}
 
 		return publishCount;
-	}
-
-	// Type guards
-	private isSignal(obj: any): obj is Signal {
-		return (
-			obj &&
-			typeof obj.name === "string" &&
-			obj.timestamp instanceof Date &&
-			typeof obj.value === "number" &&
-			typeof obj.source === "string"
-		);
 	}
 
 	private isIndicatorDataPoint(obj: any): obj is IndicatorDataPoint {
