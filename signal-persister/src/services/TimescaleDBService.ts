@@ -36,14 +36,25 @@ export class TimescaleDBService implements DatabaseService {
 	 * Inserts asset-specific data (price or volume) into the market_data table.
 	 */
 	public async insertMarketData(point: MarketDataPoint): Promise<void> {
+		// Fixed: Changed 'name' to 'asset_symbol' in the conflict clause
 		const insertMarketText = `
-			INSERT INTO public.market_data
-				(time, asset_symbol, "type", value, source)
-			VALUES
-				($1, $2, $3, $4, $5)
-			ON CONFLICT (time, name, source) DO NOTHING;
-			`;
+      INSERT INTO public.market_data
+        (time, asset_symbol, "type", value, source)
+      VALUES
+        ($1, $2, $3, $4, $5)
+      ON CONFLICT (time, asset_symbol, source) DO NOTHING;
+    `;
+
 		try {
+			// Added validation logging
+			console.log(`[DB] Attempting to insert market data:`, {
+				time: point.time,
+				asset_symbol: point.asset_symbol,
+				type: point.type,
+				value: point.value,
+				source: point.source,
+			});
+
 			const res = await this.pool.query(insertMarketText, [
 				point.time,
 				point.asset_symbol,
@@ -51,10 +62,19 @@ export class TimescaleDBService implements DatabaseService {
 				point.value,
 				point.source,
 			]);
-			// console.log(`[DB] Inserted market data: ${point.asset_symbol} ${point.type}`);
-			console.log(`[DB] market_data rowCount=${res.rowCount}`);
+
+			console.log(`[DB] market_data insert result: rowCount=${res.rowCount}, command=${res.command}`);
+
+			if (res.rowCount === 0) {
+				console.warn(
+					`[DB] No rows inserted for market_data - likely duplicate: ${point.asset_symbol} ${point.type} at ${point.time}`
+				);
+			} else {
+				console.log(`[DB] Successfully inserted market data: ${point.asset_symbol} ${point.type}`);
+			}
 		} catch (error) {
 			console.error(`[DB] Error inserting market data for ${point.asset_symbol}:`, error);
+			console.error(`[DB] Failed data point:`, point);
 			throw error;
 		}
 	}
@@ -65,15 +85,39 @@ export class TimescaleDBService implements DatabaseService {
 	 */
 	public async insertIndicator(point: IndicatorDataPoint): Promise<void> {
 		const text = `
-			INSERT INTO public.market_indicators (time, name, value, source)
-			VALUES ($1,$2,$3,$4)
-			ON CONFLICT (name) DO NOTHING
-			`;
+      INSERT INTO public.market_indicators (time, name, value, source)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (name) DO UPDATE SET
+        time = EXCLUDED.time,
+        value = EXCLUDED.value,
+        source = EXCLUDED.source,
+        created_at = NOW()
+    `;
+
 		try {
-			await this.pool.query(text, [point.name, point.time, point.value, point.source]);
-			// console.log(`[DB] Inserted/Updated indicator: ${point.name}`);
+			// Added validation logging
+			console.log(`[DB] Attempting to insert indicator:`, {
+				time: point.time,
+				name: point.name,
+				value: point.value,
+				source: point.source,
+			});
+
+			// Fixed: Parameters now match SQL column order (time, name, value, source)
+			const res = await this.pool.query(text, [point.time, point.name, point.value, point.source]);
+
+			console.log(`[DB] market_indicators insert result: rowCount=${res.rowCount}, command=${res.command}`);
+
+			if (res.rowCount === 0) {
+				console.warn(
+					`[DB] No rows inserted for indicator - this shouldn't happen with ON CONFLICT DO UPDATE: ${point.name}`
+				);
+			} else {
+				console.log(`[DB] Successfully inserted/updated indicator: ${point.name}`);
+			}
 		} catch (error) {
 			console.error(`[DB] Error inserting indicator ${point.name}:`, error);
+			console.error(`[DB] Failed data point:`, point);
 			throw error;
 		}
 	}

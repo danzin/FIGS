@@ -6,23 +6,30 @@ import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 // Mock node-cron
 jest.mock("node-cron", () => ({
 	schedule: jest.fn().mockImplementation((cronExpression, func, options) => {
-		// Mock the task object
 		const mockTask = {
-			start: jest.fn(() => {}),
+			start: jest.fn(() => {
+				// store the scheduled callback
+				(mockTask as any)._scheduledFunc = func;
+			}),
 			stop: jest.fn(),
 		};
-		// Store the scheduled function to potentially call it manually if needed
-		(mockTask.start as any)._scheduledFunc = func;
-		return mockTask;
+		return mockTask as any;
 	}),
 }));
 
 // Mock DataSource
 class MockDataSource implements DataSource {
 	key: string;
+	fetch: jest.Mock<
+		Promise<{
+			name: string;
+			timestamp: Date;
+			value: number;
+			source: string;
+		}>
+	>;
 	constructor(key: string) {
 		this.key = key;
-		// Initialize fetch here after this.key is set
 		this.fetch = jest.fn().mockResolvedValue({
 			name: "mockSignal",
 			timestamp: new Date(),
@@ -30,33 +37,30 @@ class MockDataSource implements DataSource {
 			source: this.key,
 		});
 	}
-	// Declare fetch type
-	fetch: jest.Mock<Promise<{ name: string; timestamp: Date; value: number; source: string }>>;
 }
 
 // Mock MessageBroker
 const mockMessageBroker: MessageBroker = {
-	publish: jest.fn().mockResolvedValue(undefined),
 	connect: jest.fn().mockResolvedValue(undefined),
+	publish: jest.fn().mockResolvedValue(undefined),
 	consume: jest.fn().mockResolvedValue("consumerTag"),
 	close: jest.fn().mockResolvedValue(undefined),
+	isConnected: jest.fn().mockReturnValue(true), // ← new method
 };
 
 describe("SignalScheduler Dynamic Registration", () => {
 	let scheduler: SignalScheduler;
-	let mockTask: cron.ScheduledTask; // To hold the reference to the mocked task
+	let mockTask: cron.ScheduledTask;
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-
 		scheduler = new SignalScheduler(mockMessageBroker);
 
-		// Capture the mock task created by cron.schedule
-		(cron.schedule as jest.Mock).mockImplementation((cronExpression, func, options) => {
+		// Capture the mock task for each schedule() call
+		(cron.schedule as jest.Mock).mockImplementation((cronExpr, fn, opts) => {
 			mockTask = {
 				start: jest.fn(() => {
-					// Store the function to be called
-					(mockTask as any)._scheduledFunc = func;
+					(mockTask as any)._scheduledFunc = fn;
 				}),
 				stop: jest.fn(),
 			} as any;
@@ -65,17 +69,17 @@ describe("SignalScheduler Dynamic Registration", () => {
 	});
 
 	afterEach(() => {
-		scheduler.stop(); // Ensure scheduler is stopped after each test
+		scheduler.stop();
 	});
 
 	test("should schedule and execute a dynamically registered source", async () => {
-		// Start the scheduler
-		scheduler.start(); // This will schedule any pre-existing sources (none in this test case initially)
+		// await the async start so connect() resolves before scheduling
+		await scheduler.start();
 
 		const dynamicSource = new MockDataSource("dynamic_source_1");
 		const dynamicConfig: ScheduledDataSource = {
 			source: dynamicSource,
-			schedule: "* * * * *", // Every minute for testing
+			schedule: "* * * * *",
 			enabled: true,
 			priority: "medium",
 			maxRetries: 1,
@@ -83,34 +87,26 @@ describe("SignalScheduler Dynamic Registration", () => {
 			consecutiveFailures: 0,
 		};
 
-		// Dynamically register the new source AFTER scheduler has started
+		// register after start
 		scheduler.registerSource(dynamicConfig);
 
-		// Verify that cron.schedule was called for the dynamic source
-		// The first call to cron.schedule is for health monitoring.
-		// The second call should be for the dynamically added source.
+		// health check + dynamic registration = 2 schedules
 		expect(cron.schedule).toHaveBeenCalledTimes(2);
 		expect(cron.schedule).toHaveBeenCalledWith(dynamicConfig.schedule, expect.any(Function), {
 			scheduled: false,
 			timezone: "UTC",
 		});
 
-		// Verify that the task for the dynamic source was started
+		// the dynamic task should have been .start()ed once
 		expect(mockTask.start).toHaveBeenCalledTimes(1);
 
-		// Simulate the cron job execution for the dynamic source
-		// by directly calling the function passed to cron.schedule
+		// fire the job manually
+		const jobFn = (mockTask as any)._scheduledFunc;
+		if (!jobFn) throw new Error("No scheduled function captured");
+		await jobFn();
 
-		if (mockTask && (mockTask as any)._scheduledFunc) {
-			await (mockTask as any)._scheduledFunc();
-		} else {
-			throw new Error("Scheduled function not captured for dynamic source.");
-		}
-
-		// Verify that the source's fetch method was called
+		// verify the fetch → publish flow
 		expect(dynamicSource.fetch).toHaveBeenCalledTimes(1);
-
-		// Verify that the message broker's publish method was called
 		expect(mockMessageBroker.publish).toHaveBeenCalledWith("signals", "", {
 			name: "mockSignal",
 			timestamp: expect.any(Date),

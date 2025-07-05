@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { DataSource } from "./datasources/Datasource";
-import { MessageBroker, Signal } from "@financialsignalsgatheringsystem/common";
+import { MessageBroker, Signal, MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 export interface ScheduledDataSource {
 	source: DataSource;
@@ -13,6 +13,9 @@ export interface ScheduledDataSource {
 	lastSuccess?: Date;
 	consecutiveFailures: number;
 }
+
+// Union type for all possible data source return types
+type DataSourceResult = Signal | MarketDataPoint[] | IndicatorDataPoint | null;
 
 export class SignalScheduler {
 	private scheduledSources: Map<string, ScheduledDataSource> = new Map();
@@ -178,24 +181,26 @@ export class SignalScheduler {
 
 		while (attempt <= config.maxRetries) {
 			try {
-				const signal = await config.source.fetch();
+				const result = await config.source.fetch();
 
-				if (signal) {
-					// Validate signal before publishing
-					if (this.validateSignal(signal as Signal)) {
-						await this.messageBroker.publish("signals", "", signal);
+				if (result) {
+					// Validate and publish the result based on its type
+					const publishCount = await this.processAndPublishResult(result, sourceKey);
 
+					if (publishCount > 0) {
 						config.lastSuccess = new Date();
 						config.consecutiveFailures = 0;
 
 						const duration = Date.now() - startTime;
-						console.log(`[SignalScheduler] Successfully collected ${sourceKey} in ${duration}ms`);
+						console.log(
+							`[SignalScheduler] Successfully collected and published ${publishCount} data points from ${sourceKey} in ${duration}ms`
+						);
 						return;
 					} else {
-						throw new Error("Invalid signal structure returned");
+						throw new Error("No valid data points could be published");
 					}
 				} else {
-					console.warn(`[SignalScheduler] ${sourceKey} returned null signal`);
+					console.warn(`[SignalScheduler] ${sourceKey} returned null result`);
 					config.consecutiveFailures++;
 					return;
 				}
@@ -236,8 +241,162 @@ export class SignalScheduler {
 		}
 	}
 
+	/**
+	 * Process and publish result based on its type
+	 * Returns the number of successfully published data points
+	 */
+	private async processAndPublishResult(result: DataSourceResult, sourceKey: string): Promise<number> {
+		if (!result) {
+			console.warn(`[SignalScheduler] Null result from ${sourceKey}`);
+			return 0;
+		}
+
+		let publishCount = 0;
+
+		// Handle MarketDataPoint array
+		if (Array.isArray(result)) {
+			console.log(`[SignalScheduler] Processing ${result.length} MarketDataPoint(s) from ${sourceKey}`);
+
+			for (const dataPoint of result) {
+				if (this.validateMarketDataPoint(dataPoint)) {
+					try {
+						await this.messageBroker.publish("market_data", "", dataPoint);
+						publishCount++;
+						console.log(
+							`[SignalScheduler] Published MarketDataPoint: ${dataPoint.asset_symbol} ${dataPoint.type} = ${dataPoint.value}`
+						);
+					} catch (error) {
+						console.error(`[SignalScheduler] Failed to publish MarketDataPoint:`, error);
+					}
+				} else {
+					console.warn(`[SignalScheduler] Invalid MarketDataPoint from ${sourceKey}:`, dataPoint);
+				}
+			}
+		}
+		// Handle single IndicatorDataPoint
+		else if (this.isIndicatorDataPoint(result)) {
+			console.log(`[SignalScheduler] Processing IndicatorDataPoint from ${sourceKey}`);
+
+			if (this.validateIndicatorDataPoint(result)) {
+				try {
+					await this.messageBroker.publish("indicators", "", result);
+					publishCount++;
+					console.log(`[SignalScheduler] Published IndicatorDataPoint: ${result.name} = ${result.value}`);
+				} catch (error) {
+					console.error(`[SignalScheduler] Failed to publish IndicatorDataPoint:`, error);
+				}
+			} else {
+				console.warn(`[SignalScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, result);
+			}
+		}
+		// Handle legacy Signal
+		else if (this.isSignal(result)) {
+			console.log(`[SignalScheduler] Processing legacy Signal from ${sourceKey}`);
+
+			if (this.validateSignal(result)) {
+				try {
+					await this.messageBroker.publish("signals", "", result);
+					publishCount++;
+					console.log(`[SignalScheduler] Published Signal: ${result.name} = ${result.value}`);
+				} catch (error) {
+					console.error(`[SignalScheduler] Failed to publish Signal:`, error);
+				}
+			} else {
+				console.warn(`[SignalScheduler] Invalid Signal from ${sourceKey}:`, result);
+			}
+		} else {
+			console.error(`[SignalScheduler] Unknown result type from ${sourceKey}:`, typeof result, result);
+		}
+
+		return publishCount;
+	}
+
+	// Type guards
+	private isSignal(obj: any): obj is Signal {
+		return (
+			obj &&
+			typeof obj.name === "string" &&
+			obj.timestamp instanceof Date &&
+			typeof obj.value === "number" &&
+			typeof obj.source === "string"
+		);
+	}
+
+	private isIndicatorDataPoint(obj: any): obj is IndicatorDataPoint {
+		return (
+			obj &&
+			typeof obj.name === "string" &&
+			obj.time instanceof Date &&
+			typeof obj.value === "number" &&
+			typeof obj.source === "string"
+		);
+	}
+
+	// Validation functions
+	private validateMarketDataPoint(dataPoint: MarketDataPoint): boolean {
+		const isValid = !!(
+			dataPoint &&
+			dataPoint.time instanceof Date &&
+			!isNaN(dataPoint.time.getTime()) &&
+			typeof dataPoint.asset_symbol === "string" &&
+			dataPoint.asset_symbol.length > 0 &&
+			typeof dataPoint.type === "string" &&
+			dataPoint.type.length > 0 &&
+			typeof dataPoint.value === "number" &&
+			!isNaN(dataPoint.value) &&
+			typeof dataPoint.source === "string" &&
+			dataPoint.source.length > 0
+		);
+
+		if (!isValid) {
+			console.warn(`[SignalScheduler] MarketDataPoint validation failed:`, {
+				hasTime: dataPoint?.time instanceof Date,
+				timeValid: dataPoint?.time ? !isNaN(dataPoint.time.getTime()) : false,
+				hasAssetSymbol: typeof dataPoint?.asset_symbol === "string",
+				assetSymbolValid: typeof dataPoint?.asset_symbol === "string" && dataPoint.asset_symbol.length > 0,
+				hasType: typeof dataPoint?.type === "string",
+				typeValid: typeof dataPoint?.type === "string" && dataPoint.type.length > 0,
+				hasValue: typeof dataPoint?.value === "number",
+				valueValid: typeof dataPoint?.value === "number" && !isNaN(dataPoint.value),
+				hasSource: typeof dataPoint?.source === "string",
+				sourceValid: typeof dataPoint?.source === "string" && dataPoint.source.length > 0,
+			});
+		}
+
+		return isValid;
+	}
+
+	private validateIndicatorDataPoint(dataPoint: IndicatorDataPoint): boolean {
+		const isValid = !!(
+			dataPoint &&
+			typeof dataPoint.name === "string" &&
+			dataPoint.name.length > 0 &&
+			dataPoint.time instanceof Date &&
+			!isNaN(dataPoint.time.getTime()) &&
+			typeof dataPoint.value === "number" &&
+			!isNaN(dataPoint.value) &&
+			typeof dataPoint.source === "string" &&
+			dataPoint.source.length > 0
+		);
+
+		if (!isValid) {
+			console.warn(`[SignalScheduler] IndicatorDataPoint validation failed:`, {
+				hasName: typeof dataPoint?.name === "string",
+				nameValid: typeof dataPoint?.name === "string" && dataPoint.name.length > 0,
+				hasTime: dataPoint?.time instanceof Date,
+				timeValid: dataPoint?.time ? !isNaN(dataPoint.time.getTime()) : false,
+				hasValue: typeof dataPoint?.value === "number",
+				valueValid: typeof dataPoint?.value === "number" && !isNaN(dataPoint.value),
+				hasSource: typeof dataPoint?.source === "string",
+				sourceValid: typeof dataPoint?.source === "string" && dataPoint.source.length > 0,
+			});
+		}
+
+		return isValid;
+	}
+
 	private validateSignal(signal: Signal): boolean {
-		return !!(
+		const isValid = !!(
 			signal &&
 			signal.name &&
 			signal.timestamp instanceof Date &&
@@ -246,6 +405,19 @@ export class SignalScheduler {
 			!isNaN(signal.value) &&
 			signal.source
 		);
+
+		if (!isValid) {
+			console.warn(`[SignalScheduler] Signal validation failed:`, {
+				hasName: !!signal?.name,
+				hasTimestamp: signal?.timestamp instanceof Date,
+				timestampValid: signal?.timestamp ? !isNaN(signal.timestamp.getTime()) : false,
+				hasValue: typeof signal?.value === "number",
+				valueValid: typeof signal?.value === "number" && !isNaN(signal.value),
+				hasSource: !!signal?.source,
+			});
+		}
+
+		return isValid;
 	}
 
 	private isSourceHealthy(config: ScheduledDataSource): boolean {
