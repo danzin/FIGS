@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS public.market_data (
     source TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     
-    -- Add unique constraint to prevent duplicate entries
-    CONSTRAINT unique_market_data_entry UNIQUE (time, asset_symbol, type, source)
+    -- Don't need it for now
+   -- CONSTRAINT unique_market_data_entry UNIQUE (time, asset_symbol, type, source)
 );
 SELECT create_hypertable('public.market_data', 'time', if_not_exists => TRUE);
 
@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS public.market_indicators (
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     
-    -- Add unique constraint to prevent duplicate entries
-    CONSTRAINT unique_market_indicator_entry UNIQUE (time, name, source)
+    -- Don't need it for now
+    -- CONSTRAINT unique_market_indicator_entry UNIQUE (time, name, source)
 );
 SELECT create_hypertable('public.market_indicators', 'time', if_not_exists => TRUE);
 
