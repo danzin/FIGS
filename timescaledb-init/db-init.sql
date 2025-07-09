@@ -301,16 +301,16 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Step 7: Insert Sample Data
-\echo '--> Step 7: Inserting sample assets...'
-INSERT INTO public.assets (symbol, name, category) VALUES
-    ('bitcoin', 'Bitcoin', 'crypto'), 
-    ('ethereum', 'Ethereum', 'crypto'),
-    ('solana', 'Solana', 'crypto'), 
-    ('render', 'Render Token', 'crypto'),
-    ('spy', 'SPDR S&P 500 ETF', 'index'),
-    ('brent_crude_oil', 'Brent Crude Oil', 'commodity'),
-    ('vix', 'CBOE Volatility Index', 'index')
-ON CONFLICT (symbol) DO NOTHING;
+-- \echo '--> Step 7: Inserting sample assets...'
+-- INSERT INTO public.assets (symbol, name, category) VALUES
+--     ('bitcoin', 'Bitcoin', 'crypto'), 
+--     ('ethereum', 'Ethereum', 'crypto'),
+--     ('solana', 'Solana', 'crypto'), 
+--     ('render', 'Render Token', 'crypto'),
+--     ('spy', 'SPDR S&P 500 ETF', 'index'),
+--     ('brent_crude_oil', 'Brent Crude Oil', 'commodity'),
+--     ('vix', 'CBOE Volatility Index', 'index')
+-- ON CONFLICT (symbol) DO NOTHING;
 
 -- Step 8: Create useful views for debugging
 \echo '--> Step 8: Creating debug views...'

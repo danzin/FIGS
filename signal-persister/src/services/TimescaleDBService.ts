@@ -42,7 +42,6 @@ export class TimescaleDBService implements DatabaseService {
         (time, asset_symbol, "type", value, source)
       VALUES
         ($1, $2, $3, $4, $5)
-      
     `;
 
 		try {
