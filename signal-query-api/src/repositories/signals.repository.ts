@@ -57,7 +57,7 @@ export class SignalsRepository {
    * Fetches the latest non-price/volume signals from the helper view.
    */
   async findLatestGeneralSignals(): Promise<SignalDto[]> {
-    const text = `SELECT name, time, value, source FROM public.latest_signals;`;
+    const text = `SELECT * FROM public.latest_indicators;`;
     const result = await this.pool.query(text);
     return result.rows;
   }

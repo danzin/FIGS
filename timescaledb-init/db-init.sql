@@ -129,7 +129,22 @@ SELECT add_continuous_aggregate_policy('market_data_1h',
 SELECT add_continuous_aggregate_policy('market_data_1d',
   start_offset => INTERVAL '60 days',
   end_offset   => INTERVAL '1 hour',
-  schedule_interval => INTERVAL '1 hour');
+  schedule_interval => INTERVAL '30 minutes');
+
+-- ========================
+-- Latest Indicators 
+-- ========================
+CREATE OR REPLACE VIEW public.latest_indicators AS
+SELECT DISTINCT ON (name)
+    name,
+    value,
+    time   AS latest_time,
+    source
+FROM public.market_indicators
+ORDER BY
+    name,
+    time DESC;
+
 
 -- ========================
 -- API Functions
@@ -142,26 +157,31 @@ CREATE OR REPLACE FUNCTION public.get_ohlc_data(
     p_limit        INT     DEFAULT 100
 )
 RETURNS TABLE(
-    timestamp TIMESTAMPTZ,
-    open      DECIMAL,
-    high      DECIMAL,
-    low       DECIMAL,
-    close     DECIMAL,
-    volume    DECIMAL
+    bucketed_at TIMESTAMPTZ,
+    open        DECIMAL(20,8),
+    high        DECIMAL(20,8),
+    low         DECIMAL(20,8),
+    close       DECIMAL(20,8),
+    volume      DECIMAL(20,8)
 ) AS $$
 BEGIN
   RETURN QUERY EXECUTE format($f$
-    WITH p AS (SELECT * FROM market_data_%s
-                WHERE asset_symbol=$1 AND "type"='price'
-                ORDER BY time DESC LIMIT $2),
-         v AS (SELECT time, volume FROM market_data_%s
-                WHERE asset_symbol=$1 AND "type"='volume'
-                ORDER BY time DESC LIMIT $2)
-    SELECT p.time,p.open,p.high,p.low,p.close,v.volume
-    FROM p LEFT JOIN v USING(time)
-    ORDER BY p.time DESC
-  $f$, p_interval, p_interval) USING p_asset_symbol, p_limit;
-END;$$ LANGUAGE plpgsql;
+    SELECT
+      time      AS bucketed_at,
+      open,
+      high,
+      low,
+      close,
+      volume
+    FROM public.market_data_%s
+    WHERE asset_symbol = $1
+      AND open       IS NOT NULL
+    ORDER BY time DESC
+    LIMIT $2
+  $f$, p_interval)
+  USING p_asset_symbol, p_limit;
+END;
+$$ LANGUAGE plpgsql STABLE;
 
 -- get_assets
 CREATE OR REPLACE FUNCTION public.get_assets()
