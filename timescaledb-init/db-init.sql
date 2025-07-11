@@ -152,36 +152,43 @@ ORDER BY
 
 -- get_ohlc_data
 CREATE OR REPLACE FUNCTION public.get_ohlc_data(
-    p_asset_symbol VARCHAR,
-    p_interval     VARCHAR DEFAULT '1d',
-    p_limit        INT     DEFAULT 100
+    p_asset_symbol character varying, 
+    p_interval character varying DEFAULT '1d'::character varying, 
+    p_limit integer DEFAULT 100
 )
 RETURNS TABLE(
-    bucketed_at TIMESTAMPTZ,
-    open        DECIMAL(20,8),
-    high        DECIMAL(20,8),
-    low         DECIMAL(20,8),
-    close       DECIMAL(20,8),
-    volume      DECIMAL(20,8)
-) AS $$
+    "timestamp" timestamptz, 
+    open numeric, 
+    high numeric, 
+    low numeric, 
+    close numeric, 
+    volume numeric
+)
+LANGUAGE plpgsql
+STABLE
+AS $function$
 BEGIN
-  RETURN QUERY EXECUTE format($f$
-    SELECT
-      time      AS bucketed_at,
-      open,
-      high,
-      low,
-      close,
-      volume
-    FROM public.market_data_%s
-    WHERE asset_symbol = $1
-      AND open       IS NOT NULL
-    ORDER BY time DESC
-    LIMIT $2
-  $f$, p_interval)
-  USING p_asset_symbol, p_limit;
+    RETURN QUERY EXECUTE format($f$
+        SELECT 
+            p.time AS bucketed_at,
+            p.open,
+            p.high,
+            p.low,
+            p.close,
+            v.volume
+        FROM public.market_data_%s p
+        LEFT JOIN public.market_data_%s v ON p.time = v.time 
+            AND p.asset_symbol = v.asset_symbol 
+            AND v.type = 'volume'
+        WHERE p.asset_symbol = $1
+            AND p.type = 'price'
+            AND p.open IS NOT NULL
+        ORDER BY p.time DESC
+        LIMIT $2
+    $f$, p_interval, p_interval)
+    USING p_asset_symbol, p_limit;
 END;
-$$ LANGUAGE plpgsql STABLE;
+$function$;
 
 -- get_assets
 CREATE OR REPLACE FUNCTION public.get_assets()

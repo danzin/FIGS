@@ -109,7 +109,7 @@ export class SignalsRepository {
 
     const text = `
       SELECT name, time, value, source
-      FROM public.latest_signals
+      FROM public.latest_indicators
       WHERE name = ANY($1::text[]);
     `;
 
@@ -119,33 +119,6 @@ export class SignalsRepository {
     } catch (error) {
       console.error(
         `[SignalsRepository] Error fetching latest signals by names:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Fetches the latest non-price signals by their names.
-   * This is used for dashboard widgets that need the latest values of specific signals.
-   */
-  async findLatestPricesByNames(priceNames: string[]): Promise<PriceDTO[]> {
-    if (!priceNames || priceNames.length === 0) {
-      return [];
-    }
-
-    const text = `
-      SELECT asset, time, price, source
-      FROM public.latest_prices
-      WHERE asset = ANY($1::text[]);
-    `;
-
-    try {
-      const result = await this.pool.query(text, [priceNames]);
-      return result.rows;
-    } catch (error) {
-      console.error(
-        `[SignalsRepository] Error fetching latest prices by names:`,
         error,
       );
       throw error;

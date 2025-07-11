@@ -13,9 +13,11 @@ dist/
 
 # SQL migrations
 sql-migration.sql
+sql-modifications.sql
 
 # coverage reports
 coverage/
 
 # log files
 *.log
+

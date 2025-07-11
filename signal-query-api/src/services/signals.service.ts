@@ -101,28 +101,4 @@ export class SignalsService {
 
     return signalsMap;
   }
-
-  /**
-   * Fetches the latest price signals (brent crude oil etc) for the dashboard.
-   */
-  async getLatestPricesByNames(
-    assets: string[],
-  ): Promise<Record<string, PriceDTO>> {
-    const signals = await this.repo.findLatestPricesByNames(assets);
-
-    const signalsMap: Record<string, PriceDTO> = {};
-    for (const signal of signals) {
-      signalsMap[signal.asset] = signal;
-    }
-
-    for (const requestedAsset of assets) {
-      if (!signalsMap[requestedAsset]) {
-        console.warn(
-          `[SignalsService] No latest value found for requested price: ${requestedAsset}`,
-        );
-      }
-    }
-
-    return signalsMap;
-  }
 }
