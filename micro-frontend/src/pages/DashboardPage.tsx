@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import { getOhlcData } from '../api/signalsApi';
 import type { OhlcData, Interval, IndicatorData } from '../types/OhlcData';
-import { useIndicatorsData } from '../hooks/useIndicatorsData'; // Use the renamed hook
+import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard } from '../components/MetricCard';
 import { useLatestPriceData } from '../hooks/useLatestPriceData';
 

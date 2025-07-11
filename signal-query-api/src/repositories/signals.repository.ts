@@ -52,12 +52,10 @@ export class SignalsRepository {
 
   public async getLatestIndicators(names?: string[]): Promise<IndicatorDto[]> {
     if (names && names.length > 0) {
-      // Your DB function doesn't support multiple names, so we query the view directly
       const text = `SELECT * FROM public.get_latest_indicators() WHERE name = ANY($1::text[]);`;
       const { rows } = await this.pool.query(text, [names]);
       return rows.map((row) => ({ ...row, value: parseFloat(row.value) }));
     }
-    // If no names are provided, get all latest indicators
     const { rows } = await this.pool.query(
       'SELECT * FROM public.get_latest_indicators();',
     );

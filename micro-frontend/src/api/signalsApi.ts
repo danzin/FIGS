@@ -15,7 +15,7 @@ export const getOhlcData = async (assetSymbol: string, interval: Interval): Prom
 export const getLatestIndicators = async (indicatorNames: string[]): Promise<Record<string, IndicatorData>> => {
 	const response = await apiClient.get<Record<string, IndicatorData>>("/indicators/latest", {
 		params: {
-			names: indicatorNames.join(","), // Join array into comma-separated string for URL param
+			names: indicatorNames.join(","),
 		},
 	});
 	return response.data;
