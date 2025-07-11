@@ -191,26 +191,39 @@ END;
 $function$;
 
 -- get_assets
-CREATE OR REPLACE FUNCTION public.get_assets()
-RETURNS TABLE(
-  symbol VARCHAR,
-  name   VARCHAR,
-  category VARCHAR,
-  latest_price      DECIMAL,
-  latest_price_time TIMESTAMPTZ,
-  is_active BOOLEAN
+CREATE OR REPLACE FUNCTION get_assets(
+    p_asset_symbol VARCHAR(20) DEFAULT NULL
+)
+RETURNS TABLE (
+    symbol VARCHAR(20),
+    name VARCHAR(100),
+    category VARCHAR(20),
+    latest_price DECIMAL(20,8),
+    latest_price_time TIMESTAMPTZ,
+    is_active BOOLEAN
 ) AS $$
 BEGIN
-  RETURN QUERY
-  SELECT a.symbol,a.name,a.category,md.value,md.time,a.is_active
-  FROM public.assets a
-  LEFT JOIN LATERAL (
-    SELECT value,time FROM public.market_data
-    WHERE asset_symbol=a.symbol AND "type"='price'
-    ORDER BY time DESC LIMIT 1
-  ) md ON true
-  WHERE a.is_active;
-END;$$ LANGUAGE plpgsql;
+    RETURN QUERY
+    SELECT 
+        a.symbol,
+        a.name,
+        a.category,
+        md.value AS latest_price,
+        md.time AS latest_price_time,
+        a.is_active
+    FROM public.assets a
+    LEFT JOIN LATERAL (
+        SELECT value, time
+        FROM public.market_data
+        WHERE asset_symbol = a.symbol AND type = 'price'
+        ORDER BY time DESC
+        LIMIT 1
+    ) md ON true
+    WHERE a.is_active = true
+        AND (p_asset_symbol IS NULL OR a.symbol = p_asset_symbol)
+    ORDER BY a.symbol;
+END;
+$$ LANGUAGE plpgsql;
 
 -- get_latest_indicators
 CREATE OR REPLACE FUNCTION get_latest_indicators(p_indicator_name VARCHAR(100) DEFAULT NULL)
