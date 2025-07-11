@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import { getOhlcData } from '../api/signalsApi';
-import type { OhlcData, Interval, Signal } from '../types/OhlcData';
-import { useSignalsData } from '../hooks/useSIgnalsData';
+import type { OhlcData, Interval, IndicatorData } from '../types/OhlcData';
+import { useIndicatorsData } from '../hooks/useIndicatorsData'; // Use the renamed hook
 import { MetricCard } from '../components/MetricCard';
 import { useLatestPriceData } from '../hooks/useLatestPriceData';
 
@@ -26,11 +26,11 @@ export const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { metrics, isLoading: metricsLoading, error: metricsError } = useSignalsData();
+const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
   const { prices, isLoading: pricesLoading, error: pricesError } = useLatestPriceData();
 
-  const isLoadingAssets   = metricsLoading || pricesLoading
-  const errorMessage = metricsError || pricesError
+  const isLoadingAssets   = indicatorsLoading || pricesLoading
+  const errorMessage = indicatorsError || pricesError
   
 
   useEffect(() => {
@@ -72,38 +72,38 @@ export const DashboardPage: React.FC = () => {
             ))
           ) : errorMessage ? (
             <div className="col-span-full bg-red-900/20 border border-red-800 p-4 rounded-2xl">
-              <p className="text-red-400 text-sm text-center">{metricsError}</p>
+              <p className="text-red-400 text-sm text-center">{indicatorsError}</p>
             </div>
           ) : (
             <>
               <MetricCard 
                 label="Fear&Greed Index" 
-                signal={metrics.fearGreed as Signal}
+                signal={indicators.fearGreed as IndicatorData}
                 precision={0}
               />
               <MetricCard 
                 label="VIX Level" 
-                signal={metrics.vix as Signal}
+                signal={indicators.vix as IndicatorData}
                 precision={2}
                 description='Volatility of the U.S. stock market'
               />
               <MetricCard 
                 label="BTC Dominance" 
-                signal={metrics.btcDominance as Signal}
+                signal={indicators.btcDominance as IndicatorData}
                 unit="%"
                 precision={1}
                 description='BTC.D'
               />
               <MetricCard 
                 label="Unemployment" 
-                signal={metrics.unemployment as Signal}
+                signal={indicators.unemployment as IndicatorData}
                 unit="%"
                 precision={1}
                 description='U.S. Unemployment Rate'
               />
               <MetricCard 
                 label="Crude Oil" 
-                signal={prices.brentCrudeOil as Signal}
+                signal={prices.brentCrudeOil as IndicatorData}
                 unit="$"
                 precision={2}
                 description='Brent Crude Oil Price'

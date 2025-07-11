@@ -25,7 +25,6 @@ export class AssetDto {
   is_active: boolean;
 }
 
-// For the `get_ohlc_data()` function result
 export class OhlcDataDto {
   timestamp: Date;
   open: number;
@@ -38,7 +37,7 @@ export class OhlcDataDto {
 // Query parameters for the OHLC endpoint
 export class GetOhlcQueryDto {
   @IsOptional()
-  @IsIn(['15m', '1h', '1d']) // The intervals your function supports
+  @IsIn(['15m', '1h', '1d'])
   interval?: '15m' | '1h' | '1d' = '1h';
 
   @IsOptional()
@@ -49,7 +48,6 @@ export class GetOhlcQueryDto {
   limit?: number = 1000;
 }
 
-// For the `get_latest_indicators()` function result
 export class IndicatorDto {
   name: string;
   value: number;
@@ -57,8 +55,8 @@ export class IndicatorDto {
   source: string;
 }
 
-// For the GET /indicators/latest?names=... endpoint
 export class GetLatestIndicatorsQueryDto {
+  @IsOptional()
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
@@ -66,5 +64,5 @@ export class GetLatestIndicatorsQueryDto {
   @Transform(({ value }) =>
     typeof value === 'string' ? value.split(',') : value,
   )
-  names: string[];
+  names?: string[];
 }

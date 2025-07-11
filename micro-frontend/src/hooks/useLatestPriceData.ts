@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { getLatestAssetPrice } from "../api/signalsApi";
-import type { Signal } from "../types/OhlcData";
+import { getLatestIndicators } from "../api/signalsApi";
+import type { IndicatorData } from "../types/OhlcData";
 
 interface PriceData {
-	brentCrudeOil: Signal | null;
+	brentCrudeOil: IndicatorData | null;
 }
 
 interface UsePriceDataReturn {
@@ -31,7 +31,7 @@ export const useLatestPriceData = (): UsePriceDataReturn => {
 	const fetchPriceData = async () => {
 		try {
 			setError(null);
-			const response = await getLatestAssetPrice(PRICE_SIGNAL_NAMES);
+			const response = await getLatestIndicators(PRICE_SIGNAL_NAMES);
 			setPrices({
 				brentCrudeOil: response["brent_crude_oil"] || null,
 			});

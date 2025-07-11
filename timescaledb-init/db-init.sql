@@ -213,17 +213,22 @@ BEGIN
 END;$$ LANGUAGE plpgsql;
 
 -- get_latest_indicators
-CREATE OR REPLACE FUNCTION public.get_latest_indicators(
-    p_indicator_name VARCHAR DEFAULT NULL
-)
-RETURNS TABLE(name VARCHAR,value DECIMAL,time TIMESTAMPTZ,source VARCHAR)
-AS $$
+CREATE OR REPLACE FUNCTION get_latest_indicators(p_indicator_name VARCHAR(100) DEFAULT NULL)
+RETURNS TABLE (
+    name VARCHAR(100),
+    value DECIMAL(20,8),
+    "timestamp" TIMESTAMPTZ,
+    source VARCHAR(50)
+) AS $$
 BEGIN
-  RETURN QUERY
-  SELECT DISTINCT ON (mi.name) mi.name,mi.value,mi.time,mi.source
-  FROM public.market_indicators mi
-  WHERE p_indicator_name IS NULL OR mi.name=p_indicator_name
-  ORDER BY mi.name,mi.time DESC;
-END;$$ LANGUAGE plpgsql;
-
-COMMIT;
+    RETURN QUERY
+    SELECT DISTINCT ON (mi.name)
+        mi.name,
+        mi.value,
+        mi.time as "timestamp", 
+        mi.source
+    FROM public.market_indicators mi
+    WHERE (p_indicator_name IS NULL OR mi.name = p_indicator_name)
+    ORDER BY mi.name, mi.time DESC;
+END;
+$$ LANGUAGE plpgsql;
