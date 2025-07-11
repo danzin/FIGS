@@ -16,165 +16,49 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-const VALID_GRANS = [
-  '1 minute',
-  '5 minutes',
-  '15 minutes',
-  '1 hour',
-  '1 day',
-  '1 week',
-  '1 month',
-];
-
-export class SignalDto {
-  @IsString()
-  @IsNotEmpty()
+export class AssetDto {
+  symbol: string;
   name: string;
-
-  @Type(() => Date) // Transform incoming string to Date
-  @IsDate()
-  time: Date; // In DB it's timestamptz, here it's Date
-
-  @IsNumber()
-  value: number;
-
-  @IsString()
-  @IsNotEmpty()
-  source: string;
+  category: string;
+  latest_price?: number;
+  latest_price_time?: Date;
+  is_active: boolean;
 }
 
-export class PriceDTO {
-  @IsString()
-  @IsNotEmpty()
-  asset: string;
-
-  @Type(() => Date) // Transform incoming string to Date
-  @IsDate()
-  time: Date; // In DB it's timestamptz, here it's Date
-
-  @IsNumber()
-  price: number;
-
-  @IsString()
-  @IsNotEmpty()
-  source: string;
-}
-export class IndicatorDTO {
-  @IsString()
-  @IsNotEmpty()
-  name: string; // e.g., 'fear_greed_index', 'vix_level'
-
-  @Type(() => Date) // Transform incoming string to Date
-  @IsDate()
-  time: Date; // In DB it's timestamptz, here it's Date
-
-  @IsNumber()
-  value: number;
-
-  @IsString()
-  @IsNotEmpty()
-  source: string;
+// For the `get_ohlc_data()` function result
+export class OhlcDataDto {
+  timestamp: Date;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number | null;
 }
 
-export class AssetDTO {
-  @IsString()
-  @IsNotEmpty()
-  symbol: string; // e.g., 'bitcoin', 'ethereum'
-
-  @IsString()
-  @IsNotEmpty()
-  name: string; // e.g., 'Bitcoin', 'Ethereum'
-
-  @IsString()
-  @IsNotEmpty()
-  category: string; // e.g., 'cryptocurrency', 'stock'
-}
-
-export class OhlcDto {
-  time: Date;
-  name: string;
-  open_price: number;
-  high_price: number;
-  low_price: number;
-  close_price: number;
-  total_volume: number;
-}
-
+// Query parameters for the OHLC endpoint
 export class GetOhlcQueryDto {
   @IsOptional()
-  @IsIn(['15m', '1h', '30m', '1d']) // Validate against the intervals the function supprots
-  interval?: '15m' | '1h' | '30m' | '1d';
-
-  @IsOptional()
-  @IsString()
-  source?: string;
+  @IsIn(['15m', '1h', '1d']) // The intervals your function supports
+  interval?: '15m' | '1h' | '1d' = '1h';
 
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(10000)
+  @Max(5000)
   limit?: number = 1000;
 }
 
-export class OhlcDataDto {
-  @Type(() => Date)
-  @IsDate()
-  timestamp: Date;
-
-  @IsNumber()
-  open: number;
-
-  @IsNumber()
-  high: number;
-
-  @IsNumber()
-  low: number;
-
-  @IsNumber()
-  close: number;
-
-  @IsNumber()
-  @IsOptional() // Volume might be null if no volume data was present in the bucket
-  volume?: number;
-}
-
-export class VwapDto {
-  time: Date;
+// For the `get_latest_indicators()` function result
+export class IndicatorDto {
   name: string;
-  vwap: number;
-  total_volume: number;
+  value: number;
+  time: Date;
+  source: string;
 }
 
-export class GetSignalsQueryDto {
-  @IsOptional()
-  @IsISO8601({}, { message: 'startTime must be a valid ISO8601 timestamp' })
-  startTime?: string;
-
-  @IsOptional()
-  @IsISO8601({}, { message: 'endTime must be a valid ISO8601 timestamp' })
-  endTime?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  @Max(1000)
-  limit?: number = 100; // Default value
-
-  @IsOptional()
-  @IsString()
-  @Matches(new RegExp(`^(${VALID_GRANS.join('|')})$`), {
-    message: `granularity must be one of ${VALID_GRANS.join(', ')}`,
-  })
-  granularity?: string;
-
-  @IsOptional()
-  @IsString()
-  source?: string;
-}
-
-export class GetLatestSignalsQueryDto {
+// For the GET /indicators/latest?names=... endpoint
+export class GetLatestIndicatorsQueryDto {
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
@@ -183,33 +67,4 @@ export class GetLatestSignalsQueryDto {
     typeof value === 'string' ? value.split(',') : value,
   )
   names: string[];
-}
-
-export class GetLatestPricesQueryDto {
-  @IsArray()
-  @ArrayNotEmpty()
-  @ArrayUnique()
-  @IsString({ each: true })
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.split(',') : value,
-  )
-  assets: string[];
-}
-
-export class GetDashboardDataQueryDto {
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.split(',') : value,
-  )
-  assets: string[]; // e.g., assets=bitcoin,spy,brent_crude_oil
-
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.split(',') : value,
-  )
-  indicators: string[]; // e.g., indicators=fear_greed_index,vix_level
 }

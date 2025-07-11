@@ -1,58 +1,37 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { SignalsService } from './../services/signals.service';
+import { Controller, Get, Param, Query, ValidationPipe } from '@nestjs/common';
+import { SignalsService } from '../services/signals.service';
 import {
-  GetDashboardDataQueryDto,
-  GetLatestPricesQueryDto,
-  GetLatestSignalsQueryDto,
+  AssetDto,
   GetOhlcQueryDto,
   OhlcDataDto,
-  PriceDTO,
-  SignalDto,
+  IndicatorDto,
+  GetLatestIndicatorsQueryDto,
 } from '../models/signal.dto';
 
 @Controller('v1')
 export class SignalsController {
   constructor(private readonly signalsService: SignalsService) {}
 
-  @Get('dashboard/latest')
-  async getDashboardData(@Query() queryParams: GetDashboardDataQueryDto) {
-    return this.signalsService.getLatestDashboardData(
-      queryParams.assets,
-      queryParams.indicators,
-    );
-  }
-
-  @Get('assets') // Returns a list of all available assets
-  async listAssets() {
+  @Get('assets')
+  async listAssets(): Promise<AssetDto[]> {
     return this.signalsService.listAssets();
   }
 
-  @Get('assets/:asset/ohlc')
+  @Get('assets/:symbol/ohlc')
   async getOhlc(
-    @Param('asset') asset: string,
-    @Query() queryParams: GetOhlcQueryDto,
+    @Param('symbol') symbol: string,
+    @Query(new ValidationPipe({ transform: true }))
+    queryParams: GetOhlcQueryDto,
   ): Promise<OhlcDataDto[]> {
-    console.log('Received query params:', queryParams);
-    return this.signalsService.getOhlcData(asset, queryParams);
+    return this.signalsService.getOhlcData(symbol, queryParams);
   }
 
-  @Get('assets/latest') // Latest asset prices
-  // Example request: /api/v1/assets/latest?assets=brent_crude_oil
-  async getLatestPrice(
-    @Query() queryParams: GetLatestPricesQueryDto,
-  ): Promise<Record<string, PriceDTO>> {
-    return this.signalsService.getLatestPricesByNames(queryParams.assets);
-  }
-
-  @Get('signals') // For general signals
-  async listGeneralSignals(): Promise<string[]> {
-    return this.signalsService.listGeneralSignals();
-  }
-
-  @Get('signals/latest') // Latest general signals
-  async getLatestSignals(
-    @Query() queryParams: GetLatestSignalsQueryDto,
-  ): Promise<Record<string, SignalDto>> {
-    return this.signalsService.getLatestSignalsByNames(queryParams.names);
+  @Get('indicators/latest')
+  async getLatestIndicators(
+    @Query(new ValidationPipe({ transform: true }))
+    queryParams: GetLatestIndicatorsQueryDto,
+  ): Promise<Record<string, IndicatorDto>> {
+    // The queryParams.names is optional now in the service
+    return this.signalsService.getLatestIndicators(queryParams?.names);
   }
 }
