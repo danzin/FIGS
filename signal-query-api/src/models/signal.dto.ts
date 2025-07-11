@@ -37,8 +37,8 @@ export class OhlcDataDto {
 // Query parameters for the OHLC endpoint
 export class GetOhlcQueryDto {
   @IsOptional()
-  @IsIn(['15m', '1h', '1d'])
-  interval?: '15m' | '1h' | '1d' = '1h';
+  @IsIn(['15m', '1h', '1d', '30m'])
+  interval?: '15m' | '1h' | '30m' | '1d' = '1h';
 
   @IsOptional()
   @Type(() => Number)
