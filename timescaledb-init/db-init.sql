@@ -41,6 +41,28 @@ CREATE TABLE IF NOT EXISTS public.market_indicators (
 SELECT create_hypertable('public.market_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('public.market_indicators', 'time', if_not_exists => TRUE);
 
+-- Upsert helper
+CREATE OR REPLACE FUNCTION public.upsert_asset_from_signal()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.assets(symbol,name)
+    VALUES (NEW.asset_symbol, NEW.asset_symbol)
+  ON CONFLICT(symbol) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Attach to the feeds
+CREATE TRIGGER trg_md_insert_upsert_asset
+  AFTER INSERT ON public.market_data
+  FOR EACH ROW
+  EXECUTE FUNCTION public.upsert_asset_from_signal();
+
+CREATE TRIGGER trg_ms_insert_upsert_asset
+  AFTER INSERT ON public.market_signals
+  FOR EACH ROW
+  EXECUTE FUNCTION public.upsert_asset_from_signal();
+
 -- ========================
 -- Indexes & constraints
 -- ========================
