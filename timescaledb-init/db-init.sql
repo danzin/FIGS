@@ -47,22 +47,19 @@ RETURNS TRIGGER AS $$
 DECLARE
   normalized_symbol TEXT := lower(NEW.asset_symbol);
 BEGIN
+  -- Ignore garbage
   IF normalized_symbol IS NULL OR length(trim(normalized_symbol)) < 2 THEN
     RETURN NEW;
   END IF;
 
-  INSERT INTO public.assets(symbol, name)
-  VALUES (normalized_symbol, normalized_symbol)
-  ON CONFLICT(symbol) DO NOTHING;
+  INSERT INTO public.assets(symbol, name, updated_at)
+  VALUES (normalized_symbol, normalized_symbol, NOW())
+  ON CONFLICT (symbol) DO UPDATE
+    SET updated_at = EXCLUDED.updated_at;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_md_insert_upsert_asset
-  AFTER INSERT ON public.market_data
-  FOR EACH ROW
-  EXECUTE FUNCTION public.upsert_asset_from_market_data();
 
 -- ========================
 -- Indexes & constraints
