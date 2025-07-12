@@ -59,7 +59,7 @@ CREATE TRIGGER trg_md_insert_upsert_asset
   EXECUTE FUNCTION public.upsert_asset_from_signal();
 
 CREATE TRIGGER trg_ms_insert_upsert_asset
-  AFTER INSERT ON public.market_signals
+  AFTER INSERT ON public.market_indicators
   FOR EACH ROW
   EXECUTE FUNCTION public.upsert_asset_from_signal();
 
