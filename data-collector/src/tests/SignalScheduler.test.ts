@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { SignalScheduler, ScheduledDataSource } from "../SignalScheduler";
-import { DataSource, IndicatorDataPoint, MarketDataPoint } from "@financialsignalsgatheringsystem/common";
+import { DataSource, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 
 // Mock node-cron
@@ -8,7 +8,6 @@ jest.mock("node-cron", () => ({
 	schedule: jest.fn().mockImplementation((cronExpression, func, options) => {
 		const mockTask = {
 			start: jest.fn(() => {
-				// store the scheduled callback
 				(mockTask as any)._scheduledFunc = func;
 			}),
 			stop: jest.fn(),
@@ -35,13 +34,12 @@ class MockDataSource implements DataSource<IndicatorDataPoint> {
 	}
 }
 
-// Mock MessageBroker
 const mockMessageBroker: MessageBroker = {
 	connect: jest.fn().mockResolvedValue(undefined),
 	publish: jest.fn().mockResolvedValue(undefined),
 	consume: jest.fn().mockResolvedValue("consumerTag"),
 	close: jest.fn().mockResolvedValue(undefined),
-	isConnected: jest.fn().mockReturnValue(true), // ← new method
+	isConnected: jest.fn().mockReturnValue(true),
 };
 
 describe("SignalScheduler Dynamic Registration", () => {
@@ -83,25 +81,20 @@ describe("SignalScheduler Dynamic Registration", () => {
 			consecutiveFailures: 0,
 		};
 
-		// register after start
 		scheduler.registerSource(dynamicConfig);
 
-		// health check + dynamic registration = 2 schedules
 		expect(cron.schedule).toHaveBeenCalledTimes(2);
 		expect(cron.schedule).toHaveBeenCalledWith(dynamicConfig.schedule, expect.any(Function), {
 			scheduled: false,
 			timezone: "UTC",
 		});
 
-		// the dynamic task should have been .start()ed once
 		expect(mockTask.start).toHaveBeenCalledTimes(1);
 
-		// fire the job manually
 		const jobFn = (mockTask as any)._scheduledFunc;
 		if (!jobFn) throw new Error("No scheduled function captured");
 		await jobFn();
 
-		// verify the fetch → publish flow
 		expect(dynamicSource.fetch).toHaveBeenCalledTimes(1);
 		expect(mockMessageBroker.publish).toHaveBeenCalledWith("signals", "", {
 			name: "mockSignal",
