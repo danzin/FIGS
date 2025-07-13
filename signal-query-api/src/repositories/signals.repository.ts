@@ -14,7 +14,7 @@ export class SignalsRepository {
 
   public async getCryptoAssets(): Promise<AssetDto[]> {
     const { rows } = await this.pool.query(
-      "'SELECT * FROM public.get_assets() WHERE category='crypto';",
+      "SELECT * FROM public.get_assets() WHERE category='crypto';",
     );
     return rows.map((row) => ({
       ...row,
