@@ -1,13 +1,13 @@
 import axios from "axios";
-import { DataSource } from "./Datasource";
-import { IndicatorDataPoint, MarketDataPoint } from "@financialsignalsgatheringsystem/common";
+import { DataSource } from "@financialsignalsgatheringsystem/common";
+import { IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 // TODO: I don't want crude oil, vix level and spy price to be part of the assets table,
 // nor do I want them to be in the market_data table.
 // These are to be treated as indicators, not assets, until I decide that's dumb and change my mind again for the n-th time.
 // Tomorrow i'm changing their types and assigning them to the market_indicators rabbit channel instead of the market_data channel.
 
-export class YahooFinanceSource implements DataSource {
+export class YahooFinanceSource implements DataSource<IndicatorDataPoint> {
 	public key: string;
 	private readonly symbol: string;
 	private readonly metric: "price" | "volume";
@@ -18,7 +18,7 @@ export class YahooFinanceSource implements DataSource {
 		this.key = `yahoo_${symbol}_${metric}`;
 	}
 
-	async fetch(): Promise<MarketDataPoint[] | null> {
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
 		try {
 			const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${this.symbol}`, {
 				params: {
@@ -114,8 +114,7 @@ export class YahooFinanceSource implements DataSource {
 			return [
 				{
 					time: timestamp,
-					asset_symbol: this.symbol,
-					type: this.metric,
+					name: this.symbol,
 					value,
 					source: "Yahoo Finance",
 				},
@@ -149,7 +148,7 @@ export class SPYSource extends YahooFinanceSource {
 	}
 }
 
-export class BrentCrudeOilSource implements DataSource {
+export class BrentCrudeOilSource implements DataSource<IndicatorDataPoint> {
 	public key: string;
 	private static readonly BRENT_SYMBOLS = ["BZ=F", "BZT=F", "^SGICBRB"];
 	private sources: YahooFinanceSource[];
@@ -161,7 +160,7 @@ export class BrentCrudeOilSource implements DataSource {
 		this.sources = BrentCrudeOilSource.BRENT_SYMBOLS.map((symbol) => new YahooFinanceSource(symbol, "price"));
 	}
 
-	async fetch(): Promise<MarketDataPoint[] | null> {
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
 		// Try each source in order starting with the last successful one
 		for (const source of this.sources) {
 			try {
@@ -170,8 +169,7 @@ export class BrentCrudeOilSource implements DataSource {
 					return [
 						{
 							time: result[0].time,
-							asset_symbol: "BZ",
-							type: "price",
+							name: this.key,
 							value: result[0].value,
 							source: result[0].source,
 						},

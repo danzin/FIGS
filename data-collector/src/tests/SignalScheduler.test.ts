@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { SignalScheduler, ScheduledDataSource } from "../SignalScheduler";
-import { DataSource } from "../datasources/Datasource";
+import { DataSource, IndicatorDataPoint, MarketDataPoint } from "@financialsignalsgatheringsystem/common";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 
 // Mock node-cron
@@ -18,24 +18,20 @@ jest.mock("node-cron", () => ({
 }));
 
 // Mock DataSource
-class MockDataSource implements DataSource {
+class MockDataSource implements DataSource<IndicatorDataPoint> {
 	key: string;
-	fetch: jest.Mock<
-		Promise<{
-			name: string;
-			time: Date;
-			value: number;
-			source: string;
-		}>
-	>;
+	fetch: jest.Mock<Promise<IndicatorDataPoint[]>>;
+
 	constructor(key: string) {
 		this.key = key;
-		this.fetch = jest.fn().mockResolvedValue({
-			name: "mockSignal",
-			timestamp: new Date(),
-			value: 123,
-			source: this.key,
-		});
+		this.fetch = jest.fn().mockResolvedValue([
+			{
+				name: "mockSignal",
+				time: new Date(),
+				value: 123,
+				source: this.key,
+			},
+		]);
 	}
 }
 

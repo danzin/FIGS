@@ -3,7 +3,7 @@ import { DataSource, IndicatorDataPoint } from "@financialsignalsgatheringsystem
 
 type IndicatorMetric = "btc_dominance" | "btc_volume";
 
-export class CoinGeckoIndicatorSource implements DataSource {
+export class CoinGeckoIndicatorSource implements DataSource<IndicatorDataPoint> {
 	public readonly key: string;
 	private readonly metric: IndicatorMetric;
 
@@ -12,9 +12,10 @@ export class CoinGeckoIndicatorSource implements DataSource {
 		this.key = `coingecko_${metric}`;
 	}
 
-	async fetch(): Promise<IndicatorDataPoint | null> {
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
 		if (this.metric === "btc_dominance") {
-			return this.fetchBitcoinDominance();
+			const point = await this.fetchBitcoinDominance();
+			return point ? [point] : null;
 		}
 		console.warn(`[CoinGeckoIndicatorSource] Metric '${this.metric}' is not supported.`);
 		return null;

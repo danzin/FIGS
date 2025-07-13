@@ -1,9 +1,9 @@
-import { DataSourceResult } from "../models/data";
+import { MarketDataPoint } from "../models/marketDataPoint";
+import { IndicatorDataPoint } from "../models/indicatorDataPoint";
 
-export interface DataSource {
-	// The unique key for the source instance (e.g., 'coingecko_bitcoin_price')
+// Constrain T so it’s either a MarketDataPoint or an IndicatorDataPoint
+export interface DataSource<T extends MarketDataPoint | IndicatorDataPoint> {
 	key: string;
-
-	// fetch() now returns the more specific union type
-	fetch(): Promise<DataSourceResult | null>;
+	// now returns an array of exactly T
+	fetch(): Promise<T[] | null>;
 }

@@ -1,9 +1,9 @@
 import cron from "node-cron";
-import { DataSource } from "./datasources/Datasource";
+import { DataSource } from "@financialsignalsgatheringsystem/common";
 import { MessageBroker, Signal, MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 export interface ScheduledDataSource {
-	source: DataSource;
+	source: DataSource<MarketDataPoint | IndicatorDataPoint>;
 	schedule: string; // cron expression
 	enabled: boolean;
 	priority: "high" | "medium" | "low";
@@ -13,9 +13,6 @@ export interface ScheduledDataSource {
 	lastSuccess?: Date;
 	consecutiveFailures: number;
 }
-
-// Union type for all possible data source return types
-type DataSourceResult = Signal | MarketDataPoint[] | IndicatorDataPoint | null;
 
 export class SignalScheduler {
 	private scheduledSources: Map<string, ScheduledDataSource> = new Map();
@@ -245,7 +242,10 @@ export class SignalScheduler {
 	 * Process and publish result based on its type
 	 * Returns the number of successfully published data points
 	 */
-	private async processAndPublishResult(result: DataSourceResult, sourceKey: string): Promise<number> {
+	private async processAndPublishResult(
+		result: (MarketDataPoint | IndicatorDataPoint)[],
+		sourceKey: string
+	): Promise<number> {
 		if (!result) {
 			console.warn(`[SignalScheduler] Null result from ${sourceKey}`);
 			return 0;
@@ -253,43 +253,26 @@ export class SignalScheduler {
 
 		let publishCount = 0;
 
-		// Handle MarketDataPoint array
-		if (Array.isArray(result)) {
-			console.log(`[SignalScheduler] Processing ${result.length} MarketDataPoint(s) from ${sourceKey}`);
-
-			for (const dataPoint of result) {
-				if (this.validateMarketDataPoint(dataPoint)) {
-					try {
-						await this.messageBroker.publish("market_data", "", dataPoint);
-						publishCount++;
-						console.log(
-							`[SignalScheduler] Published MarketDataPoint: ${dataPoint.asset_symbol} ${dataPoint.type} = ${dataPoint.value}`
-						);
-					} catch (error) {
-						console.error(`[SignalScheduler] Failed to publish MarketDataPoint:`, error);
-					}
-				} else {
-					console.warn(`[SignalScheduler] Invalid MarketDataPoint from ${sourceKey}:`, dataPoint);
+		for (const dp of result) {
+			if (this.isMarketDataPoint(dp)) {
+				if (!this.validateMarketDataPoint(dp)) {
+					console.warn(`[SignalScheduler] Invalid MarketDataPoint from ${sourceKey}:`, dp);
+					continue;
 				}
-			}
-		}
-		// Handle single IndicatorDataPoint
-		else if (this.isIndicatorDataPoint(result)) {
-			console.log(`[SignalScheduler] Processing IndicatorDataPoint from ${sourceKey}`);
-
-			if (this.validateIndicatorDataPoint(result)) {
-				try {
-					await this.messageBroker.publish("market_indicators", "", result);
-					publishCount++;
-					console.log(`[SignalScheduler] Published IndicatorDataPoint: ${result.name} = ${result.value}`);
-				} catch (error) {
-					console.error(`[SignalScheduler] Failed to publish IndicatorDataPoint:`, error);
+				await this.messageBroker.publish("market_data", "", dp);
+				publishCount++;
+				console.log(`[SignalScheduler] Published MarketDataPoint: ${dp.asset_symbol} ${dp.type} = ${dp.value}`);
+			} else if (this.isIndicatorDataPoint(dp)) {
+				if (!this.validateIndicatorDataPoint(dp)) {
+					console.warn(`[SignalScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, dp);
+					continue;
 				}
+				await this.messageBroker.publish("market_indicators", "", dp);
+				publishCount++;
+				console.log(`[SignalScheduler] Published IndicatorDataPoint: ${dp.name} = ${dp.value}`);
 			} else {
-				console.warn(`[SignalScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, result);
+				console.error(`[SignalScheduler] Unknown datapoint type from ${sourceKey}:`, dp);
 			}
-		} else {
-			console.error(`[SignalScheduler] Unknown result type from ${sourceKey}:`, typeof result, result);
 		}
 
 		return publishCount;
@@ -300,6 +283,16 @@ export class SignalScheduler {
 			obj &&
 			typeof obj.name === "string" &&
 			obj.time instanceof Date &&
+			typeof obj.value === "number" &&
+			typeof obj.source === "string"
+		);
+	}
+	private isMarketDataPoint(obj: any): obj is MarketDataPoint {
+		return (
+			obj &&
+			obj.time instanceof Date &&
+			typeof obj.asset_symbol === "string" &&
+			typeof obj.type === "string" &&
 			typeof obj.value === "number" &&
 			typeof obj.source === "string"
 		);

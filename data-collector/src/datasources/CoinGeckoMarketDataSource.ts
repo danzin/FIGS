@@ -1,7 +1,7 @@
 import axios from "axios";
 import { DataSource, MarketDataPoint } from "@financialsignalsgatheringsystem/common";
 
-export class CoinGeckoMarketDataSource implements DataSource {
+export class CoinGeckoMarketDataSource implements DataSource<MarketDataPoint> {
 	public readonly key: string;
 	private readonly coinGeckoId: string; // e.g., 'bitcoin', 'ethereum'
 
