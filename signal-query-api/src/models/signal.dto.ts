@@ -25,6 +25,10 @@ export class AssetDto {
   is_active: boolean;
 }
 
+export class AssetNameDto {
+  name: string;
+}
+
 export class OhlcDataDto {
   timestamp: Date;
   open: number;

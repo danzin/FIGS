@@ -6,6 +6,7 @@ import {
   OhlcDataDto,
   IndicatorDto,
   GetLatestIndicatorsQueryDto,
+  AssetNameDto,
 } from '../models/signal.dto';
 
 @Controller('v1')
@@ -13,8 +14,9 @@ export class SignalsController {
   constructor(private readonly signalsService: SignalsService) {}
 
   @Get('assets')
-  async listAssets(): Promise<AssetDto[]> {
-    return this.signalsService.listAssets();
+  async listAssets(): Promise<string[]> {
+    const assets = await this.signalsService.listAssetNames(); // returns [{ name: string }, …]
+    return assets.map((asset) => asset.name);
   }
 
   @Get('assets/:symbol/ohlc')

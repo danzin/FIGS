@@ -20,3 +20,9 @@ export const getLatestIndicators = async (indicatorNames: string[]): Promise<Rec
 	});
 	return response.data;
 };
+
+export const getAssetNames = async (): Promise<string[]> => {
+	const { data } = await apiClient.get<string[]>("/assets");
+	console.log("Asset names fetched:", data);
+	return data;
+};

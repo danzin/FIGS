@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
-import { getOhlcData } from '../api/signalsApi';
+import { getAssetNames, getOhlcData } from '../api/signalsApi';
 import type { OhlcData, Interval, IndicatorData } from '../types/OhlcData';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard } from '../components/MetricCard';
 import { useLatestPriceData } from '../hooks/useLatestPriceData';
 
-const supportedAssets = [
-  { label: 'Bitcoin', value: 'bitcoin' },
-  { label: 'Ethereum', value: 'ethereum' },
-  { label: 'Solana', value: 'solana' },
-];
+type AssetOption = {label: string, value: string}
 
 const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '15 Minutes', value: '15m' },
@@ -20,7 +16,8 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 ];
 
 export const DashboardPage: React.FC = () => {
-  const [selectedAsset, setSelectedAsset] = useState(supportedAssets[0].value);
+  const [assetOptions, setAssetOptions] = useState<AssetOption[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<string>('');
   const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
   const [chartData, setChartData] = useState<OhlcData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,6 +29,32 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
   const isLoadingAssets   = indicatorsLoading || pricesLoading
   const errorMessage = indicatorsError || pricesError
   
+
+
+  useEffect(() => {
+    const loadAssets = async () => {
+      try {
+        const names = await getAssetNames();        // e.g. ['Bitcoin','Ethereym'...]
+        // Map into label/value. Here we use the lowercase symbol as value:
+        const opts = names.map(name => ({
+          label: name,
+          value: name.toLowerCase().replace(/\s+/g, '-'),
+        }));
+        setAssetOptions(opts);
+
+        // Initialize selectedAsset to first option if none chosen yet
+        if (!selectedAsset && opts.length > 0) {
+          setSelectedAsset(opts[0].value);
+        }
+      } catch (err) {
+        console.error('Failed to load assets:', err);
+      }
+    };
+
+    loadAssets();
+  }, []);  // run once
+
+
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -129,7 +152,7 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
                           focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
                           hover:bg-gray-700 transition-colors"
             >
-              {supportedAssets.map(asset => (
+              {assetOptions.map(asset => (
                 <option key={asset.value} value={asset.value}>
                   {asset.label}
                 </option>

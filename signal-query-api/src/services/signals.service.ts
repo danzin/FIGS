@@ -5,14 +5,15 @@ import {
   GetOhlcQueryDto,
   OhlcDataDto,
   IndicatorDto,
+  AssetNameDto,
 } from '../models/signal.dto';
 
 @Injectable()
 export class SignalsService {
   constructor(private readonly repo: SignalsRepository) {}
 
-  async listAssets(): Promise<AssetDto[]> {
-    return this.repo.getCryptoAssets();
+  async listAssetNames(): Promise<AssetNameDto[]> {
+    return this.repo.listCryptoNames();
   }
 
   async getOhlcData(

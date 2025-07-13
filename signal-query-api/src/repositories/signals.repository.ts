@@ -6,20 +6,21 @@ import {
   GetOhlcQueryDto,
   OhlcDataDto,
   IndicatorDto,
+  AssetNameDto,
 } from '../models/signal.dto';
 
 @Injectable()
 export class SignalsRepository {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
 
-  public async getCryptoAssets(): Promise<AssetDto[]> {
-    const { rows } = await this.pool.query(
-      "SELECT * FROM public.get_assets() WHERE category='crypto';",
+  public async listCryptoNames(): Promise<AssetNameDto[]> {
+    const { rows } = await this.pool.query<AssetNameDto>(
+      `SELECT name
+     FROM public.get_assets()
+     WHERE category = 'crypto'
+     ORDER BY name;`,
     );
-    return rows.map((row) => ({
-      ...row,
-      latest_price: row.latest_price ? parseFloat(row.latest_price) : null,
-    }));
+    return rows;
   }
 
   public async getOhlcData(
