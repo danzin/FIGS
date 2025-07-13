@@ -12,9 +12,9 @@ import {
 export class SignalsRepository {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
 
-  public async getAssets(): Promise<AssetDto[]> {
+  public async getCryptoAssets(): Promise<AssetDto[]> {
     const { rows } = await this.pool.query(
-      'SELECT * FROM public.get_assets();',
+      "'SELECT * FROM public.get_assets() WHERE category='crypto';",
     );
     return rows.map((row) => ({
       ...row,

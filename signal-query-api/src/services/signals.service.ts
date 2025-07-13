@@ -12,7 +12,7 @@ export class SignalsService {
   constructor(private readonly repo: SignalsRepository) {}
 
   async listAssets(): Promise<AssetDto[]> {
-    return this.repo.getAssets();
+    return this.repo.getCryptoAssets();
   }
 
   async getOhlcData(
