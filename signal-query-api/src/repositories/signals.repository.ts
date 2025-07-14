@@ -58,6 +58,10 @@ export class SignalsRepository {
     }
   }
 
+  /**
+   * Fetches latest indicators from the database.
+   * If names are provided, filters indicators by names.
+   */
   public async getLatestIndicators(names?: string[]): Promise<IndicatorDto[]> {
     if (names && names.length > 0) {
       const text = `SELECT * FROM public.get_latest_indicators() WHERE name = ANY($1::text[]);`;

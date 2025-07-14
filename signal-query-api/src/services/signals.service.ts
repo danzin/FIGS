@@ -12,6 +12,9 @@ import {
 export class SignalsService {
   constructor(private readonly repo: SignalsRepository) {}
 
+  /**
+   * Gets the list of crypto asset names via repository.
+   */
   async listAssetNames(): Promise<AssetNameDto[]> {
     return this.repo.listCryptoNames();
   }
