@@ -19,6 +19,10 @@ export class SignalsService {
     return this.repo.listCryptoNames();
   }
 
+  /**
+   * Gets OHLC data for the given asset symbol and query params.
+   * Throws NotFoundException if no data is returned.
+   */
   async getOhlcData(
     assetSymbol: string,
     queryParams: GetOhlcQueryDto,
@@ -32,6 +36,10 @@ export class SignalsService {
     return data;
   }
 
+  /**
+   * Gets the latest indicators, optionally filtered by names.
+   * Returns indicators as a keyed object: { [indicatorName]: IndicatorDto }
+   */
   async getLatestIndicators(
     names?: string[],
   ): Promise<Record<string, IndicatorDto>> {
