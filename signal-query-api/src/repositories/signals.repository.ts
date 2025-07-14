@@ -13,6 +13,9 @@ import {
 export class SignalsRepository {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
 
+  /**
+   * Fetches all crypto asset names from the database.
+   */
   public async listCryptoNames(): Promise<AssetNameDto[]> {
     const { rows } = await this.pool.query<AssetNameDto>(
       `SELECT name
@@ -23,6 +26,10 @@ export class SignalsRepository {
     return rows;
   }
 
+  /**
+   * Fetches OHLC (Open, High, Low, Close) data for a given asset symbol and query params.
+   * Throws BadRequestException if invalid interval is passed.
+   */
   public async getOhlcData(
     assetSymbol: string,
     params: GetOhlcQueryDto,
