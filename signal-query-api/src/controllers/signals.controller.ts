@@ -13,12 +13,20 @@ import {
 export class SignalsController {
   constructor(private readonly signalsService: SignalsService) {}
 
+  /**
+   * GET /v1/assets
+   * Returns the list of available crypto asset names.
+   */
   @Get('assets')
   async listAssets(): Promise<string[]> {
     const assets = await this.signalsService.listAssetNames(); // returns [{ name: string }, …]
     return assets.map((asset) => asset.name);
   }
 
+  /**
+   * GET /v1/assets/:symbol/ohlc
+   * Returns OHLC data for the specified asset symbol and query parameters.
+   */
   @Get('assets/:symbol/ohlc')
   async getOhlc(
     @Param('symbol') symbol: string,
@@ -28,6 +36,11 @@ export class SignalsController {
     return this.signalsService.getOhlcData(symbol, queryParams);
   }
 
+  /**
+   * GET /v1/indicators/latest
+   * Returns latest indicator values.
+   * Can be optionally filtered by indicator names.
+   */
   @Get('indicators/latest')
   async getLatestIndicators(
     @Query(new ValidationPipe({ transform: true }))
