@@ -1,44 +1,28 @@
 import axios from "axios";
-import type { OhlcData, Signal, Interval, PriceDTO } from "../types/OhlcData";
+import type { OhlcData, Interval, IndicatorData } from "../types/OhlcData";
 
 const apiClient = axios.create({
 	baseURL: "/api/v1",
 });
 
-export const getOhlcData = async (baseName: string, interval: Interval): Promise<OhlcData[]> => {
-	const response = await apiClient.get<OhlcData[]>(`/assets/${baseName}/ohlc/`, {
+export const getOhlcData = async (assetSymbol: string, interval: Interval): Promise<OhlcData[]> => {
+	const response = await apiClient.get<OhlcData[]>(`/assets/${assetSymbol}/ohlc`, {
 		params: { interval },
 	});
 	return response.data;
 };
 
-//eg, request 'api/v1/signals/latest/?names=fear_greed_index,FRED_M2SL'
-export const getLatestMacroSignals = async (signalNames: string[]): Promise<Record<string, Signal>> => {
-	const response = await apiClient.get<Record<string, Signal>>("/signals/latest", {
+export const getLatestIndicators = async (indicatorNames: string[]): Promise<Record<string, IndicatorData>> => {
+	const response = await apiClient.get<Record<string, IndicatorData>>("/indicators/latest", {
 		params: {
-			names: signalNames.join(","),
+			names: indicatorNames.join(","),
 		},
 	});
 	return response.data;
 };
 
-export const getLatestAssetPrice = async (assetNames: string[]): Promise<Record<string, Signal>> => {
-	const response = await apiClient.get<Record<string, PriceDTO>>("/assets/latest", {
-		params: {
-			assets: assetNames.join(","),
-		},
-	});
-
-	// Transform PriceDTO to Signal format
-	const transformedData: Record<string, Signal> = {};
-	Object.entries(response.data).forEach(([key, priceData]) => {
-		transformedData[key] = {
-			name: priceData.asset,
-			time: priceData.time,
-			value: priceData.price, // price becomes value
-			source: priceData.source,
-		};
-	});
-
-	return transformedData;
+export const getAssetNames = async (): Promise<string[]> => {
+	const { data } = await apiClient.get<string[]>("/assets");
+	console.log("Asset names fetched:", data);
+	return data;
 };

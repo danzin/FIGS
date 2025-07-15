@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
-import { getOhlcData } from '../api/signalsApi';
-import type { OhlcData, Interval, Signal } from '../types/OhlcData';
-import { useSignalsData } from '../hooks/useSIgnalsData';
+import { getAssetNames, getOhlcData } from '../api/signalsApi';
+import type { OhlcData, Interval, IndicatorData } from '../types/OhlcData';
+import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard } from '../components/MetricCard';
 import { useLatestPriceData } from '../hooks/useLatestPriceData';
 
-const supportedAssets = [
-  { label: 'Bitcoin', value: 'coingecko_bitcoin' },
-  { label: 'Ethereum', value: 'coingecko_ethereum' },
-  { label: 'Solana', value: 'coingecko_solana' },
-];
+type AssetOption = {label: string, value: string}
 
 const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '15 Minutes', value: '15m' },
@@ -20,18 +16,45 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 ];
 
 export const DashboardPage: React.FC = () => {
-  const [selectedAsset, setSelectedAsset] = useState(supportedAssets[0].value);
+  const [assetOptions, setAssetOptions] = useState<AssetOption[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<string>('');
   const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
   const [chartData, setChartData] = useState<OhlcData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { metrics, isLoading: metricsLoading, error: metricsError } = useSignalsData();
+const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
   const { prices, isLoading: pricesLoading, error: pricesError } = useLatestPriceData();
 
-  const isLoadingAssets   = metricsLoading || pricesLoading
-  const errorMessage = metricsError || pricesError
+  const isLoadingAssets   = indicatorsLoading || pricesLoading
+  const errorMessage = indicatorsError || pricesError
   
+
+
+  useEffect(() => {
+    const loadAssets = async () => {
+      try {
+        const names = await getAssetNames();        // e.g. ['Bitcoin','Ethereym'...]
+        // Map into label/value. Here we use the lowercase symbol as value:
+        const opts = names.map(name => ({
+          label: name,
+          value: name.toLowerCase().replace(/\s+/g, '-'),
+        }));
+        setAssetOptions(opts);
+
+        // Initialize selectedAsset to first option if none chosen yet
+        if (!selectedAsset && opts.length > 0) {
+          setSelectedAsset(opts[0].value);
+        }
+      } catch (err) {
+        console.error('Failed to load assets:', err);
+      }
+    };
+
+    loadAssets();
+  }, []);  // run once
+
+
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -72,38 +95,38 @@ export const DashboardPage: React.FC = () => {
             ))
           ) : errorMessage ? (
             <div className="col-span-full bg-red-900/20 border border-red-800 p-4 rounded-2xl">
-              <p className="text-red-400 text-sm text-center">{metricsError}</p>
+              <p className="text-red-400 text-sm text-center">{indicatorsError}</p>
             </div>
           ) : (
             <>
               <MetricCard 
                 label="Fear&Greed Index" 
-                signal={metrics.fearGreed as Signal}
+                signal={indicators.fearGreed as IndicatorData}
                 precision={0}
               />
               <MetricCard 
                 label="VIX Level" 
-                signal={metrics.vix as Signal}
+                signal={indicators.vix as IndicatorData}
                 precision={2}
                 description='Volatility of the U.S. stock market'
               />
               <MetricCard 
                 label="BTC Dominance" 
-                signal={metrics.btcDominance as Signal}
+                signal={indicators.btcDominance as IndicatorData}
                 unit="%"
                 precision={1}
                 description='BTC.D'
               />
               <MetricCard 
                 label="Unemployment" 
-                signal={metrics.unemployment as Signal}
+                signal={indicators.unemployment as IndicatorData}
                 unit="%"
                 precision={1}
                 description='U.S. Unemployment Rate'
               />
               <MetricCard 
                 label="Crude Oil" 
-                signal={prices.brentCrudeOil as Signal}
+                signal={prices.brentCrudeOil as IndicatorData}
                 unit="$"
                 precision={2}
                 description='Brent Crude Oil Price'
@@ -129,7 +152,7 @@ export const DashboardPage: React.FC = () => {
                           focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
                           hover:bg-gray-700 transition-colors"
             >
-              {supportedAssets.map(asset => (
+              {assetOptions.map(asset => (
                 <option key={asset.value} value={asset.value}>
                   {asset.label}
                 </option>

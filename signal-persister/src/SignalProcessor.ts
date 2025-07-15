@@ -1,5 +1,6 @@
-import { RabbitMQService, Signal } from "@financialsignalsgatheringsystem/common";
+import { RabbitMQService } from "@financialsignalsgatheringsystem/common";
 import { TimescaleDBService } from "./services/TimescaleDBService";
+import { MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 export class SignalProcessor {
 	private rabbitMQService: RabbitMQService;
@@ -21,14 +22,10 @@ export class SignalProcessor {
 
 	public async start(): Promise<void> {
 		try {
-			await this.rabbitMQService.connect();
-			await this.dbService.connect(); // explicit connection test
-			console.log("[SignalProcessor] Services connected.");
-
 			await this.rabbitMQService.consume(
 				this.queueName,
 				this.exchangeName,
-				this.handleIncomingSignal.bind(this) // ensure 'this' context
+				this.handleIncomingMessage.bind(this) // ensure 'this' context
 			);
 			console.log("[SignalProcessor] Started consuming signals.");
 		} catch (error) {
@@ -37,23 +34,41 @@ export class SignalProcessor {
 		}
 	}
 
-	private async handleIncomingSignal(signal: Signal): Promise<void> {
+	private async handleIncomingMessage(payload: unknown): Promise<void> {
 		try {
-			console.log(`[SignalProcessor] Processing signal: ${signal.name}`);
+			// Handle both single objects and arrays
+			const messages = Array.isArray(payload) ? payload : [payload];
 
-			await this.dbService.insertSignal(signal);
-			console.log(`[SignalProcessor] Successfully processed and persisted signal: ${signal.name}`);
+			for (const message of messages) {
+				if (this.isMarketDataPoint(message)) {
+					await this.dbService.insertMarketData(message);
+				} else if (this.isIndicatorDataPoint(message)) {
+					await this.dbService.insertIndicator(message);
+				} else {
+					console.warn("[SignalProcessor] Unknown message type:", message);
+				}
+			}
 		} catch (error) {
-			console.error(`[SignalProcessor] Error handling signal ${signal.name}:`, error);
-			// Error is thrown by dbService, RabbitMQService's consumer will nack it.
-			throw error; // Re-throw to ensure message is nacked by RabbitMQService
+			console.error("[SignalProcessor] Error handling message:", error);
+			throw error;
 		}
+	}
+
+	private isMarketDataPoint(message: MarketDataPoint): message is MarketDataPoint {
+		return (
+			message && typeof message.asset_symbol === "string" && (message.type === "price" || message.type === "volume")
+		);
+	}
+
+	private isIndicatorDataPoint(message: IndicatorDataPoint): message is IndicatorDataPoint {
+		return (
+			message && typeof message.name === "string" && typeof message.value === "number" && !("asset_symbol" in message)
+		);
 	}
 
 	public async stop(): Promise<void> {
 		console.log("[SignalProcessor] Stopping...");
 		await this.rabbitMQService.close();
-		await this.dbService.disconnect();
 		console.log("[SignalProcessor] Stopped.");
 	}
 }
