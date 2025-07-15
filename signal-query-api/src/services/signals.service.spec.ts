@@ -57,18 +57,24 @@ describe('SignalsService', () => {
   describe('getLatestIndicators', () => {
     it('should return indicators mapped by name', async () => {
       const mockIndicators = [
-        { name: 'SMA', value: 100 },
-        { name: 'EMA', value: 200 },
+        { name: 'bitcoin_dominance', value: 60 },
+        { name: 'fear_greed', value: 60 },
       ];
       repo.getLatestIndicators.mockResolvedValueOnce(mockIndicators as any);
 
-      const result = await service.getLatestIndicators(['SMA', 'EMA']);
+      const result = await service.getLatestIndicators([
+        'bitcoin_dominance',
+        'fear_greed',
+      ]);
 
       expect(result).toEqual({
-        SMA: { name: 'SMA', value: 100 },
-        EMA: { name: 'EMA', value: 200 },
+        bitcoin_dominance: { name: 'bitcoin_dominance', value: 60 },
+        fear_greed: { name: 'fear_greed', value: 60 },
       });
-      expect(repo.getLatestIndicators).toHaveBeenCalledWith(['SMA', 'EMA']);
+      expect(repo.getLatestIndicators).toHaveBeenCalledWith([
+        'bitcoin_dominance',
+        'fear_greed',
+      ]);
     });
   });
 });
