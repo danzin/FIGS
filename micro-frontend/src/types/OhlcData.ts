@@ -10,7 +10,7 @@ export interface OhlcData {
 export interface IndicatorData {
 	name: string;
 	value: number;
-	time: string;
+	timestamp: string;
 	source: string;
 }
 
