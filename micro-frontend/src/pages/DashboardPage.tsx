@@ -61,32 +61,32 @@ console.log('indicatods', indicators);
             <>
               <MetricCard 
                 label="Fear&Greed Index" 
-                indicator={indicators['fear_greed_index'] as IndicatorData}
+                indicator={indicators.fearGreedIndex as IndicatorData}
                 precision={0}
               />
               <MetricCard 
                 label="VIX Level" 
-                indicator={indicators['^VIX'] as IndicatorData}
+                indicator={indicators.vix as IndicatorData}
                 precision={2}
                 description='Volatility of the U.S. stock market'
               />
               <MetricCard 
-                label="BTC Dominance" 
-                indicator={indicators['btc_dominance'] as IndicatorData}
+                label="BTC.D" 
+                indicator={indicators.btcDominance as IndicatorData}
                 unit="%"
                 precision={1}
-                description='BTC.D'
+                description='BTC Dominance'
               />
               <MetricCard 
                 label="Unemployment" 
-                indicator={indicators['FRED_UNRATE'] as IndicatorData}
+                indicator={indicators.fredUnrate as IndicatorData}
                 unit="%"
                 precision={1}
                 description='U.S. Unemployment Rate'
               />
               <MetricCard 
                 label="SPY" 
-                indicator={indicators['SPY'] as IndicatorData}
+                indicator={indicators.spy as IndicatorData}
                 unit="$"
                 precision={2}
                 description='SPDR S&P 500 ETF'

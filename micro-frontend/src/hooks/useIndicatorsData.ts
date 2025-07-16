@@ -4,6 +4,15 @@ import type { IndicatorData } from "../types/OhlcData";
 
 const INDICATORS_TO_FETCH = ["^VIX", "fear_greed_index", "btc_dominance", "FRED_UNRATE", "SPY"];
 
+function toCamel(s: string) {
+	return s
+		.replace(/[\^]/g, "") // drop funky chars
+		.toLowerCase()
+		.split(/[_\s-]+/)
+		.map((word, i) => (i === 0 ? word : word[0].toUpperCase() + word.slice(1)))
+		.join("");
+}
+
 export const useIndicatorsData = () => {
 	const [indicators, setIndicators] = useState<Record<string, IndicatorData>>({});
 	const [isLoading, setIsLoading] = useState(true);
@@ -13,7 +22,12 @@ export const useIndicatorsData = () => {
 		const fetchData = async () => {
 			try {
 				const data = await getLatestIndicators(INDICATORS_TO_FETCH);
-				setIndicators(data);
+				const normalized: Record<string, any> = {};
+				Object.entries(data).forEach(([key, val]) => {
+					normalized[toCamel(key)] = val;
+				});
+				console.log("Normalized indicators:", normalized);
+				setIndicators(normalized);
 			} catch (err: any) {
 				console.error("Failed to fetch indicators:", err);
 				setError("Could not load indicator data.");
