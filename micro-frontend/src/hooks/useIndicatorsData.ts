@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getLatestIndicators } from "../api/signalsApi";
 import type { IndicatorData } from "../types/OhlcData";
 
-const INDICATORS_TO_FETCH = ["^VIX", "fear_greed_index", "btc_dominance", "FRED_UNRATE", "FRED_M2SL"];
+const INDICATORS_TO_FETCH = ["^VIX", "fear_greed_index", "btc_dominance", "FRED_UNRATE", "SPY"];
 
 export const useIndicatorsData = () => {
 	const [indicators, setIndicators] = useState<Record<string, IndicatorData>>({});
@@ -13,7 +13,6 @@ export const useIndicatorsData = () => {
 		const fetchData = async () => {
 			try {
 				const data = await getLatestIndicators(INDICATORS_TO_FETCH);
-				console.log(`Indicators data:`, data);
 				setIndicators(data);
 			} catch (err: any) {
 				console.error("Failed to fetch indicators:", err);

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
-import { getAssetNames, getOhlcData } from '../api/signalsApi';
-import type { OhlcData, Interval, IndicatorData } from '../types/OhlcData';
+import type { Interval, IndicatorData } from '../types/OhlcData';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard } from '../components/MetricCard';
-
-type AssetOption = {label: string, value: string}
+import { useOhlcData } from '../hooks/useOhlcData';
+import { useAssetNames } from '../hooks/useAssetNames';
 
 const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '15 Minutes', value: '15m' },
@@ -15,58 +14,25 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 ];
 
 export const DashboardPage: React.FC = () => {
-  const [assetOptions, setAssetOptions] = useState<AssetOption[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<string>('');
-  const [interval, setInterval] = useState<Interval>(supportedIntervals[3].value);
-  const [chartData, setChartData] = useState<OhlcData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const { options: assetOptions, loading: assetsLoading } = useAssetNames();
+  const [selectedAsset, setSelectedAsset] = useState("");
+  const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
+
+  useEffect(() => {
+    if (!selectedAsset && assetOptions.length) {
+      setSelectedAsset(assetOptions[0].value);
+    }
+  }, [assetOptions]);
+
+  const {
+    data: chartData,
+    loading: chartLoading,
+    error: chartError,
+  } = useOhlcData(selectedAsset, interval);
 
 const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
-
-  useEffect(() => {
-    const loadAssets = async () => {
-      try {
-        const names = await getAssetNames();        // e.g. ['Bitcoin','Ethereym'...]
-        // Map into label/value. Here we use the lowercase symbol as value:
-        const opts = names.map(name => ({
-          label: name,
-          value: name.toLowerCase().replace(/\s+/g, '-'),
-        }));
-        setAssetOptions(opts);
-
-        // Initialize selectedAsset to first option if none chosen yet
-        if (!selectedAsset && opts.length > 0) {
-          setSelectedAsset(opts[0].value);
-        }
-      } catch (err) {
-        console.error('Failed to load assets:', err);
-      }
-    };
-
-    loadAssets();
-  }, []);  // run once
-
-
-
-  useEffect(() => {
-    const fetchChartData = async () => {
-      if (!selectedAsset) return;
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getOhlcData(selectedAsset, interval);
-        setChartData(data);
-      } catch (err) {
-        console.error("Failed to fetch chart data:", err);
-        setError("Failed to load chart data. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchChartData();
-  }, [selectedAsset, interval]); // Refetch data when selectedAsset changes
+console.log('indicatods', indicators);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 ">
@@ -95,35 +61,35 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
             <>
               <MetricCard 
                 label="Fear&Greed Index" 
-                indicator={indicators.fearGreed as IndicatorData}
+                indicator={indicators['fear_greed_index'] as IndicatorData}
                 precision={0}
               />
               <MetricCard 
                 label="VIX Level" 
-                indicator={indicators.vix as IndicatorData}
+                indicator={indicators['^VIX'] as IndicatorData}
                 precision={2}
                 description='Volatility of the U.S. stock market'
               />
               <MetricCard 
                 label="BTC Dominance" 
-                indicator={indicators.btcDominance as IndicatorData}
+                indicator={indicators['btc_dominance'] as IndicatorData}
                 unit="%"
                 precision={1}
                 description='BTC.D'
               />
               <MetricCard 
                 label="Unemployment" 
-                indicator={indicators.unemployment as IndicatorData}
+                indicator={indicators['FRED_UNRATE'] as IndicatorData}
                 unit="%"
                 precision={1}
                 description='U.S. Unemployment Rate'
               />
               <MetricCard 
-                label="Crude Oil" 
-                indicator={indicators.brentCrudeOil as IndicatorData}
+                label="SPY" 
+                indicator={indicators['SPY'] as IndicatorData}
                 unit="$"
                 precision={2}
-                description='Brent Crude Oil Price'
+                description='SPDR S&P 500 ETF'
               />
             </>
           )}
@@ -176,7 +142,7 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
 
           { /* Chart Container */}
           <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
-            {isLoading && (
+            {chartLoading && (
               <div className="flex items-center justify-center h-96">
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
@@ -185,15 +151,15 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
               </div>
             )}
             
-            {error && (
+            {chartError && (
               <div className="flex items-center justify-center h-96">
                 <p className="text-red-400 bg-red-900/20 px-4 py-2 rounded-lg border border-red-800">
-                  {error}
+                  {chartError}
                 </p>
               </div>
             )}
             
-            {!isLoading && !error && (
+            {!chartLoading && !chartError && (
               <div className="w-full h-[50vh] md:h-[600px]">
                 <FinancialChart data={chartData} />
               </div>
