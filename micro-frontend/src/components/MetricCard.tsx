@@ -1,9 +1,9 @@
 import React from 'react';
-import type { Signal } from '../types/OhlcData';
+import type { IndicatorData } from '../types/OhlcData';
 
 interface MetricCardProps {
   label: string;
-  signal?: Signal; 
+  indicator?: IndicatorData; 
   unit?: string;  
   precision?: number; 
   description?: string;
@@ -12,30 +12,31 @@ interface MetricCardProps {
 
 export const MetricCard: React.FC<MetricCardProps> = ({
   label,
-  signal,
+  indicator,
   unit = '',
   precision = 2,
   description: descriptionProp,
   gradient = '',
 }) => {
-  const displayValue = signal?.value !== undefined ? signal.value.toFixed(precision) : '--';
-  const displayTime = signal?.time ? new Date(signal.time).toLocaleTimeString() : '';
+  const displayValue = indicator?.value !== undefined ? indicator.value.toFixed(precision) : '--';
+  console.log(`Rendering MetricCard for ${label} with value: ${displayValue}`);
+  const displayTime = indicator?.timestamp ? new Date(indicator.timestamp).toLocaleTimeString() : '';
   let descriptionText: string | undefined = descriptionProp;
-  if (signal?.name === 'fear_greed_index' && signal.value !== undefined) {
+  if (indicator?.name === 'fear_greed_index' && indicator.value !== undefined) {
     switch (true) {
-      case signal.value < 20:
+      case indicator.value < 20:
       descriptionText = 'Extreme Fear';
       break;
-    case signal.value < 40:
+    case indicator.value < 40:
       descriptionText = 'Fear';
       break;
-    case signal.value < 60:
+    case indicator.value < 60:
       descriptionText = 'Neutral';
       break;
-    case signal.value < 80:
+    case indicator.value < 80:
       descriptionText = 'Greed';
       break;
-    case signal.value <= 100:
+    case indicator.value <= 100:
       descriptionText = 'Extreme Greed';
       break;
     default:

@@ -4,7 +4,6 @@ import { getAssetNames, getOhlcData } from '../api/signalsApi';
 import type { OhlcData, Interval, IndicatorData } from '../types/OhlcData';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard } from '../components/MetricCard';
-import { useLatestPriceData } from '../hooks/useLatestPriceData';
 
 type AssetOption = {label: string, value: string}
 
@@ -18,18 +17,12 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 export const DashboardPage: React.FC = () => {
   const [assetOptions, setAssetOptions] = useState<AssetOption[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<string>('');
-  const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
+  const [interval, setInterval] = useState<Interval>(supportedIntervals[3].value);
   const [chartData, setChartData] = useState<OhlcData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
 const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
-  const { prices, isLoading: pricesLoading, error: pricesError } = useLatestPriceData();
-
-  const isLoadingAssets   = indicatorsLoading || pricesLoading
-  const errorMessage = indicatorsError || pricesError
-  
-
 
   useEffect(() => {
     const loadAssets = async () => {
@@ -58,16 +51,17 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
 
   useEffect(() => {
     const fetchChartData = async () => {
+      if (!selectedAsset) return;
       setIsLoading(true);
       setError(null);
       try {
-          const data = await getOhlcData(selectedAsset, interval);
-          setChartData(data);
+        const data = await getOhlcData(selectedAsset, interval);
+        setChartData(data);
       } catch (err) {
-          console.error("Failed to fetch chart data:", err);
-          setError("Failed to load chart data. Please try again.");
+        console.error("Failed to fetch chart data:", err);
+        setError("Failed to load chart data. Please try again.");
       } finally {
-          setIsLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -86,14 +80,14 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
 
       {/* Metrics bar */}
         <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full sm:w-2/3">
-          {isLoadingAssets ? (
+          {indicatorsLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center animate-pulse">
                 <div className="h-3 bg-gray-600 rounded w-16 mb-2"></div>
                 <div className="h-6 bg-gray-600 rounded w-12"></div>
               </div>
             ))
-          ) : errorMessage ? (
+          ) : indicatorsError ? (
             <div className="col-span-full bg-red-900/20 border border-red-800 p-4 rounded-2xl">
               <p className="text-red-400 text-sm text-center">{indicatorsError}</p>
             </div>
@@ -101,32 +95,32 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
             <>
               <MetricCard 
                 label="Fear&Greed Index" 
-                signal={indicators.fearGreed as IndicatorData}
+                indicator={indicators.fearGreed as IndicatorData}
                 precision={0}
               />
               <MetricCard 
                 label="VIX Level" 
-                signal={indicators.vix as IndicatorData}
+                indicator={indicators.vix as IndicatorData}
                 precision={2}
                 description='Volatility of the U.S. stock market'
               />
               <MetricCard 
                 label="BTC Dominance" 
-                signal={indicators.btcDominance as IndicatorData}
+                indicator={indicators.btcDominance as IndicatorData}
                 unit="%"
                 precision={1}
                 description='BTC.D'
               />
               <MetricCard 
                 label="Unemployment" 
-                signal={indicators.unemployment as IndicatorData}
+                indicator={indicators.unemployment as IndicatorData}
                 unit="%"
                 precision={1}
                 description='U.S. Unemployment Rate'
               />
               <MetricCard 
                 label="Crude Oil" 
-                signal={prices.brentCrudeOil as IndicatorData}
+                indicator={indicators.brentCrudeOil as IndicatorData}
                 unit="$"
                 precision={2}
                 description='Brent Crude Oil Price'
