@@ -50,4 +50,3 @@ The full docker build:
 
 ![image](https://github.com/user-attachments/assets/5f744c97-ee1f-40d3-8e35-736cff4f061e)
 
-

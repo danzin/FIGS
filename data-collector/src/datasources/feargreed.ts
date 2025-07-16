@@ -1,11 +1,11 @@
 import axios from "axios";
-import { DataSource } from "./Datasource";
-import { Signal } from "@financialsignalsgatheringsystem/common";
+import { DataSource } from "@financialsignalsgatheringsystem/common";
+import { IndicatorDataPoint, Signal } from "@financialsignalsgatheringsystem/common";
 
-export class FearGreedSource implements DataSource {
+export class FearGreedSource implements DataSource<IndicatorDataPoint> {
 	public key = "fear_greed_index";
 
-	async fetch(): Promise<Signal | null> {
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
 		try {
 			const response = await axios.get("https://api.alternative.me/fng/", {
 				headers: {
@@ -21,24 +21,24 @@ export class FearGreedSource implements DataSource {
 			}
 
 			const value = parseInt(data.value);
-			const timestamp = new Date(parseInt(data.timestamp) * 1000);
+			const time = new Date(parseInt(data.timestamp) * 1000);
 
 			if (isNaN(value) || value < 0 || value > 100) {
 				console.warn(`Invalid Fear & Greed value: ${data.value}`);
 				return null;
 			}
 
-			if (isNaN(timestamp.getTime())) {
+			if (isNaN(time.getTime())) {
 				console.warn(`Invalid Fear & Greed timestamp: ${data.timestamp}`);
 				return null;
 			}
-
-			return {
+			const point: IndicatorDataPoint = {
 				name: this.key,
-				timestamp,
+				time,
 				value,
 				source: "Alternative.me",
 			};
+			return [point];
 		} catch (error) {
 			console.error("Error fetching Fear & Greed Index:", error);
 			if (axios.isAxiosError(error) && error.response?.status === 429) {

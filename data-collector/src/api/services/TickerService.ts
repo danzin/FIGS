@@ -1,5 +1,6 @@
 import { SchedulerConfigManager } from "../../SchedulerConfigManager";
-import { CoinGeckoSource } from "../../datasources/coingecko";
+import { CoinGeckoMarketDataSource } from "../../datasources/CoinGeckoMarketDataSource";
+import { CoinGeckoIndicatorSource } from "../../datasources/CoinGeckoIndicatorSource";
 import { AddTickerRequest, AddTickerResponse, TickerListResponse, ValidationResponse } from "../types/ticker.types";
 export class TickerService {
 	constructor(private schedulerManager: SchedulerConfigManager) {}
@@ -34,13 +35,10 @@ export class TickerService {
 
 		try {
 			// Create data source
-			const source = new CoinGeckoSource(request.coinId, request.metric);
-
-			// Test if the coin exists and returns data
-			console.log(`[TickerService] Testing ${request.coinId} ${request.metric}...`);
-			const testSignal = await source.fetch();
-
-			if (!testSignal) {
+			const marketDataSource = new CoinGeckoMarketDataSource(request.coinId);
+			console.log(`[TickerService] Testing market data for ${request.coinId}...`);
+			const testData = await marketDataSource.fetch();
+			if (!testData || testData.length === 0) {
 				return {
 					success: false,
 					error: `No data returned for ${request.coinId} with metric ${request.metric}`,
@@ -50,33 +48,42 @@ export class TickerService {
 
 			// Check if source already exists
 			const existingStatus = this.schedulerManager.getScheduler().getStatus();
-			if (existingStatus.some((s) => s.sourceKey === source.key)) {
+			if (existingStatus.some((s) => s.sourceKey === marketDataSource.key)) {
 				return {
 					success: false,
-					error: `Ticker ${source.key} already exists`,
+					error: `Ticker ${marketDataSource.key} already exists`,
 					message: "Duplicate ticker",
-					sourceKey: source.key,
+					sourceKey: marketDataSource.key,
 				};
 			}
 
 			// Add to scheduler with custom or default configuration
 			const schedule = request.schedule || "*/15 * * * *";
-			const priority = request.priority || "medium";
-			const maxRetries = request.maxRetries || 3;
-			const retryDelay = request.retryDelay || 60000;
+			const commonOptions = {
+				priority: request.priority || "medium",
+				maxRetries: request.maxRetries || 3,
+				retryDelay: request.retryDelay || 60000,
+			};
 
-			this.schedulerManager.addCustomSchedule(source, schedule, {
-				priority,
-				maxRetries,
-				retryDelay,
-			});
+			this.schedulerManager.addCustomSchedule(marketDataSource, schedule, commonOptions);
+			console.log(`[TickerService] Added market data source: ${marketDataSource.key} with schedule: ${schedule}`);
 
-			console.log(`[TickerService] Added ticker: ${source.key} with schedule: ${schedule}`);
+			if (request.coinId === "bitcoin") {
+				const dominanceSource = new CoinGeckoIndicatorSource("btc_dominance");
+				if (!existingStatus.some((s) => s.sourceKey === dominanceSource.key)) {
+					this.schedulerManager.addCustomSchedule(
+						dominanceSource,
+						"0 */2 * * *", // Dominance doesn't change fast, every 2 hours is fine
+						{ ...commonOptions, priority: "low" }
+					);
+					console.log(`[TickerService] Added indicator source: ${dominanceSource.key}`);
+				}
+			}
 
 			return {
 				success: true,
 				message: `Successfully added ticker for ${request.coinId} ${request.metric}`,
-				sourceKey: source.key,
+				sourceKey: marketDataSource.key,
 				schedule,
 			};
 		} catch (error) {
@@ -110,12 +117,27 @@ export class TickerService {
 
 	listTickers(): TickerListResponse {
 		const status = this.schedulerManager.getScheduler().getStatus();
-		const cryptoTickers = status.filter((s) => s.sourceKey.startsWith("coingecko_"));
 
+		// Group sources by asset symbol
+		const assets: Record<string, any[]> = {};
+		for (const s of status) {
+			let assetSymbol = s.sourceKey;
+			// A simple way to group by asset name
+			if (s.sourceKey.startsWith("coingecko_market_data_")) {
+				assetSymbol = s.sourceKey.replace("coingecko_market_data_", "");
+			} // Add more rules for other sources...
+
+			if (!assets[assetSymbol]) {
+				assets[assetSymbol] = [];
+			}
+			assets[assetSymbol].push(s);
+		}
+		const marketDataTickers = status.filter((s) => s.sourceKey.startsWith("coingecko_market_data_"));
 		return {
-			total: cryptoTickers.length,
-			tickers: cryptoTickers.map((ticker) => ({
+			total: marketDataTickers.length,
+			tickers: marketDataTickers.map((ticker) => ({
 				sourceKey: ticker.sourceKey,
+				asset: ticker.sourceKey.replace("coingecko_market_data_", ""),
 				enabled: ticker.enabled,
 				schedule: ticker.schedule,
 				lastSuccess: ticker.lastSuccess,
@@ -127,15 +149,15 @@ export class TickerService {
 
 	async validateCoin(coinId: string): Promise<ValidationResponse> {
 		try {
-			const testSource = new CoinGeckoSource(coinId, "price");
-			const signal = await testSource.fetch();
+			const testSource = new CoinGeckoMarketDataSource(coinId);
+			const dataPoints = await testSource.fetch();
 
-			if (signal) {
+			if (dataPoints && dataPoints.length > 0) {
 				return {
 					valid: true,
 					coinId,
 					message: `${coinId} is supported and returning data`,
-					sampleValue: signal.value,
+					sampleValue: dataPoints.find((p) => p.type === "price")?.value || 0,
 				};
 			} else {
 				return {

@@ -13,7 +13,7 @@ async function main() {
 	}
 
 	// Initialize services
-	const rabbitMQService = new RabbitMQService(config.RABBITMQ_URL);
+	const rabbit = new RabbitMQService(config.RABBITMQ_URL);
 	const timescaleDBService = new TimescaleDBService({
 		host: config.DB_HOST,
 		port: Number(config.DB_PORT),
@@ -22,30 +22,36 @@ async function main() {
 		database: config.DB_NAME,
 	});
 
-	// Create the SignalProcessor instance with the services and queue/exchange names
-	const signalProcessor = new SignalProcessor(
-		rabbitMQService,
-		timescaleDBService,
-		"signal_storage_queue", // Queue name
-		"signals" // Exchange name
-	);
+	await rabbit.connect();
+	await timescaleDBService.connect();
+
+	console.log("[SignalPersisterApp] Services connected, spinning up consumers…");
+
+	// Create the SignalProcessor instances with the services and queue/exchange names
+	const priceProc = new SignalProcessor(rabbit, timescaleDBService, "market_data_queue", "market_data");
+	const indicatorProc = new SignalProcessor(rabbit, timescaleDBService, "market_indicators_queue", "market_indicators");
 
 	try {
-		await signalProcessor.start();
-		console.log("[SignalPersisterApp] Signal Persister is running. To exit press CTRL+C");
+		await Promise.all([priceProc.start(), indicatorProc.start()]);
+		console.log("[SignalPersisterApp] All processors running – wait for data!");
 	} catch (error) {
 		console.error("[SignalPersisterApp] Failed to start application:", error);
-		await signalProcessor.stop().catch((err) => console.error("[SignalPersisterApp] Error during shutdown:", err));
+		await Promise.all([
+			priceProc.stop().catch((err) => console.error("[SignalPersisterApp] Error during shutdown:", err)),
+			indicatorProc.stop().catch((err) => console.error("[SignalPersisterApp] Error during shutdown:", err)),
+		]);
+		await timescaleDBService.disconnect();
 		process.exit(1);
 	}
 
 	// Graceful shutdown
 	const gracefulShutdown = async (signal: string) => {
 		console.log(`\n[SignalPersisterApp] Caught ${signal}, shutting down gracefully...`);
-		await signalProcessor
-			.stop()
-			.catch((err) => console.error("[SignalPersisterApp] Error during graceful shutdown:", err));
-		console.log("[SignalPersisterApp] Shutdown complete.");
+		await Promise.all([
+			priceProc.stop().catch((err) => console.error("[SignalPersisterApp] Error during graceful shutdown:", err)),
+			indicatorProc.stop().catch((err) => console.error("[SignalPersisterApp] Error during graceful shutdown:", err)),
+		]);
+		await timescaleDBService.disconnect();
 		process.exit(0);
 	};
 

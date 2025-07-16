@@ -1,11 +1,16 @@
 import axios from "axios";
-import { DataSource } from "./Datasource";
-import { Signal } from "@financialsignalsgatheringsystem/common";
+import { DataSource } from "@financialsignalsgatheringsystem/common";
+import { IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
-export class YahooFinanceSource implements DataSource {
+// TODO: I don't want crude oil, vix level and spy price to be part of the assets table,
+// nor do I want them to be in the market_data table.
+// These are to be treated as indicators, not assets, until I decide that's dumb and change my mind again for the n-th time.
+// Tomorrow i'm changing their types and assigning them to the market_indicators rabbit channel instead of the market_data channel.
+
+export class YahooFinanceSource implements DataSource<IndicatorDataPoint> {
 	public key: string;
 	private readonly symbol: string;
-	private readonly metric: string;
+	private readonly metric: "price" | "volume";
 
 	constructor(symbol: string, metric: "price" | "volume" = "price") {
 		this.symbol = symbol;
@@ -13,7 +18,7 @@ export class YahooFinanceSource implements DataSource {
 		this.key = `yahoo_${symbol}_${metric}`;
 	}
 
-	async fetch(): Promise<Signal | null> {
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
 		try {
 			const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${this.symbol}`, {
 				params: {
@@ -106,12 +111,14 @@ export class YahooFinanceSource implements DataSource {
 				`[YahooFinanceSource] Successfully fetched ${this.metric} for ${this.symbol}: ${value} at ${timestamp.toISOString()}`
 			);
 
-			return {
-				name: this.key,
-				timestamp,
-				value,
-				source: "Yahoo Finance",
-			};
+			return [
+				{
+					time: timestamp,
+					name: this.symbol,
+					value,
+					source: "Yahoo Finance",
+				},
+			];
 		} catch (error) {
 			console.error(`Error fetching ${this.symbol} ${this.metric} from Yahoo Finance:`, error);
 			if (axios.isAxiosError(error)) {
@@ -141,7 +148,7 @@ export class SPYSource extends YahooFinanceSource {
 	}
 }
 
-export class BrentCrudeOilSource implements DataSource {
+export class BrentCrudeOilSource implements DataSource<IndicatorDataPoint> {
 	public key: string;
 	private static readonly BRENT_SYMBOLS = ["BZ=F", "BZT=F", "^SGICBRB"];
 	private sources: YahooFinanceSource[];
@@ -149,35 +156,27 @@ export class BrentCrudeOilSource implements DataSource {
 
 	constructor() {
 		this.key = "brent_crude_oil_price";
-
 		// Separate source for each symbol
 		this.sources = BrentCrudeOilSource.BRENT_SYMBOLS.map((symbol) => new YahooFinanceSource(symbol, "price"));
 	}
 
-	async fetch(): Promise<Signal | null> {
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
 		// Try each source in order starting with the last successful one
-		for (let i = 0; i < this.sources.length; i++) {
-			const sourceIndex = (this.currentSourceIndex + i) % this.sources.length;
-			const source = this.sources[sourceIndex];
-			const symbol = BrentCrudeOilSource.BRENT_SYMBOLS[sourceIndex];
+		for (const source of this.sources) {
 			try {
-				console.log(`[BrentCrudeOilSource] Trying symbol: ${symbol}`);
 				const result = await source.fetch();
-
-				if (result) {
-					result.name = this.key;
-
-					if (sourceIndex !== this.currentSourceIndex) {
-						console.log(`[BrentCrudeOilSource] Successfully switched to symbol: ${symbol}`);
-						this.currentSourceIndex = sourceIndex;
-					}
-
-					return result;
-				} else {
-					console.warn(`[BrentCrudeOilSource] ${symbol} returned null result`);
+				if (result && result.length > 0) {
+					return [
+						{
+							time: result[0].time,
+							name: this.key,
+							value: result[0].value,
+							source: result[0].source,
+						},
+					];
 				}
 			} catch (error) {
-				console.warn(`[BrentCrudeOilSource] Failed to fetch from ${symbol}:`, error);
+				console.warn(`Failed to fetch from ${source.key}:`, error);
 			}
 		}
 		console.error(`[BrentCrudeOilSource] All Brent crude oil symbols failed`);

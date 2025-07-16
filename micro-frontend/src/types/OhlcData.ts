@@ -1,24 +1,17 @@
 export interface OhlcData {
-	timestamp: string; // The API sends the date as an ISO string
+	timestamp: string;
 	open: number;
 	high: number;
 	low: number;
 	close: number;
-	volume: number | null; // Volume can be null
+	volume: number | null;
 }
 
-export type Interval = "15m" | "30m" | "1h" | "1d";
-
-export interface Signal {
+export interface IndicatorData {
 	name: string;
-	time: string;
 	value: number;
+	timestamp: string;
 	source: string;
 }
 
-export interface PriceDTO {
-	asset: string;
-	time: string;
-	price: number;
-	source: string;
-}
+export type Interval = "15m" | "1h" | "1d" | "30m";
