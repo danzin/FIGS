@@ -32,7 +32,6 @@ export const DashboardPage: React.FC = () => {
   } = useOhlcData(selectedAsset, interval);
 
 const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
-console.log('indicatods', indicators);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 ">
