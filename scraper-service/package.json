@@ -1,0 +1,28 @@
+{
+  "name": "scraper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:scrape": "ts-node src/test-scraper.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@financialsignalsgatheringsystem/common": "^1.0.0",
+    "amqplib": "^0.10.8",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "node-cron": "^3.0.3",
+    "playwright": "^1.54.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node-cron": "^3.0.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

@@ -8,7 +8,8 @@
     "data-collector",
     "signal-persister",
     "signal-query-api",
-    "micro-frontend"
+    "micro-frontend",
+    "scraper-service"
   ],
   "scripts": {
     "build": "tsc --build --force tsconfig.json",
