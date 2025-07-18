@@ -4,7 +4,8 @@
     { "path": "./common" },
     { "path": "./data-collector" },
     { "path": "./signal-persister" },
-    { "path": "./signal-query-api" }
-   
+    { "path": "./signal-query-api" },
+    { "path": "./micro-frontend" },
+    { "path": "./scraper-service" } 
   ]
 }
