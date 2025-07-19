@@ -1,12 +1,10 @@
 import { Controller, Get, Param, Query, ValidationPipe } from '@nestjs/common';
 import { SignalsService } from '../services/signals.service';
 import {
-  AssetDto,
   GetOhlcQueryDto,
   OhlcDataDto,
   IndicatorDto,
   GetLatestIndicatorsQueryDto,
-  AssetNameDto,
 } from '../models/signal.dto';
 
 @Controller('v1')

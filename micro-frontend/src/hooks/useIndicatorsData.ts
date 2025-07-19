@@ -26,10 +26,8 @@ export const useIndicatorsData = () => {
 				Object.entries(data).forEach(([key, val]) => {
 					normalized[toCamel(key)] = val;
 				});
-				console.log("Normalized indicators:", normalized);
 				setIndicators(normalized);
 			} catch (err: any) {
-				console.error("Failed to fetch indicators:", err);
 				setError("Could not load indicator data.");
 			} finally {
 				setIsLoading(false);

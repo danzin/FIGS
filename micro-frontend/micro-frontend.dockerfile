@@ -4,18 +4,16 @@ WORKDIR /usr/src/app
 COPY package.json package-lock.json* ./
 COPY common/package.json ./common/
 COPY micro-frontend/package.json ./micro-frontend/
+COPY data-collector/package.json ./data-collector/
+COPY signal-persister/package.json ./signal-persister/
+COPY signal-query-api/package.json ./signal-query-api/
+COPY scraper-service/package.json ./scraper-service/
 
-WORKDIR /
-RUN npm --prefix /usr/src/app install 
+RUN npm ci
 
-WORKDIR /usr/src/app
-COPY common/ ./common/
-COPY micro-frontend/ ./micro-frontend/
+COPY . .
 
-
-# --- Build the frontend application ---
-WORKDIR /usr/src/app/micro-frontend
-RUN npm run build 
+RUN npm run build
 
 
 # ─── Stage 2: Serve ────────────────────────────────

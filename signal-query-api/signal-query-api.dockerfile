@@ -5,20 +5,19 @@ WORKDIR /usr/src/monorepo
 # 1. Copy ALL manifests and the single root lock file to leverage caching.
 COPY package.json package-lock.json* ./
 COPY common/package.json ./common/
+COPY micro-frontend/package.json ./micro-frontend/
 COPY data-collector/package.json ./data-collector/
 COPY signal-persister/package.json ./signal-persister/
 COPY signal-query-api/package.json ./signal-query-api/
+COPY scraper-service/package.json ./scraper-service/
 
-# 2. Install ALL dependencies from the root using the lock file.
 RUN npm ci
 
-# 3. Copy the rest of the source code and config files.
 COPY . .
 
-# 4. Build the entire monorepo.
-RUN npm run build
 
-# 5. Prune devDependencies to clean up node_modules for production.
+RUN npm run build
+# Prune devDependencies
 RUN npm prune --production
 
 
