@@ -11,7 +11,7 @@ COPY signal-persister/package.json ./signal-persister/
 COPY signal-query-api/package.json ./signal-query-api/
 COPY scraper-service/package.json ./scraper-service/
 
-# 2. Install *all* workspaces so the local "common" link is created
+# 2. Install ALL workspaces so the local "common" link is created
 RUN npm ci
 
 # 3. Copy the rest of the repo
