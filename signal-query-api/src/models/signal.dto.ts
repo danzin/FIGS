@@ -1,13 +1,9 @@
 import { Type } from 'class-transformer';
 import {
-  IsDate,
   IsIn,
-  IsISO8601,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
-  Matches,
   Max,
   Min,
   IsArray,
@@ -17,24 +13,24 @@ import {
 import { Transform } from 'class-transformer';
 
 export class AssetDto {
-  symbol: string;
-  name: string;
-  category: string;
+  symbol!: string;
+  name!: string;
+  category!: string;
   latest_price?: number;
   latest_price_time?: Date;
-  is_active: boolean;
+  is_active!: boolean;
 }
 
 export class AssetNameDto {
-  name: string;
+  name!: string;
 }
 
 export class OhlcDataDto {
-  timestamp: Date;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
+  timestamp!: Date;
+  open!: number;
+  high!: number;
+  low!: number;
+  close!: number;
   volume?: number | null;
 }
 
@@ -53,10 +49,10 @@ export class GetOhlcQueryDto {
 }
 
 export class IndicatorDto {
-  name: string;
-  value: number;
-  time: Date;
-  source: string;
+  name!: string;
+  value!: number;
+  time!: Date;
+  source!: string;
 }
 
 export class GetLatestIndicatorsQueryDto {
