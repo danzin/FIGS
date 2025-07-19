@@ -242,7 +242,7 @@ export class AppStoreRankScraper implements Scraper {
 				name: this.key,
 				time: new Date(),
 				value: rank,
-				source: `Applestore-${this.country.toUpperCase()}`,
+				source: `AppStore-${this.country.toUpperCase()}`,
 			};
 
 			return indicator;
