@@ -6,5 +6,5 @@ export type ScraperResult = IndicatorDataPoint | MarketDataPoint[] | null;
 export interface Scraper {
 	key: string;
 	// The main execution method
-	scrape(): Promise<ScraperResult>;
+	scrape(): Promise<IndicatorDataPoint | null>;
 }
