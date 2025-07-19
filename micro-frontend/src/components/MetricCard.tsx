@@ -16,7 +16,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   unit = '',
   precision = 2,
   description: descriptionProp,
-  gradient = '',
+
 }) => {
   const displayValue = indicator?.value !== undefined ? indicator.value.toFixed(precision) : '--';
   const displayTime = indicator?.timestamp ? new Date(indicator.timestamp).toLocaleTimeString() : '';

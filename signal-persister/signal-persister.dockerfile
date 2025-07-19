@@ -16,6 +16,8 @@ RUN npm ci
 COPY . .
 
 RUN npm run build
+# RUN npm run build -w @financialsignalsgatheringsystem/common
+# RUN npm run build -w signal-persister
 
 # Prune devDependencies 
 RUN npm prune --production

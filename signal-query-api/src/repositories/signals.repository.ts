@@ -2,7 +2,6 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_CONNECTION } from '../database/database.constants';
 import {
-  AssetDto,
   GetOhlcQueryDto,
   OhlcDataDto,
   IndicatorDto,
@@ -51,9 +50,14 @@ export class SignalsRepository {
         volume: row.volume ? parseFloat(row.volume) : null,
       }));
     } catch (error) {
-      if (error.message.includes('Invalid interval')) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('Invalid interval') ||
+          error.message.includes('Limit must be'))
+      ) {
         throw new BadRequestException(error.message);
       }
+
       throw error;
     }
   }

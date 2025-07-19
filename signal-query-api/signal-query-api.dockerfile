@@ -14,9 +14,11 @@ COPY scraper-service/package.json ./scraper-service/
 RUN npm ci
 
 COPY . .
-
-
 RUN npm run build
+
+# RUN npm run build -w @financialsignalsgatheringsystem/common
+# RUN npm run build -w signal-query-api
+
 # Prune devDependencies
 RUN npm prune --production
 

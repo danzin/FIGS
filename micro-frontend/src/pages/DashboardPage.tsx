@@ -15,7 +15,7 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 
 export const DashboardPage: React.FC = () => {
 
-  const { options: assetOptions, loading: assetsLoading } = useAssetNames();
+  const { options: assetOptions } = useAssetNames();
   const [selectedAsset, setSelectedAsset] = useState("");
   const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
 
