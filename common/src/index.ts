@@ -5,3 +5,4 @@ export * from "./datasources/datasources";
 export * from "./models/data";
 export * from "./models/indicatorDataPoint";
 export * from "./models/marketDataPoint";
+export * from "./scheduler/TaskScheduler";

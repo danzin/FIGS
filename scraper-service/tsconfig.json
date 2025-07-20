@@ -2,7 +2,6 @@
   "extends": "../tsconfig.base.json", //extends the root base tsconfig
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "lib": ["es2020", "dom"], // specify es2020 and dom libs in order to use all JavaScript features and DOM APIs
 
   },

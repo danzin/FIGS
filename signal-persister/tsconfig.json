@@ -1,12 +1,18 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2021",
     "module": "commonjs",
-    "rootDir": "src",        
+    "rootDir": "./src",
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "scripts"]    
+  "include": ["src/**/*", "scripts"],
+  // SUPER IMPORTANT FOR MONOREPO: Without this, TypeScript won't recognize the common library and will throw errrors when importing from it
+  // because it'll be looking for the local directory rather than the base tsconfig -> common library
+  "references": [
+    { "path": "../common" } // This tells TS compiler to be aware of the common project when building data-collector 
+  ] 
 }

@@ -26,7 +26,7 @@ async function test() {
 
 	try {
 		console.log(`--- Running Scraper Test for: ${scraper.key} ---`);
-		const result = await scraper.scrape();
+		const result = await scraper.fetch();
 
 		console.log("\nPublishing result...");
 		await mockPublishResult(result); // Call our corrected mock function

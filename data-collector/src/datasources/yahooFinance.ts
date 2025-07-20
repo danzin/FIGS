@@ -7,7 +7,7 @@ import { IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 // These are to be treated as indicators, not assets, until I decide that's dumb and change my mind again for the n-th time.
 // Tomorrow i'm changing their types and assigning them to the market_indicators rabbit channel instead of the market_data channel.
 
-export class YahooFinanceSource implements DataSource<IndicatorDataPoint> {
+export class YahooFinanceSource implements DataSource {
 	public key: string;
 	private readonly symbol: string;
 	private readonly metric: "price" | "volume";
@@ -148,7 +148,7 @@ export class SPYSource extends YahooFinanceSource {
 	}
 }
 
-export class BrentCrudeOilSource implements DataSource<IndicatorDataPoint> {
+export class BrentCrudeOilSource implements DataSource {
 	public key: string;
 	private static readonly BRENT_SYMBOLS = ["BZ=F", "BZT=F", "^SGICBRB"];
 	private sources: YahooFinanceSource[];

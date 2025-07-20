@@ -177,7 +177,7 @@ export class AppStoreRankScraper implements Scraper {
 		await new Promise((resolve) => setTimeout(resolve, delay));
 	}
 
-	async scrape(): Promise<MarketDataPoint[] | null> {
+	async fetch(): Promise<MarketDataPoint[] | null> {
 		console.log(`[AppStoreRankScraper] Scraping ${this.appName} from charts page…`);
 
 		const { browser, context } = await this.createStealthContext();
