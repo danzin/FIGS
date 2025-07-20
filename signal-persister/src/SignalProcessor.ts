@@ -40,30 +40,40 @@ export class SignalProcessor {
 			const messages = Array.isArray(payload) ? payload : [payload];
 
 			for (const message of messages) {
-				if (this.isMarketDataPoint(message)) {
-					await this.dbService.insertMarketData(message);
-				} else if (this.isIndicatorDataPoint(message)) {
-					await this.dbService.insertIndicator(message);
-				} else {
-					console.warn("[SignalProcessor] Unknown message type:", message);
+				const messageType = this.getDataPointType(message);
+				switch (messageType) {
+					case "MarketDataPoint":
+						await this.dbService.insertMarketData(message);
+						break;
+					case "IndicatorDataPoint":
+						await this.dbService.insertIndicator(message);
+						break;
+					case "Unknown":
+					default:
+						console.warn("[SignalProcessor] Unknown message type:", message);
+						break;
 				}
 			}
+			console.log("[SignalProcessor] Successfully processed messages:", messages.length);
 		} catch (error) {
 			console.error("[SignalProcessor] Error handling message:", error);
 			throw error;
 		}
 	}
 
-	private isMarketDataPoint(message: MarketDataPoint): message is MarketDataPoint {
-		return (
-			message && typeof message.asset_symbol === "string" && (message.type === "price" || message.type === "volume")
-		);
-	}
+	private getDataPointType(point: any): "MarketDataPoint" | "IndicatorDataPoint" | "Unknown" {
+		const hasAssetSymbol = "asset_symbol" in point && typeof point.asset_symbol === "string";
+		const hasName = "name" in point && typeof point.name === "string";
+		const hasTime = "time" in point && point.time instanceof Date;
+		const hasValue = "value" in point; // We don't care about the type of value here
 
-	private isIndicatorDataPoint(message: IndicatorDataPoint): message is IndicatorDataPoint {
-		return (
-			message && typeof message.name === "string" && typeof message.value === "number" && !("asset_symbol" in message)
-		);
+		if (hasAssetSymbol && hasTime && hasValue) {
+			return "MarketDataPoint";
+		}
+		if (hasName && hasTime && hasValue) {
+			return "IndicatorDataPoint";
+		}
+		return "Unknown";
 	}
 
 	public async stop(): Promise<void> {

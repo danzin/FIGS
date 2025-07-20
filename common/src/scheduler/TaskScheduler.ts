@@ -233,7 +233,7 @@ export class TaskScheduler {
 	 * Process and publish result based on its type
 	 * Returns the number of successfully published data points
 	 */
-	private async processAndPublishResult(result: TaskResult | TaskResult[] | null, sourceKey: string): Promise<number> {
+	private async processAndPublishResult(result: TaskResult, sourceKey: string): Promise<number> {
 		if (!result) {
 			console.warn(`[TaskScheduler] Null result from ${sourceKey}`);
 			return 0;
@@ -244,48 +244,49 @@ export class TaskScheduler {
 		let publishCount = 0;
 
 		for (const dp of dataPoints) {
-			if (this.isMarketDataPoint(dp)) {
-				if (!this.validateMarketDataPoint(dp)) {
-					console.warn(`[TaskScheduler] Invalid MarketDataPoint from ${sourceKey}:`, dp);
-					continue;
-				}
-				await this.messageBroker.publish("market_data", "", dp);
-				publishCount++;
-				console.log(`[TaskScheduler] Published MarketDataPoint: ${dp.asset_symbol} ${dp.type} = ${dp.value}`);
-			} else if (this.isIndicatorDataPoint(dp)) {
-				if (!this.validateIndicatorDataPoint(dp)) {
-					console.warn(`[TaskScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, dp);
-					continue;
-				}
-				await this.messageBroker.publish("market_indicators", "", dp);
-				publishCount++;
-				console.log(`[TaskScheduler] Published IndicatorDataPoint: ${dp.name} = ${dp.value}`);
-			} else {
-				console.error(`[TaskScheduler] Unknown datapoint type from ${sourceKey}:`, dp);
+			const pointType = this.getDataPointType(dp);
+			switch (pointType) {
+				case "MarketDataPoint":
+					if (this.validateMarketDataPoint(dp)) {
+						await this.messageBroker.publish("market_data", "", dp);
+						publishCount++;
+					} else {
+						console.warn(`[TaskScheduler] Invalid MarketDataPoint from ${sourceKey}:`, dp);
+					}
+					break;
+
+				case "IndicatorDataPoint":
+					if (this.validateIndicatorDataPoint(dp)) {
+						await this.messageBroker.publish("market_indicators", "", dp);
+						publishCount++;
+					} else {
+						console.warn(`[TaskScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, dp);
+					}
+					break;
+
+				case "Unknown":
+				default:
+					console.error(`[TaskScheduler] Unknown datapoint type from ${sourceKey}:`, dp);
+					break;
 			}
 		}
 
 		return publishCount;
 	}
 
-	private isIndicatorDataPoint(obj: any): obj is IndicatorDataPoint {
-		return (
-			obj &&
-			typeof obj.name === "string" &&
-			obj.time instanceof Date &&
-			(typeof obj.value === "number" || null) &&
-			typeof obj.source === "string"
-		);
-	}
-	private isMarketDataPoint(obj: any): obj is MarketDataPoint {
-		return (
-			obj &&
-			obj.time instanceof Date &&
-			typeof obj.asset_symbol === "string" &&
-			typeof obj.type === "string" &&
-			typeof obj.value === "number" &&
-			typeof obj.source === "string"
-		);
+	private getDataPointType(point: any): "MarketDataPoint" | "IndicatorDataPoint" | "Unknown" {
+		const hasAssetSymbol = "asset_symbol" in point && typeof point.asset_symbol === "string";
+		const hasName = "name" in point && typeof point.name === "string";
+		const hasTime = "time" in point && point.time instanceof Date;
+		const hasValue = "value" in point; // We don't care about the type of value here
+
+		if (hasAssetSymbol && hasTime && hasValue) {
+			return "MarketDataPoint";
+		}
+		if (hasName && hasTime && hasValue) {
+			return "IndicatorDataPoint";
+		}
+		return "Unknown";
 	}
 
 	// Validation functions
