@@ -12,14 +12,14 @@ export class ScraperConfigManager {
 		// Your scraper scheduling logic from index.ts moves here
 		this.scheduler.registerSource({
 			source: new AppStoreRankScraper("coinbase", "Coinbase: Buy BTC, ETH, SOL", "us"),
-			schedule: "0 8 * * *", // Daily at 8 AM UTC
+			schedule: "0 */5 * * *", // Once every 5 hours
 			enabled: true,
 			priority: "medium",
 			maxRetries: 3, // Scrapers are fragile, more retries
 			retryDelay: 15 * 60 * 1000, // 15-minute retry delay
 			consecutiveFailures: 0,
 		});
-		// ... schedule Binance scraper, etc.
+		// ... schedule Binance scraper later, etc.
 	}
 
 	public getScheduler(): TaskScheduler {

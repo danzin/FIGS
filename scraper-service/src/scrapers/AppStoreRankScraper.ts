@@ -112,7 +112,7 @@ export class AppStoreRankScraper implements Scraper {
 		// Launch browser with comprehensive stealth flags
 		// Each flag serves a specific purpose in avoiding detection
 		const browser = await chromium.launch({
-			headless: false, // TODO: Set to true in production
+			headless: true, // TODO: Set to true in production
 			args: [
 				"--no-sandbox",
 				"--disable-setuid-sandbox",
@@ -229,7 +229,7 @@ export class AppStoreRankScraper implements Scraper {
 
 			if (rank === null) {
 				console.warn(
-					`[AppStoreRankScraper] Could not find "${this.appDisplayName}" in 'Top 100 Free Apps' charts. App may not be in top 200 or name may not match exactly.`
+					`[AppStoreRankScraper] Could not find "${this.appDisplayName}" in 'Top 100 Free Apps' charts. Coinbase is NOT in the Top 100!.`
 				);
 
 				return null;

@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "lib": ["es2020", "dom"], // specify es2020 and dom libs in order to use all JavaScript features and DOM APIs
-
+    "rootDir": "./src", // set the root directory for the project
   },
     "include": [
     "src/**/*" 
