@@ -5,5 +5,5 @@ export type ScraperResult = IndicatorDataPoint | MarketDataPoint[] | null;
 export interface Scraper {
 	key: string;
 	// The main execution method
-	fetch(): Promise<MarketDataPoint[] | null>;
+	fetch(): Promise<IndicatorDataPoint | null>;
 }

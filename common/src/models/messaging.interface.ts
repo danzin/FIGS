@@ -13,7 +13,7 @@ export interface MessageBroker {
 	 * Publish a message to an exchange
 	 * @param exchangeName - Name of the exchange to publish to
 	 * @param routingKey - Routing key for the message (empty string for fanout exchanges)
-	 * @param message - The message to publish (Signal, MarketDataPoint, or IndicatorDataPoint)
+	 * @param message - The message to publish ( MarketDataPoint, or IndicatorDataPoint)
 	 * @param options - Additional publish options
 	 */
 	publish(
@@ -25,7 +25,7 @@ export interface MessageBroker {
 
 	/**
 	 * Consume messages from a queue
-	 * Note: Currently only supports Signal consumption for backward compatibility
+	 * Note: Currently only supports consumption for backward compatibility
 	 * @param queueName - Name of the queue to consume from
 	 * @param exchangeName - Name of the exchange to bind the queue to
 	 * @param onMessageCallback - Callback function to handle incoming messages

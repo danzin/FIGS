@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS public.market_data (
 CREATE TABLE IF NOT EXISTS public.market_indicators (
     time          TIMESTAMPTZ NOT NULL,
     name          VARCHAR(100) NOT NULL,
-    value         DECIMAL(20,8) NOT NULL,
+    value         DECIMAL(20,8),
     source        VARCHAR(50) NOT NULL,
     created_at    TIMESTAMPTZ DEFAULT NOW()
 );

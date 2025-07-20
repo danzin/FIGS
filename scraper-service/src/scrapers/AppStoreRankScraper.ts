@@ -1,6 +1,6 @@
-import { chromium, Page, BrowserContext } from "playwright";
-import { Scraper, ScraperResult } from "../models/Scraper.interface";
-import { IndicatorDataPoint, MarketDataPoint } from "@financialsignalsgatheringsystem/common";
+import { chromium, Page } from "playwright";
+import { Scraper } from "../models/Scraper.interface";
+import { IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 export class AppStoreRankScraper implements Scraper {
 	public readonly key: string;
@@ -177,7 +177,7 @@ export class AppStoreRankScraper implements Scraper {
 		await new Promise((resolve) => setTimeout(resolve, delay));
 	}
 
-	async fetch(): Promise<MarketDataPoint[] | null> {
+	async fetch(): Promise<IndicatorDataPoint | null> {
 		console.log(`[AppStoreRankScraper] Scraping ${this.appName} from charts page…`);
 
 		const { browser, context } = await this.createStealthContext();
@@ -227,12 +227,17 @@ export class AppStoreRankScraper implements Scraper {
 				return null;
 			}, this.appDisplayName);
 
+			let finalRank: number | null; // Use a variable to hold the final value
+
 			if (rank === null) {
 				console.warn(
 					`[AppStoreRankScraper] Could not find "${this.appDisplayName}" in 'Top 100 Free Apps' charts. Coinbase is NOT in the Top 100!.`
 				);
 
-				return null;
+				finalRank = null;
+			} else {
+				console.log(`[AppStoreRankScraper] Found "${this.appDisplayName}" at rank #${rank} in Finance charts`);
+				finalRank = rank;
 			}
 
 			console.log(
@@ -240,33 +245,21 @@ export class AppStoreRankScraper implements Scraper {
 			);
 
 			// Return structured data point
-			const indicator: MarketDataPoint = {
-				asset_symbol: this.appName,
-				type: "rank",
+			const indicator: IndicatorDataPoint = {
+				name: this.key, // The unique name for this indicator
 				time: new Date(),
-				value: rank,
-				source: `AppStore-${this.country.toUpperCase()}`,
+				value: finalRank, // The value can be a number or null
+				source: `AppleAppStore-${this.country.toUpperCase()}`,
 			};
 
-			return [indicator];
+			return indicator;
 		} catch (error) {
 			console.error(`[AppStoreRankScraper] Error scraping "${this.appName}":`, error);
-
-			// Debug screenshot on error
-			if (process.env.NODE_ENV === "development") {
-				try {
-					await page.screenshot({
-						path: `error_charts_${this.appName}_${Date.now()}.png`,
-						fullPage: true,
-					});
-				} catch (screenshotError) {
-					console.warn("Could not take debug screenshot:", screenshotError);
-				}
-			}
-
 			throw error;
 		} finally {
-			await browser.close();
+			if (browser) {
+				await browser.close();
+			}
 		}
 	}
 }
