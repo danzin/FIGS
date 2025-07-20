@@ -56,6 +56,13 @@ export class TaskScheduler {
 			console.warn("[SignalScheduler] Scheduler is already running");
 			return;
 		}
+		for (const [key, cfg] of this.scheduledSources) {
+			if (!cfg.enabled) continue;
+			this.scheduleSource(key, cfg);
+
+			// KICK IT OFF NOW
+			this.triggerSource(key).catch((err) => console.error(`[TaskScheduler] Startup trigger failed for ${key}:`, err));
+		}
 
 		console.log("[SignalScheduler] Starting scheduler...");
 		this.isRunning = true;

@@ -122,6 +122,22 @@ services:
         limits:
           cpus: '0.2'
           memory: 128M
+  scraper-service:
+    build:
+      context: .
+      dockerfile: ./scraper-service/scraper-service.dockerfile
+    container_name: scraper-service
+    env_file:
+      - ./scraper-service/.env 
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+    # Scraping can be memory intensive. It's good practice to set a limit.
+    mem_limit: 4gb
+    # Playwright needs a large shared memory size to run Chromium.
+    shm_size: '2gb'
+
           
 volumes: 
   timescaledb_data:
