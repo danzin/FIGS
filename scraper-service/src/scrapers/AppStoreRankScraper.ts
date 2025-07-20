@@ -1,6 +1,6 @@
 import { chromium, Page, BrowserContext } from "playwright";
 import { Scraper, ScraperResult } from "../models/Scraper.interface";
-import { IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
+import { IndicatorDataPoint, MarketDataPoint } from "@financialsignalsgatheringsystem/common";
 
 export class AppStoreRankScraper implements Scraper {
 	public readonly key: string;
@@ -112,7 +112,7 @@ export class AppStoreRankScraper implements Scraper {
 		// Launch browser with comprehensive stealth flags
 		// Each flag serves a specific purpose in avoiding detection
 		const browser = await chromium.launch({
-			headless: false, // TODO: Set to true in production
+			headless: true, // TODO: Set to true in production
 			args: [
 				"--no-sandbox",
 				"--disable-setuid-sandbox",
@@ -177,7 +177,7 @@ export class AppStoreRankScraper implements Scraper {
 		await new Promise((resolve) => setTimeout(resolve, delay));
 	}
 
-	async scrape(): Promise<IndicatorDataPoint | null> {
+	async fetch(): Promise<MarketDataPoint[] | null> {
 		console.log(`[AppStoreRankScraper] Scraping ${this.appName} from charts page…`);
 
 		const { browser, context } = await this.createStealthContext();
@@ -214,7 +214,7 @@ export class AppStoreRankScraper implements Scraper {
 						// Get the rank from the same lockup element
 						const rankElement = lockup.querySelector(".we-lockup__rank");
 						const rankText = rankElement?.textContent?.trim();
-
+						console.log(`Found app: "${title}" with rank text: "${rankText}"`);
 						if (rankText) {
 							const rankNumber = parseInt(rankText, 10);
 							if (!isNaN(rankNumber)) {
@@ -229,23 +229,26 @@ export class AppStoreRankScraper implements Scraper {
 
 			if (rank === null) {
 				console.warn(
-					`[AppStoreRankScraper] Could not find "${this.appDisplayName}" in Finance top charts. App may not be in top 200 or name may not match exactly.`
+					`[AppStoreRankScraper] Could not find "${this.appDisplayName}" in 'Top 100 Free Apps' charts. Coinbase is NOT in the Top 100!.`
 				);
 
 				return null;
 			}
 
-			console.log(`[AppStoreRankScraper] Found "${this.appDisplayName}" at rank #${rank} in Finance charts`);
+			console.log(
+				`[AppStoreRankScraper] Found "${this.appDisplayName}" at rank #${rank} in 'Top 100 Free Apps' charts`
+			);
 
 			// Return structured data point
-			const indicator: IndicatorDataPoint = {
-				name: this.key,
+			const indicator: MarketDataPoint = {
+				asset_symbol: this.appName,
+				type: "rank",
 				time: new Date(),
 				value: rank,
 				source: `AppStore-${this.country.toUpperCase()}`,
 			};
 
-			return indicator;
+			return [indicator];
 		} catch (error) {
 			console.error(`[AppStoreRankScraper] Error scraping "${this.appName}":`, error);
 

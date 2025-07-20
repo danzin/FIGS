@@ -1,6 +1,10 @@
 import cron from "node-cron";
-import { SignalScheduler, ScheduledDataSource } from "../SignalScheduler";
-import { DataSource, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
+import {
+	DataSource,
+	IndicatorDataPoint,
+	TaskScheduler,
+	ScheduledDataSource,
+} from "@financialsignalsgatheringsystem/common";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 
 // Mock node-cron
@@ -17,7 +21,7 @@ jest.mock("node-cron", () => ({
 }));
 
 // Mock DataSource
-class MockDataSource implements DataSource<IndicatorDataPoint> {
+class MockDataSource implements DataSource {
 	key: string;
 	fetch: jest.Mock<Promise<IndicatorDataPoint[]>>;
 
@@ -43,12 +47,12 @@ const mockMessageBroker: MessageBroker = {
 };
 
 describe("SignalScheduler Dynamic Registration", () => {
-	let scheduler: SignalScheduler;
+	let scheduler: TaskScheduler;
 	let mockTask: cron.ScheduledTask;
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		scheduler = new SignalScheduler(mockMessageBroker);
+		scheduler = new TaskScheduler(mockMessageBroker);
 
 		// Capture the mock task for each schedule() call
 		(cron.schedule as jest.Mock).mockImplementation((cronExpr, fn, opts) => {

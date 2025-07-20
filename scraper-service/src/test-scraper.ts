@@ -1,32 +1,39 @@
+import { ScraperResult } from "./models/Scraper.interface";
 import { AppStoreRankScraper } from "./scrapers/AppStoreRankScraper";
 // A mock message broker that just logs to console
-const mockBroker = {
-	publish: async (exchange: string, key: string, msg: any) => {
-		console.log(`MOCK PUBLISH to ${exchange}:`, msg);
-	},
-} as any;
+async function mockPublishResult(result: ScraperResult): Promise<void> {
+	if (!result) {
+		console.log("MOCK PUBLISH: Received null, nothing to publish.");
+		return;
+	}
+
+	const dataPoints = Array.isArray(result) ? result : [result];
+	console.log("\n--- MOCK PUBLISH ---");
+	for (const point of dataPoints) {
+		if ("asset_symbol" in point) {
+			console.log("Publishing to exchange: market_data");
+			console.log("Message:", point);
+		} else if ("name" in point) {
+			console.log("Publishing to exchange: market_indicators");
+			console.log("Message:", point);
+		}
+	}
+	console.log("--------------------");
+}
 
 async function test() {
-	const scraper = new AppStoreRankScraper(
-		"coinbase", // Internal name for your system
-		"Coinbase: Buy BTC, ETH, SOL", // Exact display name to search for
-		"us", // Country
-		"36" // Finance category ID
-	);
-	const scheduler = { publishResult: mockBroker.publish }; // Mock the scheduler's publish method
+	const scraper = new AppStoreRankScraper("coinbase", "Coinbase: Buy BTC, ETH, SOL", "us");
 
 	try {
-		const result = await scraper.scrape();
-		console.log("Publishing indicator:", JSON.stringify(result, null, 2));
-		const indicator = {
-			name: result?.name,
-			time: result?.time,
-			value: result?.value,
-			source: result?.source,
-		};
-		await scheduler.publishResult(indicator);
+		console.log(`--- Running Scraper Test for: ${scraper.key} ---`);
+		const result = await scraper.fetch();
+
+		console.log("\nPublishing result...");
+		await mockPublishResult(result); // Call our corrected mock function
 	} catch (e) {
-		console.error("Test failed");
+		console.error("Test failed:", e);
+	} finally {
+		console.log("\n--- Scraper Test Finished ---");
 	}
 }
 test();

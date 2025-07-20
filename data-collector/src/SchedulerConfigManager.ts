@@ -1,4 +1,3 @@
-import { SignalScheduler, ScheduledDataSource } from "./SignalScheduler";
 import { FredSource } from "./datasources/fred";
 import { CoinGeckoMarketDataSource } from "./datasources/CoinGeckoMarketDataSource";
 import { CoinGeckoIndicatorSource } from "./datasources/CoinGeckoIndicatorSource";
@@ -7,12 +6,12 @@ import { FearGreedSource } from "./datasources/feargreed";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
-
+import { TaskScheduler, ScheduledDataSource } from "@financialsignalsgatheringsystem/common";
 export class SchedulerConfigManager {
-	private scheduler: SignalScheduler;
+	private scheduler: TaskScheduler;
 
 	constructor(messageBroker: MessageBroker) {
-		this.scheduler = new SignalScheduler(messageBroker);
+		this.scheduler = new TaskScheduler(messageBroker);
 	}
 
 	public setupDefaultSchedules(): void {
@@ -130,7 +129,7 @@ export class SchedulerConfigManager {
 		});
 	}
 
-	public getScheduler(): SignalScheduler {
+	public getScheduler(): TaskScheduler {
 		return this.scheduler;
 	}
 
