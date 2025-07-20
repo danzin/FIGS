@@ -65,7 +65,7 @@ export class SignalProcessor {
 		const hasAssetSymbol = "asset_symbol" in point && typeof point.asset_symbol === "string";
 		const hasName = "name" in point && typeof point.name === "string";
 		const hasTime = "time" in point && point.time instanceof Date;
-		const hasValue = "value" in point; // We don't care about the type of value here
+		const hasValue = "value" in point;
 
 		if (hasAssetSymbol && hasTime && hasValue) {
 			return "MarketDataPoint";
