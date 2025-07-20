@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { ScheduledDataSource, TaskResult } from "@financialsignalsgatheringsystem/common";
-import { MessageBroker, Signal, MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
+import { MessageBroker, MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 export class TaskScheduler {
 	private scheduledSources: Map<string, ScheduledDataSource> = new Map();
@@ -19,19 +19,19 @@ export class TaskScheduler {
 		const sourceKey = config.source.key;
 
 		if (this.scheduledSources.has(sourceKey)) {
-			console.warn(`[SignalScheduler] Source ${sourceKey} already registered. Updating configuration.`);
+			console.warn(`[TaskScheduler] Source ${sourceKey} already registered. Updating configuration.`);
 			this.unregisterSource(sourceKey);
 		}
 
 		config.consecutiveFailures = 0;
 		this.scheduledSources.set(sourceKey, config);
 
-		console.log(`[SignalScheduler] Registered source: ${sourceKey} with schedule: ${config.schedule}`);
+		console.log(`[TaskScheduler] Registered source: ${sourceKey} with schedule: ${config.schedule}`);
 
 		// If the scheduler is already running and the source is enabled, schedule it immediately
 		if (this.isRunning && config.enabled) {
 			this.scheduleSource(sourceKey, config);
-			console.log(`[SignalScheduler] Immediately scheduled running task for ${sourceKey}`);
+			console.log(`[TaskScheduler] Immediately scheduled running task for ${sourceKey}`);
 		}
 	}
 
@@ -45,7 +45,7 @@ export class TaskScheduler {
 			this.activeTasks.delete(sourceKey);
 		}
 		this.scheduledSources.delete(sourceKey);
-		console.log(`[SignalScheduler] Unregistered source: ${sourceKey}`);
+		console.log(`[TaskScheduler] Unregistered source: ${sourceKey}`);
 	}
 
 	/**
@@ -53,7 +53,7 @@ export class TaskScheduler {
 	 */
 	public start(): void {
 		if (this.isRunning) {
-			console.warn("[SignalScheduler] Scheduler is already running");
+			console.warn("[TaskScheduler] Scheduler is already running");
 			return;
 		}
 		for (const [key, cfg] of this.scheduledSources) {
@@ -64,7 +64,7 @@ export class TaskScheduler {
 			this.triggerSource(key).catch((err) => console.error(`[TaskScheduler] Startup trigger failed for ${key}:`, err));
 		}
 
-		console.log("[SignalScheduler] Starting scheduler...");
+		console.log("[TaskScheduler] Starting scheduler...");
 		this.isRunning = true;
 		console.log(this.scheduledSources);
 		for (const [sourceKey, config] of this.scheduledSources) {
@@ -76,7 +76,7 @@ export class TaskScheduler {
 		// Start health monitoring (runs every 5 minutes)
 		this.startHealthMonitoring();
 
-		console.log(`[SignalScheduler] Started ${this.activeTasks.size} scheduled tasks`);
+		console.log(`[TaskScheduler] Started ${this.activeTasks.size} scheduled tasks`);
 	}
 
 	/**
@@ -84,21 +84,21 @@ export class TaskScheduler {
 	 */
 	public stop(): void {
 		if (!this.isRunning) {
-			console.warn("[SignalScheduler] Scheduler is not running");
+			console.warn("[TaskScheduler] Scheduler is not running");
 			return;
 		}
 
-		console.log("[SignalScheduler] Stopping scheduler...");
+		console.log("[TaskScheduler] Stopping scheduler...");
 
 		for (const [sourceKey, task] of this.activeTasks) {
 			task.stop();
-			console.log(`[SignalScheduler] Stopped task for ${sourceKey}`);
+			console.log(`[TaskScheduler] Stopped task for ${sourceKey}`);
 		}
 
 		this.activeTasks.clear();
 		this.isRunning = false;
 
-		console.log("[SignalScheduler] Scheduler stopped");
+		console.log("[TaskScheduler] Scheduler stopped");
 	}
 
 	/**
@@ -110,7 +110,7 @@ export class TaskScheduler {
 			throw new Error(`Source ${sourceKey} not found`);
 		}
 
-		console.log(`[SignalScheduler] Manually triggering ${sourceKey}`);
+		console.log(`[TaskScheduler] Manually triggering ${sourceKey}`);
 		await this.executeTask(sourceKey, config);
 	}
 
@@ -143,7 +143,7 @@ export class TaskScheduler {
 				config.schedule,
 				async () => {
 					const jitterMs = Math.floor(Math.random() * 30000); // Random jitter between 0 and 30 seconds
-					console.log(`[SignalScheduler] Task for ${sourceKey} triggered, applying ${jitterMs}ms jitter.`);
+					console.log(`[TaskScheduler] Task for ${sourceKey} triggered, applying ${jitterMs}ms jitter.`);
 					await this.sleep(jitterMs); // Apply jitter before collecting signal
 					await this.executeTask(sourceKey, config);
 				},
@@ -156,9 +156,9 @@ export class TaskScheduler {
 			task.start();
 			this.activeTasks.set(sourceKey, task);
 
-			console.log(`[SignalScheduler] Scheduled ${sourceKey} with cron: ${config.schedule}`);
+			console.log(`[TaskScheduler] Scheduled ${sourceKey} with cron: ${config.schedule}`);
 		} catch (error) {
-			console.error(`[SignalScheduler] Failed to schedule ${sourceKey}:`, error);
+			console.error(`[TaskScheduler] Failed to schedule ${sourceKey}:`, error);
 		}
 	}
 
@@ -166,7 +166,7 @@ export class TaskScheduler {
 		const startTime = Date.now();
 		config.lastRun = new Date();
 
-		console.log(`[SignalScheduler] Collecting signal from ${sourceKey}...`);
+		console.log(`[TaskScheduler] Executing task ${sourceKey}...`);
 
 		let attempt = 0;
 		let lastError: Error | null = null;
@@ -174,41 +174,39 @@ export class TaskScheduler {
 		while (attempt <= config.maxRetries) {
 			try {
 				const result = await config.source.fetch();
-
-				if (result) {
-					// Validate and publish the result based on its type
-					const publishCount = await this.processAndPublishResult(result, sourceKey);
-
-					if (publishCount > 0) {
-						config.lastSuccess = new Date();
-						config.consecutiveFailures = 0;
-
-						const duration = Date.now() - startTime;
-						console.log(
-							`[SignalScheduler] Successfully collected and published ${publishCount} data points from ${sourceKey} in ${duration}ms`
-						);
-						return;
-					} else {
-						throw new Error("No valid data points could be published");
-					}
+				if (result === null) {
+					const duration = Date.now() - startTime;
+					console.log(`[TaskScheduler] Task ${sourceKey} completed in ${duration}ms, returned null (no new data).`);
+					return; // Exit the function successfully.
+				}
+				const publishCount = await this.processAndPublishResult(result, sourceKey);
+				if (publishCount > 0) {
+					// This was a true success with data.
+					config.lastSuccess = new Date();
+					config.consecutiveFailures = 0; // Reset failure counter
+					const duration = Date.now() - startTime;
+					console.log(
+						`[TaskScheduler] Successfully published ${publishCount} data points from ${sourceKey} in ${duration}ms`
+					);
+					return; // Exit the function successfully.
 				} else {
-					console.warn(`[SignalScheduler] ${sourceKey} returned null result`);
-					config.consecutiveFailures++;
-					return;
+					// The source returned data, but none of it was valid after processing.
+					// This should be treated as a failure.
+					throw new Error("Source returned data, but no valid points could be published.");
 				}
 			} catch (error) {
 				attempt++;
 				lastError = error instanceof Error ? error : new Error(String(error));
 
 				console.error(
-					`[SignalScheduler] Attempt ${attempt}/${config.maxRetries + 1} failed for ${sourceKey}:`,
+					`[TaskScheduler] Attempt ${attempt}/${config.maxRetries + 1} failed for ${sourceKey}:`,
 					lastError.message
 				);
 
 				if (attempt <= config.maxRetries) {
 					// Wait before retrying with exponential backoff
 					const delay = config.retryDelay * Math.pow(2, attempt - 1);
-					console.log(`[SignalScheduler] Retrying ${sourceKey} in ${delay}ms...`);
+					console.log(`[TaskScheduler] Retrying ${sourceKey} in ${delay}ms...`);
 					await this.sleep(delay);
 				}
 			}
@@ -219,15 +217,13 @@ export class TaskScheduler {
 		const duration = Date.now() - startTime;
 
 		console.error(
-			`[SignalScheduler] Failed to collect ${sourceKey} after ${config.maxRetries + 1} attempts in ${duration}ms. Last error:`,
+			`[TaskScheduler] Failed to collect ${sourceKey} after ${config.maxRetries + 1} attempts in ${duration}ms. Last error:`,
 			lastError?.message
 		);
 
 		// Disable source if too many consecutive failures
 		if (config.consecutiveFailures >= 10) {
-			console.warn(
-				`[SignalScheduler] Disabling ${sourceKey} due to ${config.consecutiveFailures} consecutive failures`
-			);
+			console.warn(`[TaskScheduler] Disabling ${sourceKey} due to ${config.consecutiveFailures} consecutive failures`);
 			config.enabled = false;
 			this.unregisterSource(sourceKey);
 		}
@@ -237,9 +233,9 @@ export class TaskScheduler {
 	 * Process and publish result based on its type
 	 * Returns the number of successfully published data points
 	 */
-	private async processAndPublishResult(result: TaskResult | TaskResult[] | null, sourceKey: string): Promise<number> {
+	private async processAndPublishResult(result: TaskResult, sourceKey: string): Promise<number> {
 		if (!result) {
-			console.warn(`[SignalScheduler] Null result from ${sourceKey}`);
+			console.warn(`[TaskScheduler] Null result from ${sourceKey}`);
 			return 0;
 		}
 
@@ -248,136 +244,76 @@ export class TaskScheduler {
 		let publishCount = 0;
 
 		for (const dp of dataPoints) {
-			if (this.isMarketDataPoint(dp)) {
-				if (!this.validateMarketDataPoint(dp)) {
-					console.warn(`[SignalScheduler] Invalid MarketDataPoint from ${sourceKey}:`, dp);
-					continue;
-				}
-				await this.messageBroker.publish("market_data", "", dp);
-				publishCount++;
-				console.log(`[SignalScheduler] Published MarketDataPoint: ${dp.asset_symbol} ${dp.type} = ${dp.value}`);
-			} else if (this.isIndicatorDataPoint(dp)) {
-				if (!this.validateIndicatorDataPoint(dp)) {
-					console.warn(`[SignalScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, dp);
-					continue;
-				}
-				await this.messageBroker.publish("market_indicators", "", dp);
-				publishCount++;
-				console.log(`[SignalScheduler] Published IndicatorDataPoint: ${dp.name} = ${dp.value}`);
-			} else {
-				console.error(`[SignalScheduler] Unknown datapoint type from ${sourceKey}:`, dp);
+			const pointType = this.getDataPointType(dp);
+			switch (pointType) {
+				case "MarketDataPoint":
+					if (this.validateMarketDataPoint(dp)) {
+						await this.messageBroker.publish("market_data", "", dp);
+						publishCount++;
+					} else {
+						console.warn(`[TaskScheduler] Invalid MarketDataPoint from ${sourceKey}:`, dp);
+					}
+					break;
+
+				case "IndicatorDataPoint":
+					if (this.validateIndicatorDataPoint(dp)) {
+						await this.messageBroker.publish("market_indicators", "", dp);
+						publishCount++;
+					} else {
+						console.warn(`[TaskScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, dp);
+					}
+					break;
+
+				case "Unknown":
+				default:
+					console.error(`[TaskScheduler] Unknown datapoint type from ${sourceKey}:`, dp);
+					break;
 			}
 		}
 
 		return publishCount;
 	}
 
-	private isIndicatorDataPoint(obj: any): obj is IndicatorDataPoint {
-		return (
-			obj &&
-			typeof obj.name === "string" &&
-			obj.time instanceof Date &&
-			typeof obj.value === "number" &&
-			typeof obj.source === "string"
-		);
-	}
-	private isMarketDataPoint(obj: any): obj is MarketDataPoint {
-		return (
-			obj &&
-			obj.time instanceof Date &&
-			typeof obj.asset_symbol === "string" &&
-			typeof obj.type === "string" &&
-			typeof obj.value === "number" &&
-			typeof obj.source === "string"
-		);
+	private getDataPointType(point: any): "MarketDataPoint" | "IndicatorDataPoint" | "Unknown" {
+		const hasAssetSymbol = "asset_symbol" in point && typeof point.asset_symbol === "string";
+		const hasName = "name" in point && typeof point.name === "string";
+		const hasTime = "time" in point && point.time instanceof Date;
+		const hasValue = "value" in point; // We don't care about the type of value here
+
+		if (hasAssetSymbol && hasTime && hasValue) {
+			return "MarketDataPoint";
+		}
+		if (hasName && hasTime && hasValue) {
+			return "IndicatorDataPoint";
+		}
+		return "Unknown";
 	}
 
 	// Validation functions
-	private validateMarketDataPoint(dataPoint: MarketDataPoint): boolean {
-		const isValid = !!(
-			dataPoint &&
-			dataPoint.time instanceof Date &&
-			!isNaN(dataPoint.time.getTime()) &&
-			typeof dataPoint.asset_symbol === "string" &&
-			dataPoint.asset_symbol.length > 0 &&
-			typeof dataPoint.type === "string" &&
-			dataPoint.type.length > 0 &&
-			typeof dataPoint.value === "number" &&
-			!isNaN(dataPoint.value) &&
-			typeof dataPoint.source === "string" &&
-			dataPoint.source.length > 0
+	private validateMarketDataPoint(point: any): point is MarketDataPoint {
+		// Value MUST be a number and not null.
+		return (
+			point &&
+			point.time instanceof Date &&
+			!isNaN(point.time.getTime()) &&
+			typeof point.asset_symbol === "string" &&
+			typeof point.type === "string" &&
+			typeof point.value === "number" &&
+			!isNaN(point.value) &&
+			typeof point.source === "string"
 		);
-
-		if (!isValid) {
-			console.warn(`[SignalScheduler] MarketDataPoint validation failed:`, {
-				hasTime: dataPoint?.time instanceof Date,
-				timeValid: dataPoint?.time ? !isNaN(dataPoint.time.getTime()) : false,
-				hasAssetSymbol: typeof dataPoint?.asset_symbol === "string",
-				assetSymbolValid: typeof dataPoint?.asset_symbol === "string" && dataPoint.asset_symbol.length > 0,
-				hasType: typeof dataPoint?.type === "string",
-				typeValid: typeof dataPoint?.type === "string" && dataPoint.type.length > 0,
-				hasValue: typeof dataPoint?.value === "number",
-				valueValid: typeof dataPoint?.value === "number" && !isNaN(dataPoint.value),
-				hasSource: typeof dataPoint?.source === "string",
-				sourceValid: typeof dataPoint?.source === "string" && dataPoint.source.length > 0,
-			});
-		}
-
-		return isValid;
 	}
 
-	private validateIndicatorDataPoint(dataPoint: IndicatorDataPoint): boolean {
-		const isValid = !!(
-			dataPoint &&
-			typeof dataPoint.name === "string" &&
-			dataPoint.name.length > 0 &&
-			dataPoint.time instanceof Date &&
-			!isNaN(dataPoint.time.getTime()) &&
-			typeof dataPoint.value === "number" &&
-			!isNaN(dataPoint.value) &&
-			typeof dataPoint.source === "string" &&
-			dataPoint.source.length > 0
+	private validateIndicatorDataPoint(point: any): point is IndicatorDataPoint {
+		// Value CAN be a number OR null.
+		return (
+			point &&
+			point.time instanceof Date &&
+			!isNaN(point.time.getTime()) &&
+			typeof point.name === "string" &&
+			(typeof point.value === "number" || point.value === null) &&
+			typeof point.source === "string"
 		);
-
-		if (!isValid) {
-			console.warn(`[SignalScheduler] IndicatorDataPoint validation failed:`, {
-				hasName: typeof dataPoint?.name === "string",
-				nameValid: typeof dataPoint?.name === "string" && dataPoint.name.length > 0,
-				hasTime: dataPoint?.time instanceof Date,
-				timeValid: dataPoint?.time ? !isNaN(dataPoint.time.getTime()) : false,
-				hasValue: typeof dataPoint?.value === "number",
-				valueValid: typeof dataPoint?.value === "number" && !isNaN(dataPoint.value),
-				hasSource: typeof dataPoint?.source === "string",
-				sourceValid: typeof dataPoint?.source === "string" && dataPoint.source.length > 0,
-			});
-		}
-
-		return isValid;
-	}
-
-	private validateSignal(signal: Signal): boolean {
-		const isValid = !!(
-			signal &&
-			signal.name &&
-			signal.timestamp instanceof Date &&
-			!isNaN(signal.timestamp.getTime()) &&
-			typeof signal.value === "number" &&
-			!isNaN(signal.value) &&
-			signal.source
-		);
-
-		if (!isValid) {
-			console.warn(`[SignalScheduler] Signal validation failed:`, {
-				hasName: !!signal?.name,
-				hasTimestamp: signal?.timestamp instanceof Date,
-				timestampValid: signal?.timestamp ? !isNaN(signal.timestamp.getTime()) : false,
-				hasValue: typeof signal?.value === "number",
-				valueValid: typeof signal?.value === "number" && !isNaN(signal.value),
-				hasSource: !!signal?.source,
-			});
-		}
-
-		return isValid;
 	}
 
 	private isSourceHealthy(config: ScheduledDataSource): boolean {
@@ -409,7 +345,7 @@ export class TaskScheduler {
 			.map(([sourceKey, _]) => sourceKey);
 
 		if (unhealthySources.length > 0) {
-			console.warn(`[SignalScheduler] Unhealthy sources detected: ${unhealthySources.join(", ")}`);
+			console.warn(`[TaskScheduler] Unhealthy sources detected: ${unhealthySources.join(", ")}`);
 		}
 
 		// Log summary statistics
@@ -417,7 +353,7 @@ export class TaskScheduler {
 		const enabled = Array.from(this.scheduledSources.values()).filter((c) => c.enabled).length;
 		const healthy = Array.from(this.scheduledSources.values()).filter((c) => this.isSourceHealthy(c)).length;
 
-		console.log(`[SignalScheduler] Health check: ${healthy}/${enabled} healthy sources (${total} total registered)`);
+		console.log(`[TaskScheduler] Health check: ${healthy}/${enabled} healthy sources (${total} total registered)`);
 	}
 
 	private sleep(ms: number): Promise<void> {

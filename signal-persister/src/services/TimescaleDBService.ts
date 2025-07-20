@@ -103,7 +103,7 @@ export class TimescaleDBService implements DatabaseService {
 
 			if (res.rowCount === 0) {
 				console.warn(
-					`[DB] No rows inserted for indicator - this shouldn't happen with ON CONFLICT DO UPDATE: ${point.name}`
+					`[DB] No rows inserted for indicator - this shouldn't happen. Likely duplicate: ${point.name} at ${point.time}`
 				);
 			} else {
 				console.log(`[DB] Successfully inserted/updated indicator: ${point.name}`);

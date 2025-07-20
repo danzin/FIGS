@@ -1,4 +1,3 @@
-export * from "./models/signal.interface";
 export * from "./models/messaging.interface";
 export * from "./services/RabbitMQService";
 export * from "./datasources/datasources";
