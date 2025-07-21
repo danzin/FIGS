@@ -15,7 +15,7 @@ export class AppStoreRankScraper implements Scraper {
 		this.appDisplayName = appDisplayName;
 		this.country = country.toLowerCase();
 		this.category = category;
-		this.key = `appstore_rank_${this.appName}_ios_${this.country}`;
+		this.key = `appstore_rank_${this.appName}_${this.country}`;
 
 		this.chartsUrl = `https://apps.apple.com/${this.country}/charts/iphone/top-free-apps/${this.category}`;
 	}
@@ -246,7 +246,7 @@ export class AppStoreRankScraper implements Scraper {
 
 			// Return structured data point
 			const indicator: IndicatorDataPoint = {
-				name: this.key, // The unique name for this indicator
+				name: "Coinbase Rank", // The unique name for this indicator
 				time: new Date(),
 				value: finalRank, // The value can be a number or null
 				source: `AppleAppStore-${this.country.toUpperCase()}`,
