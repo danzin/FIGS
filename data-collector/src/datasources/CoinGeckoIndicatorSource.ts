@@ -3,7 +3,7 @@ import { DataSource, IndicatorDataPoint } from "@financialsignalsgatheringsystem
 
 type IndicatorMetric = "btc_dominance" | "btc_volume";
 
-export class CoinGeckoIndicatorSource implements DataSource<IndicatorDataPoint> {
+export class CoinGeckoIndicatorSource implements DataSource {
 	public readonly key: string;
 	private readonly metric: IndicatorMetric;
 

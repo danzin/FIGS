@@ -15,7 +15,7 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 
 export const DashboardPage: React.FC = () => {
 
-  const { options: assetOptions, loading: assetsLoading } = useAssetNames();
+  const { options: assetOptions } = useAssetNames();
   const [selectedAsset, setSelectedAsset] = useState("");
   const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
 
@@ -32,7 +32,6 @@ export const DashboardPage: React.FC = () => {
   } = useOhlcData(selectedAsset, interval);
 
 const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
-console.log('indicatods', indicators);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 ">

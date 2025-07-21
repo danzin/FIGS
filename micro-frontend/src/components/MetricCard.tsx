@@ -16,10 +16,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   unit = '',
   precision = 2,
   description: descriptionProp,
-  gradient = '',
+
 }) => {
   const displayValue = indicator?.value !== undefined ? indicator.value.toFixed(precision) : '--';
-  console.log(`Rendering MetricCard for ${label} with value: ${displayValue}`);
   const displayTime = indicator?.timestamp ? new Date(indicator.timestamp).toLocaleTimeString() : '';
   let descriptionText: string | undefined = descriptionProp;
   if (indicator?.name === 'fear_greed_index' && indicator.value !== undefined) {
