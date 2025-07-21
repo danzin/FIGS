@@ -1,5 +1,5 @@
 import React from 'react';
-import type { IndicatorData } from '../types/OhlcData';
+import type { IndicatorData } from '../types/Indicators';
 
 interface MetricCardProps {
   label: string;

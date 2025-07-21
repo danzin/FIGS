@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
-import type { Interval, IndicatorData } from '../types/OhlcData';
+import type { Interval } from '../types/OhlcData';
+import type { IndicatorData } from '../types/Indicators';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard } from '../components/MetricCard';
 import { useOhlcData } from '../hooks/useOhlcData';
@@ -32,7 +33,7 @@ export const DashboardPage: React.FC = () => {
   } = useOhlcData(selectedAsset, interval);
 
 const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
-
+console.log('Indicators:', indicators);
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 ">
       { /* Header */}
@@ -77,11 +78,10 @@ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = use
                 description='BTC Dominance'
               />
               <MetricCard 
-                label="Unemployment" 
-                indicator={indicators.fredUnrate as IndicatorData}
-                unit="%"
-                precision={1}
-                description='U.S. Unemployment Rate'
+                label="Coinbase Rank" 
+                indicator={indicators.coinbaseRank as IndicatorData}
+                precision={0}
+                description='Top 100 Finance apps in App Store'
               />
               <MetricCard 
                 label="SPY" 
