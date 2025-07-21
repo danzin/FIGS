@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { getLatestIndicators } from "../api/signalsApi";
-import type { IndicatorData } from "../types/OhlcData";
+import type { IndicatorData } from "../types/Indicators";
 
-const INDICATORS_TO_FETCH = ["^VIX", "fear_greed_index", "btc_dominance", "FRED_UNRATE", "SPY"];
+const INDICATORS_TO_FETCH = ["^VIX", "fear_greed_index", "btc_dominance", "FRED_UNRATE", "SPY", "Coinbase_Rank"];
 
 function toCamel(s: string) {
 	return s
