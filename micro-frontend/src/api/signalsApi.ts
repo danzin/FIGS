@@ -1,6 +1,6 @@
 import axios from "axios";
-import type { OhlcData, Interval, IndicatorData } from "../types/OhlcData";
-
+import type { OhlcData, Interval } from "../types/OhlcData";
+import type { IndicatorData } from "../types/Indicators";
 const apiClient = axios.create({
 	baseURL: "/api/v1",
 });

@@ -7,11 +7,4 @@ export interface OhlcData {
 	volume: number | null;
 }
 
-export interface IndicatorData {
-	name: string;
-	value: number;
-	timestamp: string;
-	source: string;
-}
-
 export type Interval = "15m" | "1h" | "1d" | "30m";
