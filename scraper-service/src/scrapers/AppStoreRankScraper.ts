@@ -8,16 +8,14 @@ export class AppStoreRankScraper implements Scraper {
 	private readonly appDisplayName: string;
 	private readonly chartsUrl: string;
 	private readonly country: string;
-	private readonly category: string;
 
-	constructor(appName: string, appDisplayName: string, country: string = "us", category: string = "36") {
+	constructor(appName: string, appDisplayName: string, country: string = "us") {
 		this.appName = appName.toLowerCase();
 		this.appDisplayName = appDisplayName;
 		this.country = country.toLowerCase();
-		this.category = category;
 		this.key = `Coinbase_Rank`;
 
-		this.chartsUrl = `https://apps.apple.com/${this.country}/charts/iphone/top-free-apps/${this.category}`;
+		this.chartsUrl = `https://apps.apple.com/us/charts/iphone/finance-apps/6015?chart=top-free`;
 	}
 
 	private async addStealthScripts(page: Page): Promise<void> {
@@ -231,18 +229,16 @@ export class AppStoreRankScraper implements Scraper {
 
 			if (rank === null) {
 				console.warn(
-					`[AppStoreRankScraper] Could not find "${this.appDisplayName}" in 'Top 100 Free Apps' charts. Coinbase is NOT in the Top 100!.`
+					`[AppStoreRankScraper] Could not find "${this.appDisplayName}" in AppStore Finance charts. Coinbase is NOT in the Top 100!.`
 				);
 
 				finalRank = null;
 			} else {
-				console.log(`[AppStoreRankScraper] Found "${this.appDisplayName}" at rank #${rank} in Finance charts`);
+				console.log(`[AppStoreRankScraper] Found "${this.appDisplayName}" at rank #${rank} AppStore Finance charts`);
 				finalRank = rank;
 			}
 
-			console.log(
-				`[AppStoreRankScraper] Found "${this.appDisplayName}" at rank #${rank} in 'Top 100 Free Apps' charts`
-			);
+			console.log(`[AppStoreRankScraper] Found "${this.appDisplayName}" at rank #${rank} in AppStore Finance charts`);
 
 			// Return structured data point
 			const indicator: IndicatorDataPoint = {
