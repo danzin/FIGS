@@ -7,9 +7,9 @@ const INDICATORS_TO_FETCH = ["^VIX", "fear_greed_index", "btc_dominance", "FRED_
 function toCamel(s: string) {
 	return s
 		.replace(/[\^]/g, "") // drop funky chars
-		.toLowerCase()
-		.split(/[_\s-]+/)
-		.map((word, i) => (i === 0 ? word : word[0].toUpperCase() + word.slice(1)))
+		.toLowerCase() // lowercase
+		.split(/[_\s-]+/) // split by underscores, spaces, or dashes
+		.map((word, i) => (i === 0 ? word : word[0].toUpperCase() + word.slice(1))) // camelCase
 		.join("");
 }
 
