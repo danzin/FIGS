@@ -31,8 +31,6 @@ export default tseslint.config(
 		languageOptions: {
 			parser: tseslint.parser,
 			parserOptions: {
-				// --- THIS IS THE CRITICAL FIX ---
-				// Point to the root tsconfig that references all other projects.
 				tsconfigRootDir: import.meta.dirname,
 				project: true, // `true` tells it to find the nearest tsconfig.json, which will be the root one due to tsconfigRootDir
 			},
