@@ -9,7 +9,6 @@ import { useAssetNames } from '../hooks/useAssetNames';
 
 const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '15 Minutes', value: '15m' },
-  { label: '30 Minutes', value: '30m' },
   { label: '1 Hour', value: '1h' },
   { label: '1 Day', value: '1d' },
 ];
