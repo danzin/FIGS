@@ -1,5 +1,7 @@
 import { MessageBroker, TaskScheduler } from "@financialsignalsgatheringsystem/common";
 import { AppStoreRankScraper } from "../scrapers/AppStoreRankScraper";
+import { CoinDeskSource } from "../scrapers/CoinDesk";
+import { CryptoSlateSource } from "../scrapers/CryptoSlate";
 
 export class ScraperConfigManager {
 	private scheduler: TaskScheduler;
@@ -19,7 +21,24 @@ export class ScraperConfigManager {
 			retryDelay: 15 * 60 * 1000, // 15-minute retry delay
 			consecutiveFailures: 0,
 		});
-		// ... schedule Binance scraper later, etc.
+		this.scheduler.registerSource({
+			source: new CoinDeskSource(),
+			schedule: "0 */4 * * *", // Once 4 hours
+			enabled: true,
+			priority: "medium",
+			maxRetries: 3, // Scrapers are fragile, more retries
+			retryDelay: 15 * 60 * 1000, // 15-minute retry delay
+			consecutiveFailures: 0,
+		});
+		this.scheduler.registerSource({
+			source: new CryptoSlateSource(),
+			schedule: "0 */4 * * *", // Once 4 hours
+			enabled: true,
+			priority: "medium",
+			maxRetries: 3, // Scrapers are fragile, more retries
+			retryDelay: 15 * 60 * 1000, // 15-minute retry delay
+			consecutiveFailures: 0,
+		});
 	}
 
 	public getScheduler(): TaskScheduler {
