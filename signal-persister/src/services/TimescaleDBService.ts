@@ -2,6 +2,16 @@ import { Pool } from "pg";
 import { DatabaseService } from "./database.interface";
 import { MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
+interface SentimentResult {
+	external_id: string;
+	source: string;
+	title: string;
+	url: string;
+	published_at: string; // Comes as ISO string
+	sentiment_score: number;
+	sentiment_label: string;
+}
+
 interface DbConfig {
 	user?: string;
 	host?: string;
@@ -112,6 +122,62 @@ export class TimescaleDBService implements DatabaseService {
 			console.error(`[DB] Error inserting indicator ${point.name}:`, error);
 			console.error(`[DB] Failed data point:`, point);
 			throw error;
+		}
+	}
+
+	public async insertArticleAndSentiment(result: SentimentResult): Promise<void> {
+		const client = await this.pool.connect();
+		try {
+			await client.query("BEGIN");
+
+			// Insert the article, and if it already exists, do nothing and return the existing ID.
+			const articleInsertQuery = `
+                INSERT INTO public.news_articles (external_id, source, title, url, published_at)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (external_id) DO UPDATE SET title = EXCLUDED.title -- Update title in case it changes
+                RETURNING id;
+            `;
+			const articleRes = await client.query(articleInsertQuery, [
+				result.external_id,
+				result.source,
+				result.title,
+				result.url,
+				new Date(result.published_at),
+			]);
+
+			// If the insert returned no ID, it means the row already existed.
+			// We need to fetch the ID of the existing row.
+			let articleId: number;
+			if (articleRes.rows.length > 0) {
+				articleId = articleRes.rows[0].id;
+			} else {
+				const selectRes = await client.query("SELECT id FROM public.news_articles WHERE external_id = $1", [
+					result.external_id,
+				]);
+				articleId = selectRes.rows[0].id;
+			}
+
+			// Insert the sentiment data linked to the article ID.
+			const sentimentInsertQuery = `
+                INSERT INTO public.news_sentiment (article_id, time, sentiment_score, sentiment_label, source)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (article_id, time) DO NOTHING; -- Avoid duplicate sentiment entries for the same second
+            `;
+			await client.query(sentimentInsertQuery, [
+				articleId,
+				new Date(),
+				result.sentiment_score,
+				result.sentiment_label,
+				"sentiment-analysis-service", // The source of the *sentiment*, not the article
+			]);
+
+			await client.query("COMMIT");
+		} catch (error) {
+			await client.query("ROLLBACK");
+			console.error(`[DbService] Error in insertArticleAndSentiment transaction:`, error);
+			throw error;
+		} finally {
+			client.release();
 		}
 	}
 
