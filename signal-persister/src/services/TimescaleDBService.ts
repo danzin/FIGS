@@ -164,7 +164,7 @@ export class TimescaleDBService implements DatabaseService {
 			const sentimentInsertQuery = `
                 INSERT INTO public.news_sentiment (article_id, time, sentiment_score, sentiment_label, source)
                 VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (article_id, time) DO NOTHING; -- Avoid duplicate sentiment entries for the same second
+                ON CONFLICT (article_id, time) DO NOTHING;
             `;
 			await client.query(sentimentInsertQuery, [
 				articleId,
