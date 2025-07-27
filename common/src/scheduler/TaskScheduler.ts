@@ -263,7 +263,7 @@ export class TaskScheduler {
 						console.warn(`[TaskScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, dp);
 					}
 					break;
-				case "IndicatorDataPoint":
+				case "NewsArticle":
 					if (this.validateNewsArticle(dp)) {
 						await this.messageBroker.publish("raw_news", "", dp);
 						publishCount++;
