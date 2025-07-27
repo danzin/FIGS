@@ -133,7 +133,7 @@ export class RabbitMQService implements MessageBroker {
 			const payload = Buffer.from(JSON.stringify(message));
 			this.channel.publish(exchangeName, routingKey, payload, { persistent: true, ...options });
 			console.log(
-				`[RabbitMQService] Published to ${exchangeName}} with routing key '${routingKey}':`,
+				`[RabbitMQService] Published to ${exchangeName} with routing key '${routingKey}':`,
 				this.getMessageIdentifier(message)
 			);
 		} catch (error) {

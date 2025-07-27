@@ -36,8 +36,8 @@ class SignalPersisterApp {
 
 	private async setupMarketDataConsumer(): Promise<void> {
 		await this.messageBroker.consume(
-			"market_data",
 			"persist_market_data_queue",
+			"market_data",
 			async (message: SupportedMessage): Promise<void> => {
 				// Use a type guard to ensure right message type
 				if (this.isMarketDataPoint(message)) {
@@ -53,8 +53,8 @@ class SignalPersisterApp {
 
 	private async setupIndicatorConsumer(): Promise<void> {
 		await this.messageBroker.consume(
-			"market_indicators",
 			"persist_indicators_queue",
+			"market_indicators",
 			async (message: SupportedMessage): Promise<void> => {
 				if (this.isIndicatorDataPoint(message)) {
 					if (this.isValidIndicatorPoint(message)) {
@@ -72,8 +72,8 @@ class SignalPersisterApp {
 		// The RabbitMQService.consume method will pass it as `any`
 		// Must cast and validate it here
 		await this.messageBroker.consume(
-			"sentiment_results",
 			"persist_sentiment_queue",
+			"sentiment_results",
 			async (message: any): Promise<void> => {
 				const result = message as SentimentResult; // Cast it
 				// convert date strings for SentimentResult manually here
