@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { ScheduledDataSource, TaskResult } from "@financialsignalsgatheringsystem/common";
+import { NewsArticle, ScheduledDataSource, TaskResult } from "@financialsignalsgatheringsystem/common";
 import { MessageBroker, MarketDataPoint, IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
 export class TaskScheduler {
@@ -263,6 +263,14 @@ export class TaskScheduler {
 						console.warn(`[TaskScheduler] Invalid IndicatorDataPoint from ${sourceKey}:`, dp);
 					}
 					break;
+				case "NewsArticle":
+					if (this.validateNewsArticle(dp)) {
+						await this.messageBroker.publish("raw_news", "", dp);
+						publishCount++;
+					} else {
+						console.warn(`[TaskScheduler] Invalid NewsArticle from ${sourceKey}:`, dp);
+					}
+					break;
 
 				case "Unknown":
 				default:
@@ -274,17 +282,22 @@ export class TaskScheduler {
 		return publishCount;
 	}
 
-	private getDataPointType(point: any): "MarketDataPoint" | "IndicatorDataPoint" | "Unknown" {
+	private getDataPointType(point: any): "MarketDataPoint" | "IndicatorDataPoint" | "NewsArticle" | "Unknown" {
 		const hasAssetSymbol = "asset_symbol" in point && typeof point.asset_symbol === "string";
 		const hasName = "name" in point && typeof point.name === "string";
 		const hasTime = "time" in point && point.time instanceof Date;
 		const hasValue = "value" in point; // We don't care about the type of value here
+		const hasTitle = "title" in point && typeof point.title === "string";
+		const hasUrl = "url" in point && typeof point.url === "string";
 
 		if (hasAssetSymbol && hasTime && hasValue) {
 			return "MarketDataPoint";
 		}
 		if (hasName && hasTime && hasValue) {
 			return "IndicatorDataPoint";
+		}
+		if (hasTitle && hasUrl) {
+			return "NewsArticle";
 		}
 		return "Unknown";
 	}
@@ -301,6 +314,19 @@ export class TaskScheduler {
 			typeof point.value === "number" &&
 			!isNaN(point.value) &&
 			typeof point.source === "string"
+		);
+	}
+
+	private validateNewsArticle(article: any): article is NewsArticle {
+		return (
+			article &&
+			typeof article.id === "string" &&
+			typeof article.source === "string" &&
+			typeof article.title === "string" &&
+			typeof article.url === "string" &&
+			// `publishedAt` will be a Date object from the scraper
+			article.publishedAt instanceof Date &&
+			!isNaN(article.publishedAt.getTime())
 		);
 	}
 

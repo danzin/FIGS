@@ -21,6 +21,6 @@ coverage/
 # log files
 *.log
 
-.venv
+# Python virtual environments
 venv/
-
+.venv
