@@ -5,6 +5,7 @@
 
 ## 🧠 Tech Stack
 - **TypeScript**
+- **Python**
 - **Express**
 - **NodeJS**
 - **NestJS**
