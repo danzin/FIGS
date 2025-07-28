@@ -24,3 +24,5 @@ coverage/
 # Python virtual environments
 venv/
 .venv
+
+data_backup**.sql
