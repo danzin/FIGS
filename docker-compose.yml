@@ -64,7 +64,7 @@ services:
       RABBITMQ_URL: *ampq-url
       HEALTH_HEAP_WARNING_MB: 512
       HEALTH_HEAP_CRITICAL_MB: 768
-      MONITOR_CHECK_INTERVAL_CRONL: '*/45 * * * *'
+      MONITOR_CHECK_INTERVAL_CRON: '*/45 * * * *'
       PORT: 3000
 
     depends_on:
@@ -156,6 +156,7 @@ services:
       DB_NAME: market_signals
       PORT: 5432
       RABBITMQ_URL: *ampq-url
+      CRON_SCHEDULE: *cron-schedule
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -173,7 +174,7 @@ services:
         - RABBITMQ_HOST=rabbitmq
       depends_on:
         - rabbitmq
-          
+
 volumes: 
   timescaledb_data:
   
