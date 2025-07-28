@@ -128,13 +128,18 @@ export class RabbitMQService implements MessageBroker {
 			if (!this.channel) throw new Error("[RabbitMQService] Cannot publish, no channel.");
 		}
 
-		await this.ensureExchange(exchangeName);
-		const payload = Buffer.from(JSON.stringify(message));
-		const ok = this.channel.publish(exchangeName, routingKey, payload, { persistent: true, ...options });
-		const id = this.getMessageIdentifier(message);
-		ok
-			? console.log(`[RabbitMQService] Published to ${exchangeName}: ${id}`)
-			: console.warn(`[RabbitMQService] Publish buffer full for ${id}`);
+		try {
+			await this.ensureExchange(exchangeName);
+			const payload = Buffer.from(JSON.stringify(message));
+			this.channel.publish(exchangeName, routingKey, payload, { persistent: true, ...options });
+			console.log(
+				`[RabbitMQService] Published to ${exchangeName} with routing key '${routingKey}':`,
+				this.getMessageIdentifier(message)
+			);
+		} catch (error) {
+			console.error(`[RabbitMQService] Failed to publish message to ${exchangeName}:`, error);
+			throw error;
+		}
 	}
 
 	public async consume(
@@ -149,37 +154,49 @@ export class RabbitMQService implements MessageBroker {
 			if (!this.channel) throw new Error("[RabbitMQService] Cannot consume, no channel.");
 		}
 
-		await this.ensureExchange(exchangeName);
-		const q = await this.channel.assertQueue(queueName, { durable: true });
-		await this.channel.bindQueue(q.queue, exchangeName, "");
-		console.log(`[RabbitMQService] Queue '${q.queue}' bound to '${exchangeName}'`);
-		this.channel.prefetch(1);
+		try {
+			await this.ensureExchange(exchangeName);
+			const q = await this.channel.assertQueue(queueName, { durable: true });
+			await this.channel.bindQueue(q.queue, exchangeName, "");
+			this.channel.prefetch(1);
 
-		const { consumerTag } = await this.channel.consume(
-			q.queue,
-			async (msg: ConsumeMessage | null) => {
-				if (!msg) return;
-				try {
-					const parsed = JSON.parse(msg.content.toString()) as SupportedMessage;
-					// convert any string timestamps to Date if present
-					if ((parsed as any).time && typeof (parsed as any).time === "string") {
-						(parsed as any).time = new Date((parsed as any).time);
+			const { consumerTag } = await this.channel.consume(
+				q.queue,
+				async (msg: ConsumeMessage | null) => {
+					if (msg) {
+						try {
+							// Parse the JSON from the buffer
+							const parsedMessage = JSON.parse(msg.content.toString());
+
+							// Convert any standard date fields from ISO strings to Date objects
+							if (parsedMessage.time) parsedMessage.time = new Date(parsedMessage.time);
+							if (parsedMessage.timestamp) parsedMessage.timestamp = new Date(parsedMessage.timestamp);
+							if (parsedMessage.publishedAt) parsedMessage.publishedAt = new Date(parsedMessage.publishedAt);
+
+							// Cast to the union type and pass to the user's callback
+							await onMessageCallback(parsedMessage as SupportedMessage);
+
+							// Ack the message if the callback didn't throw
+							this.channel!.ack(msg);
+						} catch (error) {
+							console.error(
+								`[RabbitMQService] Error in onMessageCallback for queue ${queueName}. Discarding message.`,
+								error
+							);
+							// If anything goes wrong - nack without requeueing
+							this.channel!.nack(msg, false, false);
+						}
 					}
-					const id = this.getMessageIdentifier(parsed);
-					console.log(`[RabbitMQService] Consumed: ${id}`);
-					await onMessageCallback(parsed);
-					this.channel!.ack(msg);
-					console.log(`[RabbitMQService] Acked: ${id}`);
-				} catch (err) {
-					console.error(`[RabbitMQService] Error processing message:`, err);
-					this.channel!.nack(msg, false, false);
-				}
-			},
-			{ noAck: false, ...options }
-		);
+				},
+				{ noAck: false, ...options }
+			);
 
-		console.log(`[RabbitMQService] Consuming with tag '${consumerTag}'.`);
-		return consumerTag;
+			console.log(`[RabbitMQService] Consuming from '${queueName}' with tag '${consumerTag}'.`);
+			return consumerTag;
+		} catch (error) {
+			console.error(`[RabbitMQService] Failed to setup consumer for '${queueName}':`, error);
+			throw error;
+		}
 	}
 
 	public async close(): Promise<void> {

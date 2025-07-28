@@ -6,3 +6,4 @@ export * from "./models/indicatorDataPoint";
 export * from "./models/marketDataPoint";
 export * from "./scheduler/TaskScheduler";
 export * from "./models/newsArticle";
+export * from "./models/sentimentResult";

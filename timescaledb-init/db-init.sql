@@ -37,7 +37,31 @@ CREATE TABLE IF NOT EXISTS public.market_indicators (
     created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.news_articles (
+  id SERIAL PRIMARY KEY,
+  external_id TEXT UNIQUE,  -- URL or GUID from RSS
+  source TEXT NOT NULL,
+  title TEXT NOT NULL,
+  url TEXT UNIQUE NOT NULL,
+  published_at TIMESTAMPTZ NOT NULL,
+  body TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.news_sentiment (
+  article_id INTEGER REFERENCES news_articles(id),
+  time TIMESTAMPTZ NOT NULL,
+  sentiment_score NUMERIC,
+  sentiment_label TEXT,
+  source TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (article_id, time)
+);
+
+
+
 -- Convert to hypertables
+SELECT create_hypertable('public.news_sentiment', 'time');
 SELECT create_hypertable('public.market_data', 'time', if_not_exists => TRUE);
 SELECT create_hypertable('public.market_indicators', 'time', if_not_exists => TRUE);
 
@@ -78,6 +102,10 @@ CREATE INDEX IF NOT EXISTS idx_mi_name_time
   ON public.market_indicators (name, time DESC);
 CREATE INDEX IF NOT EXISTS idx_mi_source
   ON public.market_indicators (source);
+
+-- news_articles indexes
+CREATE INDEX IF NOT EXISTS idx_ns_trime
+  ON news_sentiment (time);
 
 
 -- ========================

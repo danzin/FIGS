@@ -138,6 +138,14 @@ services:
     # Playwright needs a large shared memory size to run Chromium.
     shm_size: '2gb'
 
+  sentiment-analysis-service:
+      build:
+        context: .
+        dockerfile: ./sentiment-analysis-service/sentiment-analysis.dockerfile
+      environment:
+        - RABBITMQ_HOST=rabbitmq
+      depends_on:
+        - rabbitmq
           
 volumes: 
   timescaledb_data:

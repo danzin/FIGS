@@ -7,6 +7,7 @@ export type TaskResult =
 	| IndicatorDataPoint
 	| NewsArticle
 	| (MarketDataPoint | IndicatorDataPoint | NewsArticle)[];
+
 export interface DataSource {
 	key: string;
 	fetch(): Promise<TaskResult | null>;
