@@ -1,7 +1,7 @@
 # Financial Insights Gathering System (FIGS)
 
 ## 📌 Project Vision
- FIGS is a modular system for aggregating, persisting, and querying financial signals — primarily focused on the crypto market. It aims to surface actionable insights by combining structured data (e.g., price feeds) with unstructured signals (e.g., app store rankings, social sentiment, and search trends etc).
+ FIGS is a modular system for aggregating, persisting, and querying financial data — primarily focused on the crypto market. It aims to surface actionable insights by combining structured data (e.g., price feeds) with unstructured signals (e.g., app store rankings, AI sentiment analysis etc.)
 
 ## 🧠 Tech Stack
 - **TypeScript**
@@ -13,24 +13,30 @@
 - **TimescaleDB (PostgreSQL)** for time-series data
 - **Docker** for container orchestration
 - **Monorepo**
+- **AI Sentiment Analysis**
+  
 - Planned:
-  - Additional microservice for scraping data unreachable through an API
   - Possibly adding another DB(PostgreSQL or MongoDB) for handling non-timeseries data
   - **Redis** for caching
-  - **AWS ECS** deployment, 
+  - **AWS ECS** deployment
+  - Frontend redesign
   
 ## 📦 Microservices
 
-- **data-collector**: Consumes and publishes signals to RabbitMQ
-- **signal-persister**: Consumes and writes signals to TimescaleDB
-- **signal-query-api**: Serves raw + aggregated signal queries from TimescaleDB
+- **data-collector**: Consumes and publishes data to RabbitMQ
+- **signal-persister**: Consumes and writes data to TimescaleDB
+- **signal-query-api**: Serves raw + aggregated data queries from TimescaleDB
 - **micro-frontend**: Displays data from signal-query-api
-
+- **scraper-service**: Spins up headless browsers and scrapes data unavaiable through APIs
+- **sentiment-analysis-service**: Uses AI to perform sentiment analysis on recent news articles
+  
 ## 📊 Features
 
 - Raw + bucketed query support
 - Continuous aggregates for fast timescale lookups
 - Extensible DTOs and modular repository layer
+- AI sentiment analysis of recent news
+
 
 ## 🚀 Running Locally
 
