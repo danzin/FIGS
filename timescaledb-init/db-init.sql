@@ -130,7 +130,9 @@ SELECT
   count(*)          AS data_points
 FROM public.market_data
 WHERE "type" IN ('price','volume')
-GROUP BY 1, asset_symbol, "type";
+GROUP BY 1, asset_symbol, "type"
+WITH NO DATA;
+
 
 -- 1‑hour
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.market_data_1h
@@ -147,7 +149,8 @@ SELECT
   count(*)          AS data_points
 FROM public.market_data
 WHERE "type" IN ('price','volume')
-GROUP BY 1, asset_symbol, "type";
+GROUP BY 1, asset_symbol, "type"
+WITH NO DATA;
 
 -- 1‑day
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.market_data_1d
@@ -164,7 +167,9 @@ SELECT
   count(*)          AS data_points
 FROM public.market_data
 WHERE "type" IN ('price','volume')
-GROUP BY 1, asset_symbol, "type";
+GROUP BY 1, asset_symbol, "type"
+WITH NO DATA;
+
 
 -- Polices to auto-refresh CGs
 SELECT add_continuous_aggregate_policy('market_data_15m',
