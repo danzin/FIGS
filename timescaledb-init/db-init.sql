@@ -1,8 +1,11 @@
 -- ====================================================================
 -- Full schema, CAGG setup
 -- ====================================================================
+CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 BEGIN;
+
+
 -- ========================
 -- Create core tables
 -- ========================
@@ -39,7 +42,7 @@ CREATE TABLE IF NOT EXISTS public.market_indicators (
 
 CREATE TABLE IF NOT EXISTS public.news_articles (
   id SERIAL PRIMARY KEY,
-  external_id TEXT UNIQUE,  -- URL or GUID from RSS
+  external_id TEXT UNIQUE, 
   source TEXT NOT NULL,
   title TEXT NOT NULL,
   url TEXT UNIQUE NOT NULL,
