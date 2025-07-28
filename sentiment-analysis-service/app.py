@@ -5,9 +5,15 @@ import logging
 import sys
 import time
 from datetime import datetime, timezone
-from textblob import TextBlob
+from transformers import pipeline
 
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq') # service name from docker-compose
+sentiment_pipeline = pipeline(
+    "sentiment-analysis", 
+    model="ProsusAI/finbert",  # FinBERT model
+    return_all_scores=False    # Simplify output
+)
+
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'user')
 RABBITMQ_PASS = os.getenv('RABBITMQ_PASS', 'pass')
 
@@ -15,38 +21,47 @@ RAW_NEWS_EXCHANGE = 'raw_news'
 SENTIMENT_RESULTS_EXCHANGE = 'sentiment_results'
 SENTIMENT_ANALYSIS_QUEUE = 'sentiment_analysis_queue'
 
-
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - [SentimentService] - %(message)s',
-    stream=sys.stdout
+  level=logging.INFO,
+  format='%(asctime)s - %(levelname)s - [SentimentService] - %(message)s',
+  stream=sys.stdout
 )
 
 def analyze_title_sentiment(title: str) -> dict:
-    """
-    Analyzes the sentiment of a given text title.
-    Returns a dictionary with the score and a descriptive label.
-    """
-    if not isinstance(title, str) or not title.strip():
-        return {"score": 0.0, "label": "neutral"}
+  """
+  Analyzes sentiment using FinBERT (financial BERT model).
+  Returns normalized score and label.
+  """
+  if not isinstance(title, str) or not title.strip():
+    return {"score": 0.0, "label": "neutral"}
 
-    sentiment = TextBlob(title).sentiment
-    score = sentiment.polarity  
-
-    # Define thresholds for classification
-    if score >= 0.1:
-        label = 'bullish'
-    elif score <= -0.1:
-        label = 'bearish'
-    else:
-        label = 'neutral'
-
-    return {"score": score, "label": label}
+  try:
+    result = sentiment_pipeline(title)[0]
+    
+    label_map = {
+      'positive': 'bullish',
+      'negative': 'bearish',
+      'neutral': 'neutral'
+    }
+    
+    score = result['score'] * 2 - 1  # Scale from 0-1 to -1-1
+    
+    # Adjust score direction for negative labels
+    if result['label'] == 'negative':
+      score = -abs(score)
+        
+    return {
+      "score": round(score, 3),  # 3 decimal places
+      "label": label_map[result['label']]
+    }
+      
+  except Exception as e:
+    logging.error(f"FinBERT analysis failed: {e}")
+    return {"score": 0.0, "label": "neutral"}
 
 # ====================================================================
 # RABBITMQ CALLBACK
 # ====================================================================
-
 def on_message_callback(ch, method, properties, body):
   """
   This function is called for every message received from the raw news queue.
@@ -100,10 +115,10 @@ def on_message_callback(ch, method, properties, body):
     logging.error(f"An unexpected error occurred in callback: {e}. Discarding message.")
     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
+
 # ====================================================================
 # MAIN APPLICATION LOGIC
 # ====================================================================
-
 def main():
   """
   Main function to set up RabbitMQ connection, channels, queues,
@@ -112,13 +127,13 @@ def main():
   logging.info("Sentiment Analysis Service is starting...")
   connection = None
   while connection is None:
-      try:
-          credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
-          connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials))
-          logging.info("Successfully connected to RabbitMQ.")
-      except pika.exceptions.AMQPConnectionError as e:
-          logging.error(f"Failed to connect to RabbitMQ: {e}. Retrying in 5 seconds...")
-          time.sleep(5)
+    try:
+      credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+      connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials))
+      logging.info("Successfully connected to RabbitMQ.")
+    except pika.exceptions.AMQPConnectionError as e:
+      logging.error(f"Failed to connect to RabbitMQ: {e}. Retrying in 5 seconds...")
+      time.sleep(5)
 
   channel = connection.channel()
 
@@ -154,4 +169,4 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
+    main()
