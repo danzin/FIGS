@@ -4,17 +4,17 @@
  FIGS is a modular system for aggregating, persisting, and querying financial data — primarily focused on the crypto market. It aims to surface actionable insights by combining structured data (e.g., price feeds) with unstructured signals (e.g., app store rankings, AI sentiment analysis etc.)
 
 ## 🧠 Tech Stack
-- **TypeScript**
-- **Python**
-- **Express**
-- **NodeJS**
-- **NestJS**
-- **React, Vite, TailwindCSS** for the frontend. 
-- **RabbitMQ** for event-based communication
-- **TimescaleDB (PostgreSQL)** for time-series data
-- **Docker** for container orchestration
+- ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+- ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+- ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)
+- ![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
+- ![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white) 
+- ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)   **for the frontend**
+- ![RabbitMQ](https://img.shields.io/badge/Rabbitmq-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)   **for event-based communication**
+- ![TimeScaleDB](https://img.shields.io/badge/TimescaleDB-003B77?style=for-the-badge&logo=timescale&logoColor=white) **for time-series data**
+- ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) **for container orchestration**
 - **Monorepo**
-- **AI Sentiment Analysis**
+- **AI Sentiment Analysis** 
   
 - Planned:
   - Possibly adding another DB(PostgreSQL or MongoDB) for handling non-timeseries data
