@@ -47,6 +47,9 @@ services:
           cpus: '1.0'
           memory: 512M
 
+  x-ampq-url: &ampq-url amqp://user:pass@rabbitmq:5672
+  x-cron-schedule: &cron '0 * * * *'
+  x-fred-key: &fred_api 3d7c8197c322b5c1ba5a7d57a965bcc3
   data-collector:
     build:
       context: .      
@@ -54,8 +57,15 @@ services:
     container_name: data-collector
     ports:
       - "3000:3000" 
-    env_file:
-      - ./data-collector/.env
+    environment:
+      FRED_API_KEY: *fred_api
+      CRON_SCHEDULE: *cron
+      RABBITMQ_URL: *ampq-url
+      HEALTH_HEAP_WARNING_MB: 512
+      HEALTH_HEAP_CRITICAL_MB: 768
+      MONITOR_CHECK_INTERVAL_CRONL: '*/45 * * * *'
+      PORT: 3000
+
     depends_on:
       rabbitmq:
        condition: service_healthy
@@ -73,8 +83,13 @@ services:
       context: .
       dockerfile: ./signal-persister/signal-persister.dockerfile
     container_name: signal-persister
-    env_file:
-      - ./signal-persister/.env 
+    environment:
+      RABBITMQ_URL: *ampq-url
+      DB_USER: postgres
+      DB_HOST: timescaledb
+      DB_NAME: market_signals
+      DB_PASSWORD: postgres
+      DB_PORT: '5432'
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -94,8 +109,13 @@ services:
     container_name: signal-query-api
     ports:
       - "8080:3003"
-    env_file:
-      - ./signal-query-api/.env
+    environment:
+      DB_HOST: timescaledb
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: market_signals
+      PORT: 3003      
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -127,8 +147,14 @@ services:
       context: .
       dockerfile: ./scraper-service/scraper-service.dockerfile
     container_name: scraper-service
-    env_file:
-      - ./scraper-service/.env 
+    environment:
+      DB_HOST: timescaledb
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: market_signals
+      PORT: 5432
+      RABBITMQ_URL: *ampq-url
     depends_on:
       rabbitmq:
         condition: service_healthy
