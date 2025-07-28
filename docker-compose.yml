@@ -1,3 +1,6 @@
+x-ampq-url: &ampq-url amqp://user:pass@rabbitmq:5672
+x-cron-schedule: &cron-schedule '0 * * * *'
+x-fred-key: &fred_api 3d7c8197c322b5c1ba5a7d57a965bcc3
 services:
   rabbitmq:
     image: rabbitmq:3
@@ -47,9 +50,7 @@ services:
           cpus: '1.0'
           memory: 512M
 
-  x-ampq-url: &ampq-url amqp://user:pass@rabbitmq:5672
-  x-cron-schedule: &cron '0 * * * *'
-  x-fred-key: &fred_api 3d7c8197c322b5c1ba5a7d57a965bcc3
+
   data-collector:
     build:
       context: .      
@@ -59,7 +60,7 @@ services:
       - "3000:3000" 
     environment:
       FRED_API_KEY: *fred_api
-      CRON_SCHEDULE: *cron
+      CRON_SCHEDULE: *cron-schedule
       RABBITMQ_URL: *ampq-url
       HEALTH_HEAP_WARNING_MB: 512
       HEALTH_HEAP_CRITICAL_MB: 768
