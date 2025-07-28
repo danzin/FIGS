@@ -3,7 +3,6 @@
 -- ====================================================================
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
-BEGIN;
 
 
 -- ========================
@@ -23,8 +22,7 @@ CREATE TABLE IF NOT EXISTS public.assets (
 -- Raw market data
 CREATE TABLE IF NOT EXISTS public.market_data (
     time          TIMESTAMPTZ NOT NULL,
-    asset_symbol  VARCHAR(20) NOT NULL
-      REFERENCES public.assets(symbol),
+    asset_symbol  VARCHAR(20) NOT NULL,
     "type"       VARCHAR(20) NOT NULL,
     value         DECIMAL(20,8) NOT NULL,
     source        VARCHAR(50) NOT NULL,
@@ -64,29 +62,31 @@ CREATE TABLE IF NOT EXISTS public.news_sentiment (
 
 
 -- Convert to hypertables
-SELECT create_hypertable('public.news_sentiment', 'time');
-SELECT create_hypertable('public.market_data', 'time', if_not_exists => TRUE);
-SELECT create_hypertable('public.market_indicators', 'time', if_not_exists => TRUE);
-
--- Upsert helper for assets
-CREATE OR REPLACE FUNCTION public.upsert_asset_from_market_data()
-RETURNS TRIGGER AS $$
-DECLARE
-  normalized_symbol TEXT := lower(NEW.asset_symbol);
+DO $$
 BEGIN
-  -- Ignore garbage
-  IF normalized_symbol IS NULL OR length(trim(normalized_symbol)) < 2 THEN
-    RETURN NEW;
-  END IF;
-
-  INSERT INTO public.assets(symbol, name, updated_at)
-  VALUES (normalized_symbol, normalized_symbol, NOW())
-  ON CONFLICT (symbol) DO UPDATE
-    SET updated_at = EXCLUDED.updated_at;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+    -- Check if already a hypertable before creating
+    IF NOT EXISTS (
+        SELECT 1 FROM timescaledb_information.hypertables 
+        WHERE hypertable_name = 'news_sentiment' AND hypertable_schema = 'public'
+    ) THEN
+        PERFORM create_hypertable('public.news_sentiment', 'time');
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM timescaledb_information.hypertables 
+        WHERE hypertable_name = 'market_data' AND hypertable_schema = 'public'
+    ) THEN
+        PERFORM create_hypertable('public.market_data', 'time');
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM timescaledb_information.hypertables 
+        WHERE hypertable_name = 'market_indicators' AND hypertable_schema = 'public'
+    ) THEN
+        PERFORM create_hypertable('public.market_indicators', 'time');
+    END IF;
+END
+$$;
 
 -- ========================
 -- Indexes & constraints
@@ -114,6 +114,11 @@ CREATE INDEX IF NOT EXISTS idx_ns_trime
 -- ========================
 -- Continuous Aggregates
 -- ========================
+
+-- Drop existing views if they exist (for clean recreation)
+DROP MATERIALIZED VIEW IF EXISTS public.market_data_15m CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS public.market_data_1h CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS public.market_data_1d CASCADE;
 
 -- 15‑minute
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.market_data_15m
@@ -172,20 +177,46 @@ WITH NO DATA;
 
 
 -- Polices to auto-refresh CGs
-SELECT add_continuous_aggregate_policy('market_data_15m',
-  start_offset => INTERVAL '1 hour',
-  end_offset   => INTERVAL '1 minute',
-  schedule_interval => INTERVAL '1 minute');
+DO $$
+BEGIN
+    -- Remove existing policies if they exist
+    BEGIN
+        PERFORM remove_continuous_aggregate_policy('market_data_15m');
+    EXCEPTION
+        WHEN OTHERS THEN NULL; -- Ignore if policy doesn't exist
+    END;
+    
+    BEGIN
+        PERFORM remove_continuous_aggregate_policy('market_data_1h');
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
+    
+    BEGIN
+        PERFORM remove_continuous_aggregate_policy('market_data_1d');
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
+    
+    -- Add new policies
+    PERFORM add_continuous_aggregate_policy('market_data_15m',
+      start_offset => INTERVAL '1 hour',
+      end_offset   => INTERVAL '1 minute',
+      schedule_interval => INTERVAL '1 minute');
 
-SELECT add_continuous_aggregate_policy('market_data_1h',
-  start_offset => INTERVAL '24 hours',
-  end_offset   => INTERVAL '5 minutes',
-  schedule_interval => INTERVAL '5 minutes');
+    PERFORM add_continuous_aggregate_policy('market_data_1h',
+      start_offset => INTERVAL '24 hours',
+      end_offset   => INTERVAL '5 minutes',
+      schedule_interval => INTERVAL '5 minutes');
 
-SELECT add_continuous_aggregate_policy('market_data_1d',
-  start_offset => INTERVAL '60 days',
-  end_offset   => INTERVAL '1 hour',
-  schedule_interval => INTERVAL '30 minutes');
+    PERFORM add_continuous_aggregate_policy('market_data_1d',
+      start_offset => INTERVAL '60 days',
+      end_offset   => INTERVAL '1 hour',
+      schedule_interval => INTERVAL '30 minutes');
+END
+$$;
+
+
 
 -- ========================
 -- Latest Indicators 
@@ -301,3 +332,4 @@ BEGIN
     ORDER BY mi.name, mi.time DESC;
 END;
 $$ LANGUAGE plpgsql;
+
