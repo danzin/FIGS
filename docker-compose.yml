@@ -40,10 +40,10 @@ services:
       - ./timescaledb-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "psql -U postgres -d market_signals -c 'SELECT 1 FROM public.assets LIMIT 1'"]
-      interval: 10s   # Check every 10 seconds
-      timeout: 5s     # Wait up to 5 seconds for the check to complete
-      retries: 10     # Try up to 10 times (giving the init script plenty of time)
-      start_period: 20s # Don't start checking until 20s after the container starts
+      interval: 10s  
+      timeout: 5s     
+      retries: 10     
+      start_period: 20s 
     deploy:
       resources:
         limits:
@@ -69,10 +69,10 @@ services:
 
     depends_on:
       rabbitmq:
-        condition: service_healthy # <-- This is key
+        condition: service_healthy 
       timescaledb:
-        condition: service_healthy # <-- This is key
-    restart: unless-stopped # Use a restart policy
+        condition: service_healthy 
+    restart: unless-stopped
     deploy:
       resources:
         limits:
@@ -93,9 +93,9 @@ services:
       DB_PORT: '5432'
     depends_on:
       rabbitmq:
-        condition: service_healthy # <-- Key
+        condition: service_healthy
       timescaledb:
-        condition: service_healthy # <-- Key
+        condition: service_healthy
     restart: unless-stopped
 
     deploy:
@@ -120,7 +120,7 @@ services:
       PORT: 3003      
     depends_on:
       timescaledb:
-        condition: service_healthy # <-- Key
+        condition: service_healthy
     restart: unless-stopped
 
     deploy:
@@ -138,8 +138,7 @@ services:
       - "3001:80"
     depends_on:
       signal-query-api:
-        # For the frontend, `service_started` is often okay, but
-        # `service_healthy` is safer if the API has its own healthcheck.
+       
         condition: service_started
     restart: unless-stopped
     deploy:
