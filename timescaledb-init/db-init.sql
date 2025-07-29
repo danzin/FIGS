@@ -133,8 +133,7 @@ SELECT
   count(*)          AS data_points
 FROM public.market_data
 WHERE "type" IN ('price','volume')
-GROUP BY 1, asset_symbol, "type"
-WITH NO DATA;
+GROUP BY 1, asset_symbol, "type";
 
 
 -- 1‑hour
@@ -152,9 +151,7 @@ SELECT
   count(*)          AS data_points
 FROM public.market_data
 WHERE "type" IN ('price','volume')
-GROUP BY 1, asset_symbol, "type"
-WITH NO DATA;
-
+GROUP BY 1, asset_symbol, "type";
 -- 1‑day
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.market_data_1d
 WITH (timescaledb.continuous) AS
@@ -170,9 +167,7 @@ SELECT
   count(*)          AS data_points
 FROM public.market_data
 WHERE "type" IN ('price','volume')
-GROUP BY 1, asset_symbol, "type"
-WITH NO DATA;
-
+GROUP BY 1, asset_symbol, "type";
 
 -- Polices to auto-refresh CGs
 DO $$
@@ -200,12 +195,12 @@ BEGIN
     PERFORM add_continuous_aggregate_policy('market_data_15m',
       start_offset => INTERVAL '1 hour',
       end_offset   => INTERVAL '1 minute',
-      schedule_interval => INTERVAL '1 minute');
+      schedule_interval => INTERVAL '5 minute');
 
     PERFORM add_continuous_aggregate_policy('market_data_1h',
       start_offset => INTERVAL '24 hours',
       end_offset   => INTERVAL '5 minutes',
-      schedule_interval => INTERVAL '5 minutes');
+      schedule_interval => INTERVAL '10 minutes');
 
     PERFORM add_continuous_aggregate_policy('market_data_1d',
       start_offset => INTERVAL '60 days',
