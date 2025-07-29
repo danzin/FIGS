@@ -4,9 +4,16 @@ import pika
 import logging
 import sys
 import time
+import threading
 from datetime import datetime, timezone
 from transformers import pipeline
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import socketserver
 
+# Global variable to track service readiness
+service_ready = False
+
+# Initialize sentiment pipeline (this takes time)
 sentiment_pipeline = pipeline(
     "sentiment-analysis", 
     model="ProsusAI/finbert",  # FinBERT model
@@ -26,6 +33,59 @@ logging.basicConfig(
   format='%(asctime)s - %(levelname)s - [SentimentService] - %(message)s',
   stream=sys.stdout
 )
+
+# Health check handler
+class HealthHandler(BaseHTTPRequestHandler):
+  def do_GET(self):
+    if self.path == '/health':
+      if service_ready:
+        self.send_response(200) # All good
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        health_status = {
+            "status": "healthy",
+            "service": "sentiment-analysis",
+            "ready": True,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        self.wfile.write(json.dumps(health_status).encode())
+      else:
+        self.send_response(503)  # Service Unavailable
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        health_status = {
+          "status": "initializing",
+          "service": "sentiment-analysis", 
+          "ready": False,
+          "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        self.wfile.write(json.dumps(health_status).encode())
+    elif self.path == '/ready':
+      # Kubernetes readiness probe endpoint
+      if service_ready:
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'ready')
+      else:
+        self.send_response(503)
+        self.end_headers()
+        self.wfile.write(b'not ready')
+    else:
+      self.send_response(404)
+      self.end_headers()
+  
+  def log_message(self, format, *args):
+      # Suppress HTTP server logs to keep output clean
+      pass
+
+def start_health_server():
+  """Start health check server in background thread"""
+  try:
+    with socketserver.TCPServer(("", 6220), HealthHandler) as httpd:
+      logging.info("Health check server started on port 6220")
+      httpd.serve_forever()
+  except Exception as e:
+    logging.error(f"Failed to start health server: {e}")
 
 def analyze_title_sentiment(title: str) -> dict:
   """
@@ -59,9 +119,6 @@ def analyze_title_sentiment(title: str) -> dict:
     logging.error(f"FinBERT analysis failed: {e}")
     return {"score": 0.0, "label": "neutral"}
 
-# ====================================================================
-# RABBITMQ CALLBACK
-# ====================================================================
 def on_message_callback(ch, method, properties, body):
   """
   This function is called for every message received from the raw news queue.
@@ -115,16 +172,19 @@ def on_message_callback(ch, method, properties, body):
     logging.error(f"An unexpected error occurred in callback: {e}. Discarding message.")
     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-
-# ====================================================================
-# MAIN APPLICATION LOGIC
-# ====================================================================
 def main():
   """
   Main function to set up RabbitMQ connection, channels, queues,
   and start consuming messages.
   """
+  global service_ready
+  
   logging.info("Sentiment Analysis Service is starting...")
+  
+  # Start health check server immediately (but service_ready = False)
+  health_thread = threading.Thread(target=start_health_server, daemon=True)
+  health_thread.start()
+  
   connection = None
   while connection is None:
     try:
@@ -157,16 +217,19 @@ def main():
   # Register the callback function to handle messages
   channel.basic_consume(queue=SENTIMENT_ANALYSIS_QUEUE, on_message_callback=on_message_callback)
 
+  # Mark service as ready ONLY after everything is set up
+  service_ready = True
   logging.info("Waiting for messages. To exit press CTRL+C")
+  
   try:
     channel.start_consuming()
   except KeyboardInterrupt:
     logging.info("Shutting down...")
+    service_ready = False
     channel.stop_consuming()
   finally:
     connection.close()
     logging.info("RabbitMQ connection closed.")
-
 
 if __name__ == '__main__':
     main()
