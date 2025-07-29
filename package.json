@@ -9,10 +9,11 @@
     "signal-persister",
     "signal-query-api",
     "micro-frontend",
-    "scraper-service"
+    "scraper-service",
+    "seeder"
   ],
   "scripts": {
-    "build": "tsc --build --force tsconfig.json",
+    "build": "npm run build -w @financialsignalsgatheringsystem/common && tsc --build --force tsconfig.json",
     "build:all": "npm run build --workspaces --if-present",
     "dev": "npm run dev --workspaces --parallel"
   },
