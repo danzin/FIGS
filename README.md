@@ -49,11 +49,15 @@ docker compose up --build
 The frontend is currently minimalistic, only displaying a few signals with a price chart. 
 As I add more data to work with, more data will be displayed.
 
-![image](https://github.com/user-attachments/assets/1f422c79-09e6-4a27-9d10-79a584fb0e7e)
+<img width="1883" height="880" alt="image" src="https://github.com/user-attachments/assets/7b3be4e5-7cf4-42a8-b03a-853f2563a180" />
+<img width="424" height="945" alt="image" src="https://github.com/user-attachments/assets/cda194dd-79f9-4ad1-969d-466f099c9958" />
+
 
 The full docker build:
 
-![image](https://github.com/user-attachments/assets/fc3f486f-3c77-47b0-8b0e-1c795f48034a)
 
-![image](https://github.com/user-attachments/assets/5f744c97-ee1f-40d3-8e35-736cff4f061e)
+<img width="1585" height="396" alt="image" src="https://github.com/user-attachments/assets/12f453f9-728d-4afd-bc57-e69c463d85ea" />
+
+<img width="1395" height="892" alt="image" src="https://github.com/user-attachments/assets/aeff5b25-048e-4999-a251-d96365a0a58e" />
+
 
