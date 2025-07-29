@@ -5,11 +5,13 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install gcc and other necessary build tools
-RUN apt-get update && apt-get install -y \
-    gcc \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      gcc \
+      build-essential \
+      curl \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY ./sentiment-analysis-service/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
