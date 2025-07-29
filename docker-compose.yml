@@ -15,7 +15,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: on-failure
+
     # Ensure RabbitMQ doesn't go nuts
     deploy:
       resources:
@@ -39,11 +39,11 @@ services:
       - timescaledb_data:/var/lib/postgresql/data  
       - ./timescaledb-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d market_signals"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: on-failure 
+      test: ["CMD-SHELL", "psql -U postgres -d market_signals -c 'SELECT 1 FROM public.assets LIMIT 1'"]
+      interval: 10s   # Check every 10 seconds
+      timeout: 5s     # Wait up to 5 seconds for the check to complete
+      retries: 10     # Try up to 10 times (giving the init script plenty of time)
+      start_period: 20s # Don't start checking until 20s after the container starts
     deploy:
       resources:
         limits:
@@ -69,10 +69,10 @@ services:
 
     depends_on:
       rabbitmq:
-       condition: service_healthy
+        condition: service_healthy # <-- This is key
       timescaledb:
-        condition: service_healthy
-    restart: on-failure
+        condition: service_healthy # <-- This is key
+    restart: unless-stopped # Use a restart policy
     deploy:
       resources:
         limits:
@@ -93,10 +93,11 @@ services:
       DB_PORT: '5432'
     depends_on:
       rabbitmq:
-        condition: service_healthy
+        condition: service_healthy # <-- Key
       timescaledb:
-        condition: service_healthy
-    restart: on-failure
+        condition: service_healthy # <-- Key
+    restart: unless-stopped
+
     deploy:
       resources:
         limits:
@@ -119,8 +120,9 @@ services:
       PORT: 3003      
     depends_on:
       timescaledb:
-        condition: service_healthy
-    restart: on-failure 
+        condition: service_healthy # <-- Key
+    restart: unless-stopped
+
     deploy:
       resources:
         limits:
@@ -136,8 +138,10 @@ services:
       - "3001:80"
     depends_on:
       signal-query-api:
+        # For the frontend, `service_started` is often okay, but
+        # `service_healthy` is safer if the API has its own healthcheck.
         condition: service_started
-    restart: on-failure
+    restart: unless-stopped
     deploy:
       resources:
         limits:
@@ -160,7 +164,9 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-    restart: on-failure
+      timescaledb: 
+        condition: service_healthy 
+    restart: unless-stopped
     # Scraping can be memory intensive. 
     mem_limit: 4gb
     # Playwright needs a large shared memory size to run Chromium.
@@ -173,8 +179,9 @@ services:
       environment:
         - RABBITMQ_HOST=rabbitmq
       depends_on:
-        - rabbitmq
-      restart: on-failure
+        rabbitmq:
+          condition: service_healthy
+      restart: unless-stopped
 
 volumes: 
   timescaledb_data:
