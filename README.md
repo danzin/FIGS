@@ -30,6 +30,7 @@
 - **micro-frontend**: Displays data from signal-query-api
 - **scraper-service**: Spins up headless browsers and scrapes data unavaiable through APIs
 - **sentiment-analysis-service**: Uses AI to perform sentiment analysis on recent news articles
+- **seeder**: Seeds TimeScaleDB with fresh data and manually triggers all continousous aggregates in order to provide OHLC for the frontend chart.
   
 ## 📊 Features
 
@@ -37,7 +38,6 @@
 - Continuous aggregates for fast timescale lookups
 - Extensible DTOs and modular repository layer
 - AI sentiment analysis of recent news
-
 
 ## 🚀 Running Locally
 
