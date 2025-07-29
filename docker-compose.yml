@@ -121,6 +121,8 @@ services:
     depends_on:
       timescaledb:
         condition: service_healthy
+      seeder: 
+        condition: service_completed_successfully
     restart: unless-stopped
 
     deploy:
@@ -187,6 +189,19 @@ services:
         start_period: 60s
       restart: unless-stopped
       
+  seeder:
+    build:
+      context: .
+      dockerfile: ./seeder/seeder.dockerfile 
+    environment:
+        DB_HOST: timescaledb
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PASSWORD: postgres
+        DB_NAME: market_signals
+    depends_on:
+      timescaledb:
+        condition: service_healthy
 volumes: 
   timescaledb_data:
   

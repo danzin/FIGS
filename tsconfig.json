@@ -6,6 +6,7 @@
     { "path": "./signal-persister" },
     { "path": "./signal-query-api" },
     { "path": "./micro-frontend" },
-    { "path": "./scraper-service" } 
+    { "path": "./scraper-service" },
+    { "path": "./seeder"}
   ]
 }
