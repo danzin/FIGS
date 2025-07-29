@@ -41,30 +41,32 @@ export class TimescaleDBService implements DatabaseService {
 			throw error;
 		}
 	}
-
 	/**
-	 * Inserts asset-specific data (price or volume) into the market_data table.
+	 * Inserts a market data point (price, volume, rank).
+	 * It will automatically create an entry in the `assets` table if the symbol is new.
 	 */
 	public async insertMarketData(point: MarketDataPoint): Promise<void> {
-		// Fixed: Changed 'name' to 'asset_symbol' in the conflict clause
-		const insertMarketText = `
-      INSERT INTO public.market_data
-        (time, asset_symbol, "type", value, source)
-      VALUES
-        ($1, $2, $3, $4, $5)
-    `;
-
+		const client = await this.pool.connect();
 		try {
-			// Added validation logging
-			console.log(`[DB] Attempting to insert market data:`, {
-				time: point.time,
-				asset_symbol: point.asset_symbol,
-				type: point.type,
-				value: point.value,
-				source: point.source,
-			});
+			await client.query("BEGIN");
 
-			const res = await this.pool.query(insertMarketText, [
+			const assetUpsertQuery = `
+							INSERT INTO public.assets (symbol, name, category, updated_at)
+							VALUES ($1, $2, $3, NOW())
+							ON CONFLICT (symbol) DO UPDATE
+							SET updated_at = NOW();
+            `;
+
+			const assetName = point.asset_symbol.charAt(0).toUpperCase() + point.asset_symbol.slice(1).replace(/_/g, " ");
+			const assetCategory = "crypto";
+
+			await client.query(assetUpsertQuery, [point.asset_symbol, assetName, assetCategory]);
+
+			const marketDataInsertQuery = `
+                INSERT INTO public.market_data (time, asset_symbol, type, value, source)
+                VALUES ($1, $2, $3, $4, $5);
+            `;
+			await client.query(marketDataInsertQuery, [
 				point.time,
 				point.asset_symbol,
 				point.type,
@@ -72,22 +74,18 @@ export class TimescaleDBService implements DatabaseService {
 				point.source,
 			]);
 
-			console.log(`[DB] market_data insert result: rowCount=${res.rowCount}, command=${res.command}`);
-
-			if (res.rowCount === 0) {
-				console.warn(
-					`[DB] No rows inserted for market_data - likely duplicate: ${point.asset_symbol} ${point.type} at ${point.time}`
-				);
-			} else {
-				console.log(`[DB] Successfully inserted market data: ${point.asset_symbol} ${point.type}`);
-			}
+			// Commit the transaction
+			await client.query("COMMIT");
 		} catch (error) {
-			console.error(`[DB] Error inserting market data for ${point.asset_symbol}:`, error);
-			console.error(`[DB] Failed data point:`, point);
-			throw error;
+			// If anything fails, roll back the entire transaction
+			await client.query("ROLLBACK");
+			console.error(`[DbService] Transaction failed for market data point. Rolling back.`, { point, error });
+			throw error; // Re-throw the error so the consumer knows it failed
+		} finally {
+			// ALWAYS release the client back to the pool
+			client.release();
 		}
 	}
-
 	/**
 	 * Inserts a general indicator into the market_indicators table.
 	 */
