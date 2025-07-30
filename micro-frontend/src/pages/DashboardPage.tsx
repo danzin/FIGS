@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import type { Interval } from '../types/OhlcData';
-import type { IndicatorData } from '../types/Indicators';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
-import { MetricCard } from '../components/MetricCard';
+import { MetricCard, FearGreedCard, LatestNews } from '../components';
 import { useOhlcData } from '../hooks/useOhlcData';
 import { useAssetNames } from '../hooks/useAssetNames';
 
@@ -13,159 +12,537 @@ const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '1 Day', value: '1d' },
 ];
 
-export const DashboardPage: React.FC = () => {
+// export const DashboardPage: React.FC = () => {
 
-  const { options: assetOptions } = useAssetNames();
-  const [selectedAsset, setSelectedAsset] = useState("");
-  const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
+//   const { options: assetOptions } = useAssetNames();
+//   const [selectedAsset, setSelectedAsset] = useState("");
+//   const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
 
-  useEffect(() => {
-    if (!selectedAsset && assetOptions.length) {
-      setSelectedAsset(assetOptions[0].value);
-    }
-  }, [assetOptions]);
+//   useEffect(() => {
+//     if (!selectedAsset && assetOptions.length) {
+//       setSelectedAsset(assetOptions[0].value);
+//     }
+//   }, [assetOptions]);
 
-  const {
-    data: chartData,
-    loading: chartLoading,
-    error: chartError,
-  } = useOhlcData(selectedAsset, interval);
+//   const {
+//     data: chartData,
+//     loading: chartLoading,
+//     error: chartError,
+//   } = useOhlcData(selectedAsset, interval);
 
-const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
-console.log('Indicators:', indicators);
+// const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
+// console.log('Indicators:', indicators);
+//   return (
+//     <div className="min-h-screen bg-gray-900 text-white p-4 ">
+//       { /* Header */}
+//       <div className="mb-6">
+//         <h1 className='text-3xl font-bold'>FIGS Dashboard</h1>
+
+//       </div>
+      
+//       <div className="flex flex-col space-y-6 ">
+
+//       {/* Metrics bar */}
+//         <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full sm:w-2/3">
+//           {indicatorsLoading ? (
+//             Array.from({ length: 4 }).map((_, index) => (
+//               <div key={index} className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center animate-pulse">
+//                 <div className="h-3 bg-gray-600 rounded w-16 mb-2"></div>
+//                 <div className="h-6 bg-gray-600 rounded w-12"></div>
+//               </div>
+//             ))
+//           ) : indicatorsError ? (
+//             <div className="col-span-full bg-red-900/20 border border-red-800 p-4 rounded-2xl">
+//               <p className="text-red-400 text-sm text-center">{indicatorsError}</p>
+//             </div>
+//           ) : (
+//             <>
+//               <MetricCard 
+//                 label="Fear&Greed Index" 
+//                 indicator={indicators.fearGreedIndex as IndicatorData}
+//                 precision={0}
+//               />
+//               <MetricCard 
+//                 label="VIX Level" 
+//                 indicator={indicators.vix as IndicatorData}
+//                 precision={2}
+//                 description='Volatility of the U.S. stock market'
+//               />
+//               <MetricCard 
+//                 label="BTC.D" 
+//                 indicator={indicators.btcDominance as IndicatorData}
+//                 unit="%"
+//                 precision={1}
+//                 description='BTC Dominance'
+//               />
+//               <MetricCard 
+//                 label="Coinbase Rank" 
+//                 indicator={indicators.coinbaseRank as IndicatorData}
+//                 precision={0}
+//                 description='Top 100 Finance apps in App Store'
+//               />
+//               <MetricCard 
+//                 label="SPY" 
+//                 indicator={indicators.spy as IndicatorData}
+//                 unit="$"
+//                 precision={2}
+//                 description='SPDR S&P 500 ETF'
+//               />
+//             </>
+//           )}
+//         </div>
+
+//       {/* Chart section */}
+//         <div className="flex-row flex-wrap gap-6 items-center">
+//           <div className="flex items-center gap-2">
+//             <label 
+//               htmlFor="asset-select" 
+//               className="text-sm font-medium text-gray-300"
+//             >
+//               Select Asset:
+//             </label>
+//             <select
+//               id="asset-select"
+//               value={selectedAsset}
+//               onChange={(e) => setSelectedAsset(e.target.value)}
+//               className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg 
+//                           focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
+//                           hover:bg-gray-700 transition-colors"
+//             >
+//               {assetOptions.map(asset => (
+//                 <option key={asset.value} value={asset.value}>
+//                   {asset.label}
+//                 </option>
+//               ))}
+//             </select>
+//             <label 
+//               htmlFor="interval-select" 
+//               className="text-sm font-medium text-gray-300"
+//             >
+//               Interval:
+//             </label>
+//             <select
+//               id="interval-select"
+//               value={interval}
+//               onChange={(e) => setInterval(e.target.value as Interval)}
+//               className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg 
+//                           focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
+//                           hover:bg-gray-700 transition-colors"
+//             >
+//               {supportedIntervals.map(opt => (
+//                 <option key={opt.value} value={opt.value}>
+//                   {opt.label}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+
+//           { /* Chart Container */}
+//           <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
+//             {chartLoading && (
+//               <div className="flex items-center justify-center h-96">
+//                 <div className="flex items-center space-x-2">
+//                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+//                   <p className="text-gray-300">Loading chart...</p>
+//                 </div>
+//               </div>
+//             )}
+            
+//             {chartError && (
+//               <div className="flex items-center justify-center h-96">
+//                 <p className="text-red-400 bg-red-900/20 px-4 py-2 rounded-lg border border-red-800">
+//                   {chartError}
+//                 </p>
+//               </div>
+//             )}
+            
+//             {!chartLoading && !chartError && (
+//               <div className="w-full h-[50vh] md:h-[600px]">
+//                 <FinancialChart data={chartData} />
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//       </div>
+
+//     </div>
+//   );
+// };
+
+// export const DashboardPage: React.FC = () => {
+//   const { options: assetOptions } = useAssetNames();
+//   const [selectedAsset, setSelectedAsset] = useState("");
+//   const [interval, _setInterval] = useState<Interval>(supportedIntervals[2].value);
+
+//   useEffect(() => {
+//     if (!selectedAsset && assetOptions.length) {
+//       setSelectedAsset(assetOptions[0].value);
+//     }
+//   }, [assetOptions]);
+
+//   const {
+//     data: chartData,
+//     loading: _chartLoading,
+//     error: _chartError,
+//   } = useOhlcData(selectedAsset, interval);
+
+//   const { indicators, isLoading: _indicatorsLoading, error: _indicatorsError } = useIndicatorsData();
+//   console.log('Indicators:', indicators);
+    
+//     return (
+//       <div className="bg-gray-900 text-white p-10 sm:p-6">
+//         <header className="flex justify-between items-center mb-6">
+//           <div>
+//             <h1 className="text-2xl sm:text-3xl font-bold">Financial Insights Dashboard</h1>
+//             <p className="text-xl text-gray-400">Real-time market data and sentiment analysis</p>
+//           </div>
+//           <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors">
+//             <span>Refresh</span>
+//           </button>
+//         </header>
+
+//         <main className="space-y-6 flex-col">
+//           {/* Metrics Bar */}
+//           <section className="flex flex-col lg:flex-row gap-4">
+//             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-[3]">
+//                 {/* Replace with your useIndicatorsData hook */}
+//               <MetricCard label="BTC Dominance" indicator={mockIndicators.btcDominance} icon={<BtcIcon />} unit="%" />
+//               <MetricCard label="VIX Level" indicator={mockIndicators.vix} icon={<VixIcon />} />
+//               <MetricCard label="SPY Price" indicator={mockIndicators.spy} icon={<SpyIcon />} unit="$" precision={2} />
+//             </div>
+//             <div className="flex-1">
+//                 <FearGreedCard indicator={mockIndicators.fearGreed} />
+//             </div>
+//           </section>
+
+//           {/* Main Content Area: Chart and News */}
+//           <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+//               <div className="lg:col-span-2 bg-gray-800 p-4 rounded-lg shadow-lg">
+//                   <h2 className="text-xl font-bold mb-4">Crypto Market Overview</h2>
+//                   {/* Your Chart controls (BTC/ETH/SOL buttons, etc.) go here */}
+//                   <div className="w-full h-[50vh] md:h-[600px]">
+//                       {/* Your FinancialChart component is perfect here */}
+//                       <FinancialChart data={chartData} />
+//                   </div>
+//               </div>
+         
+//           </section>
+//           <section className="bg-gray-800 p-6 rounded-lg shadow-lg">
+//             <h2 className="text-xl font-bold mb-4">Latest Market News</h2>
+//             <LatestNews />
+//           </section>
+//         </main>
+//       </div>
+//     );
+// };
+
+// Placeholder icons
+// const BtcIcon = () => <>Ƀ</>; 
+// const VixIcon = () => <>📈</>; 
+// const SpyIcon = () => <>🏦</>; 
+
+
+// Mock data
+// const mockIndicators = {
+//     btcDominance: { name: 'btc_dominance', value: 48.7, timestamp: new Date().toISOString(), source: 'CoinGecko', change_24h: 1.2 },
+//     vix: { name: 'vix_level', value: 19.2, timestamp: new Date().toISOString(), source: 'Yahoo Finance', change_24h: -0.8 },
+//     spy: { name: 'spy_price', value: 452.36, timestamp: new Date().toISOString(), source: 'Yahoo Finance', change_24h: 1.4 },
+//     fearGreed: { name: 'fear_greed_index', value: 54, timestamp: new Date().toISOString(), source: 'Alternative.me', change_24h: 2, time: new Date() },
+// };
+
+import { TrendingUp, TrendingDown, RefreshCw, ChevronDown, BarChart3, PieChart, DollarSign, Activity } from 'lucide-react';
+
+// Enhanced MetricCard component with trend indicators and modern styling
+const EnhancedMetricCard = ({ 
+  label, 
+  value, 
+  unit = '', 
+  change, 
+  changePercent, 
+  precision = 2, 
+  description, 
+  icon: Icon,
+  isPositive 
+}) => {
+  const displayValue = value !== undefined ? value.toFixed(precision) : '--';
+  const isChangePositive = changePercent > 0;
+  
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 ">
-      { /* Header */}
-      <div className="mb-6">
-        <h1 className='text-3xl font-bold'>FIGS Dashboard</h1>
-
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          {Icon && (
+            <div className={`p-2 rounded-lg ${
+              label.includes('Fear') ? 'bg-blue-50' :
+              label.includes('VIX') ? 'bg-purple-50' :
+              label.includes('BTC') ? 'bg-orange-50' :
+              label.includes('SPY') ? 'bg-green-50' :
+              'bg-gray-50'
+            }`}>
+              <Icon className={`h-5 w-5 ${
+                label.includes('Fear') ? 'text-blue-600' :
+                label.includes('VIX') ? 'text-purple-600' :
+                label.includes('BTC') ? 'text-orange-600' :
+                label.includes('SPY') ? 'text-green-600' :
+                'text-gray-600'
+              }`} />
+            </div>
+          )}
+          <div>
+            <h3 className="text-sm font-medium text-gray-600">{label}</h3>
+            {description && (
+              <p className="text-xs text-gray-400 mt-1">{description}</p>
+            )}
+          </div>
+        </div>
       </div>
       
-      <div className="flex flex-col space-y-6 ">
-
-      {/* Metrics bar */}
-        <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full sm:w-2/3">
-          {indicatorsLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="bg-gray-800 p-4 rounded-2xl shadow flex flex-col items-center animate-pulse">
-                <div className="h-3 bg-gray-600 rounded w-16 mb-2"></div>
-                <div className="h-6 bg-gray-600 rounded w-12"></div>
-              </div>
-            ))
-          ) : indicatorsError ? (
-            <div className="col-span-full bg-red-900/20 border border-red-800 p-4 rounded-2xl">
-              <p className="text-red-400 text-sm text-center">{indicatorsError}</p>
-            </div>
-          ) : (
-            <>
-              <MetricCard 
-                label="Fear&Greed Index" 
-                indicator={indicators.fearGreedIndex as IndicatorData}
-                precision={0}
-              />
-              <MetricCard 
-                label="VIX Level" 
-                indicator={indicators.vix as IndicatorData}
-                precision={2}
-                description='Volatility of the U.S. stock market'
-              />
-              <MetricCard 
-                label="BTC.D" 
-                indicator={indicators.btcDominance as IndicatorData}
-                unit="%"
-                precision={1}
-                description='BTC Dominance'
-              />
-              <MetricCard 
-                label="Coinbase Rank" 
-                indicator={indicators.coinbaseRank as IndicatorData}
-                precision={0}
-                description='Top 100 Finance apps in App Store'
-              />
-              <MetricCard 
-                label="SPY" 
-                indicator={indicators.spy as IndicatorData}
-                unit="$"
-                precision={2}
-                description='SPDR S&P 500 ETF'
-              />
-            </>
-          )}
+      <div className="flex items-end justify-between">
+        <div className="flex items-baseline gap-1">
+          {unit === '$' && <span className="text-lg font-semibold text-gray-900">{unit}</span>}
+          <span className="text-2xl font-bold text-gray-900">{displayValue}</span>
+          {unit !== '$' && unit && <span className="text-lg font-semibold text-gray-900">{unit}</span>}
         </div>
-
-      {/* Chart section */}
-        <div className="flex-row flex-wrap gap-6 items-center">
-          <div className="flex items-center gap-2">
-            <label 
-              htmlFor="asset-select" 
-              className="text-sm font-medium text-gray-300"
-            >
-              Select Asset:
-            </label>
-            <select
-              id="asset-select"
-              value={selectedAsset}
-              onChange={(e) => setSelectedAsset(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg 
-                          focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
-                          hover:bg-gray-700 transition-colors"
-            >
-              {assetOptions.map(asset => (
-                <option key={asset.value} value={asset.value}>
-                  {asset.label}
-                </option>
-              ))}
-            </select>
-            <label 
-              htmlFor="interval-select" 
-              className="text-sm font-medium text-gray-300"
-            >
-              Interval:
-            </label>
-            <select
-              id="interval-select"
-              value={interval}
-              onChange={(e) => setInterval(e.target.value as Interval)}
-              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg 
-                          focus:ring-blue-500 focus:border-blue-500 block px-3 py-2
-                          hover:bg-gray-700 transition-colors"
-            >
-              {supportedIntervals.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+        
+        {changePercent !== undefined && (
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+            isChangePositive 
+              ? 'bg-green-50 text-green-700' 
+              : 'bg-red-50 text-red-700'
+          }`}>
+            {isChangePositive ? (
+              <TrendingUp className="h-3 w-3" />
+            ) : (
+              <TrendingDown className="h-3 w-3" />
+            )}
+            <span>{Math.abs(changePercent).toFixed(1)}%</span>
           </div>
-
-          { /* Chart Container */}
-          <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
-            {chartLoading && (
-              <div className="flex items-center justify-center h-96">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                  <p className="text-gray-300">Loading chart...</p>
-                </div>
-              </div>
-            )}
-            
-            {chartError && (
-              <div className="flex items-center justify-center h-96">
-                <p className="text-red-400 bg-red-900/20 px-4 py-2 rounded-lg border border-red-800">
-                  {chartError}
-                </p>
-              </div>
-            )}
-            
-            {!chartLoading && !chartError && (
-              <div className="w-full h-[50vh] md:h-[600px]">
-                <FinancialChart data={chartData} />
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
-
+      
+      {changePercent !== undefined && (
+        <div className="mt-2">
+          <span className="text-xs text-gray-500">24h change</span>
+        </div>
+      )}
     </div>
   );
 };
+
+// News item component with sentiment indicators
+const NewsItem = ({ title, source, time, sentiment, isPositive }) => (
+  <div className="flex items-start gap-4 p-4 hover:bg-gray-50 rounded-lg transition-colors">
+    <div className={`w-1 h-12 rounded-full ${
+      sentiment === 'Bullish' ? 'bg-green-400' :
+      sentiment === 'Bearish' ? 'bg-red-400' :
+      'bg-blue-400'
+    }`} />
+    <div className="flex-1 min-w-0">
+      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 leading-5">
+        {title}
+      </h4>
+      <div className="flex items-center gap-3 mt-2">
+        <span className="text-xs text-gray-500">{source}</span>
+        <span className="text-xs text-gray-400">•</span>
+        <span className="text-xs text-gray-500">{time}</span>
+      </div>
+    </div>
+    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+      sentiment === 'Bullish' ? 'bg-green-50 text-green-700' :
+      sentiment === 'Bearish' ? 'bg-red-50 text-red-700' :
+      'bg-blue-50 text-blue-700'
+    }`}>
+      {sentiment}
+    </div>
+  </div>
+);
+
+// Mock data
+const mockMetrics = [
+  {
+    label: "BTC Dominance",
+    value: 48.7,
+    unit: "%",
+    changePercent: 1.2,
+    description: "Bitcoin market cap dominance",
+    icon: BarChart3
+  },
+  {
+    label: "VIX Level", 
+    value: 19.2,
+    changePercent: -0.8,
+    description: "Volatility of the U.S. stock market",
+    icon: Activity
+  },
+  {
+    label: "SPY Price",
+    value: 452.36,
+    unit: "$",
+    changePercent: 1.4,
+    description: "SPDR S&P 500 ETF",
+    icon: DollarSign
+  },
+  {
+    label: "Fear & Greed Index",
+    value: 54,
+    changePercent: 2.1,
+    description: "Neutral",
+    icon: PieChart
+  }
+];
+
+const mockNews = [
+  {
+    title: "Bitcoin Surges Past $42,000 as Institutional Investors Flood In",
+    source: "CoinDesk",
+    time: "2 hours ago",
+    sentiment: "Bullish"
+  },
+  {
+    title: "Regulatory Crackdown Fears Cause Altcoin Market to Plummet", 
+    source: "Bloomberg Crypto",
+    time: "5 hours ago",
+    sentiment: "Bearish"
+  },
+  {
+    title: "Fed Chair Powell Suggests Rate Cuts May Come Later Than Expected",
+    source: "Financial Times",
+    time: "8 hours ago", 
+    sentiment: "Neutral"
+  },
+  {
+    title: "Ethereum ETF Approval Rumors Spark Rally in ETH and L2 Tokens",
+    source: "The Block",
+    time: "12 hours ago",
+    sentiment: "Bullish"
+  },
+  {
+    title: "Major Exchange Hack Results in $200M Loss, Market Reacts Negatively",
+    source: "CryptoSlate",
+    time: "14 hours ago",
+    sentiment: "Bearish"
+  }
+];
+
+const chartTabs = [
+  { id: 'btc', label: 'BTC', active: true },
+  { id: 'eth', label: 'ETH', active: false },
+  { id: 'sol', label: 'SOL', active: false },
+  { id: 'total', label: 'Total', active: false }
+];
+
+export const DashboardPage = () => {
+  const [activeTab, setActiveTab] = useState('btc');
+  const [timeframe, setTimeframe] = useState('Last 24h');
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Financial Insights Dashboard</h1>
+            <p className="text-sm text-gray-600 mt-1">Real-time market data and sentiment analysis</p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <select 
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option>Last 24h</option>
+                <option>Last 7d</option>
+                <option>Last 30d</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
+            
+            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-8">
+        {/* Metrics Cards */}
+        <div className="flex flex-col sm:flex-row gap-6">
+          {mockMetrics.map((metric, index) => (
+            <EnhancedMetricCard
+              key={index}
+              label={metric.label}
+              value={metric.value}
+              unit={metric.unit}
+              changePercent={metric.changePercent}
+              description={metric.description}
+              icon={metric.icon}
+            />
+          ))}
+        </div>
+
+        {/* Chart Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Crypto Market Overview</h2>
+              
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                {chartTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Chart Placeholder */}
+          <div className="p-6">
+            <div className="h-96 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl flex items-center justify-center border-2 border-dashed border-blue-200">
+              <div className="text-center">
+                <BarChart3 className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                <p className="text-blue-600 font-medium">Chart Component Integration</p>
+                <p className="text-blue-500 text-sm mt-1">Your existing FinancialChart will be placed here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* News Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Latest Market News</h2>
+              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                View all →
+              </button>
+            </div>
+          </div>
+          
+          <div className="divide-y divide-gray-100">
+            {mockNews.map((news, index) => (
+              <NewsItem
+                key={index}
+                title={news.title}
+                source={news.source}
+                time={news.time}
+                sentiment={news.sentiment}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

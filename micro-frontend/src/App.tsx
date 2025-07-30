@@ -2,7 +2,7 @@ import { DashboardPage } from './pages/DashboardPage'
 
 function App() {
   return (
-    <div className='w-full min-h-screen'>
+    <div className='w-full'>
       <DashboardPage/>
     </div>
   )
