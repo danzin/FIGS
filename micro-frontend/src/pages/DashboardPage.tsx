@@ -266,6 +266,7 @@ const mockMetrics = [
   {
     label: "BTC Dominance",
     value: 48.7,
+    precision: 2,
     unit: "%",
     changePercent: 1.2,
     description: "Bitcoin market cap dominance",
@@ -274,6 +275,7 @@ const mockMetrics = [
     {
     label: "Coinbase Rank",
     value: 16,
+    precision: 0,
     unit: "",
     changePercent: null,
     description: "Coinbase AppStore Rank",
@@ -283,6 +285,7 @@ const mockMetrics = [
     label: "VIX Level", 
     value: 19.2,
     changePercent: -0.8,
+    precision: 2,
     description: "Volatility of the U.S. stock market",
     icon: Activity
   },
@@ -290,6 +293,7 @@ const mockMetrics = [
     label: "SPY Price",
     value: 452.36,
     unit: "$",
+    precision: 2,
     changePercent: 1.4,
     description: "SPDR S&P 500 ETF",
     icon: DollarSign
@@ -297,6 +301,7 @@ const mockMetrics = [
   {
     label: "Fear & Greed Index",
     value: 54,
+    precision: 0,
     changePercent: 2.1,
     description: "Neutral",
     icon: PieChart
@@ -345,6 +350,7 @@ export const DashboardPage = () => {
               label={metric.label}
               value={metric.value}
               unit={metric.unit}
+              precision={metric.precision}
               changePercent={metric.changePercent}
               description={metric.description}
               icon={metric.icon}

@@ -29,12 +29,13 @@ export const EnhancedMetricCard: React.FC<EnhancedMetricCardProps> = ({
   unit = '', 
   change, 
   changePercent, 
-  precision = 2, 
+  precision, 
   description, 
   icon: Icon,
   isPositive 
 }) => {
   const displayValue = value !== undefined ? value.toFixed(precision) : '--';
+  console.log('EnhancedMetricCard', { label, value, unit, change, changePercent, precision, description, isPositive });
   if(changePercent === undefined || changePercent === null) {
     changePercent = 0;
   }
