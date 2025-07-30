@@ -361,7 +361,7 @@ const mockMetrics = [
         {/* Metrics Cards */}
         <div className="flex flex-col sm:flex-row gap-6">
           {mockMetrics.map((metric, index) => (
-            <EnhancedMetricCard
+            <MetricCard
               key={index}
               label={metric.label}
               value={metric.value}
@@ -370,7 +370,7 @@ const mockMetrics = [
               changePercent={metric.changePercent}
               description={metric.description}
               icon={metric.icon}
-              feargreed={metric.feargreed}
+
             />
           ))}
         </div>
