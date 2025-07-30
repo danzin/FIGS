@@ -31,8 +31,8 @@ interface NewsItemProps {
 export const NewsItem: React.FC<NewsItemProps> = ({ title, source, time, sentiment, isPositive }) => (
   <div className="flex items-start gap-4 p-4 hover:bg-gray-50 rounded-lg transition-colors">
     <div className={`w-1 h-12 rounded-full ${
-      sentiment === 'Bullish' ? 'bg-green-400' :
-      sentiment === 'Bearish' ? 'bg-red-400' :
+      sentiment === 'bullish' ? 'bg-green-400' :
+      sentiment === 'bearish' ? 'bg-red-400' :
       'bg-blue-400'
     }`} />
     <div className="flex-1 min-w-0">
@@ -46,8 +46,8 @@ export const NewsItem: React.FC<NewsItemProps> = ({ title, source, time, sentime
       </div>
     </div>
     <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-      sentiment === 'Bullish' ? 'bg-green-50 text-green-700' :
-      sentiment === 'Bearish' ? 'bg-red-50 text-red-700' :
+      sentiment === 'bullish' ? 'bg-green-50 text-green-700' :
+      sentiment === 'bearish' ? 'bg-red-50 text-red-700' :
       'bg-blue-50 text-blue-700'
     }`}>
       {sentiment}

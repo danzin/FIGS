@@ -313,7 +313,7 @@ const chartTabs = [
 
 export const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState('btc');
-  const [timeframe, setTimeframe] = useState('Last 24h');
+
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -381,8 +381,7 @@ export const DashboardPage = () => {
             <div className="h-96 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl flex items-center justify-center border-2 border-dashed border-blue-200">
               <div className="text-center">
                 <BarChart3 className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                <p className="text-blue-600 font-medium">Chart Component Integration</p>
-                <p className="text-blue-500 text-sm mt-1">Your existing FinancialChart will be placed here</p>
+       
               </div>
             </div>
           </div>
