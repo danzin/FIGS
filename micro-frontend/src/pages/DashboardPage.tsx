@@ -252,7 +252,6 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 
 import { TrendingUp, TrendingDown, RefreshCw, ChevronDown, BarChart3, PieChart, DollarSign, Activity } from 'lucide-react';
 
-// Enhanced MetricCard component with trend indicators and modern styling
 const EnhancedMetricCard = ({ 
   label, 
   value, 
