@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import type { Interval } from '../types/OhlcData';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
-import { MetricCard, FearGreedCard, LatestNews } from '../components';
+import { MetricCard, FearGreedCard, LatestNews, NewsItem, EnhancedMetricCard } from '../components';
 import { useOhlcData } from '../hooks/useOhlcData';
 import { useAssetNames } from '../hooks/useAssetNames';
-
 const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '15 Minutes', value: '15m' },
   { label: '1 Hour', value: '1h' },
@@ -252,109 +251,15 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 
 import { TrendingUp, TrendingDown, RefreshCw, ChevronDown, BarChart3, PieChart, DollarSign, Activity } from 'lucide-react';
 
-const EnhancedMetricCard = ({ 
-  label, 
-  value, 
-  unit = '', 
-  change, 
-  changePercent, 
-  precision = 2, 
-  description, 
-  icon: Icon,
-  isPositive 
-}) => {
-  const displayValue = value !== undefined ? value.toFixed(precision) : '--';
-  const isChangePositive = changePercent > 0;
-  
-  return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {Icon && (
-            <div className={`p-2 rounded-lg ${
-              label.includes('Fear') ? 'bg-blue-50' :
-              label.includes('VIX') ? 'bg-purple-50' :
-              label.includes('BTC') ? 'bg-orange-50' :
-              label.includes('SPY') ? 'bg-green-50' :
-              'bg-gray-50'
-            }`}>
-              <Icon className={`h-5 w-5 ${
-                label.includes('Fear') ? 'text-blue-600' :
-                label.includes('VIX') ? 'text-purple-600' :
-                label.includes('BTC') ? 'text-orange-600' :
-                label.includes('SPY') ? 'text-green-600' :
-                'text-gray-600'
-              }`} />
-            </div>
-          )}
-          <div>
-            <h3 className="text-sm font-medium text-gray-600">{label}</h3>
-            {description && (
-              <p className="text-xs text-gray-400 mt-1">{description}</p>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex items-end justify-between">
-        <div className="flex items-baseline gap-1">
-          {unit === '$' && <span className="text-lg font-semibold text-gray-900">{unit}</span>}
-          <span className="text-2xl font-bold text-gray-900">{displayValue}</span>
-          {unit !== '$' && unit && <span className="text-lg font-semibold text-gray-900">{unit}</span>}
-        </div>
-        
-        {changePercent !== undefined && (
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-            isChangePositive 
-              ? 'bg-green-50 text-green-700' 
-              : 'bg-red-50 text-red-700'
-          }`}>
-            {isChangePositive ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            <span>{Math.abs(changePercent).toFixed(1)}%</span>
-          </div>
-        )}
-      </div>
-      
-      {changePercent !== undefined && (
-        <div className="mt-2">
-          <span className="text-xs text-gray-500">24h change</span>
-        </div>
-      )}
-    </div>
-  );
-};
+// Mock news
+const mockNews = [
+  { source: 'CoinDesk', title: 'Bitcoin Surges Past $42,000 as Institutional Investors Flood In', time: '2 hours ago', sentiment: 'bullish' },
+  { source: 'Bloomberg Crypto', title: 'Regulatory Crackdown Fears Cause Altcoin Market to Plummet', time: '5 hours ago', sentiment: 'bearish' },
+  { source: 'Financial Times', title: 'Fed Chair Powell Suggests Rate Cuts May Come Later Than Expected', time: '8 hours ago', sentiment: 'neutral' },
+  { source: 'The Block', title: 'Ethereum ETF Approval Rumors Spark Rally in ETH and L2 Tokens', time: '12 hours ago', sentiment: 'bullish' },
+  { source: 'CryptoSlate', title: 'Major Exchange Hack Results in $200M Loss, Market Reacts Negatively', time: '14 hours ago', sentiment: 'bearish' },
+];
 
-// News item component with sentiment indicators
-const NewsItem = ({ title, source, time, sentiment, isPositive }) => (
-  <div className="flex items-start gap-4 p-4 hover:bg-gray-50 rounded-lg transition-colors">
-    <div className={`w-1 h-12 rounded-full ${
-      sentiment === 'Bullish' ? 'bg-green-400' :
-      sentiment === 'Bearish' ? 'bg-red-400' :
-      'bg-blue-400'
-    }`} />
-    <div className="flex-1 min-w-0">
-      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 leading-5">
-        {title}
-      </h4>
-      <div className="flex items-center gap-3 mt-2">
-        <span className="text-xs text-gray-500">{source}</span>
-        <span className="text-xs text-gray-400">•</span>
-        <span className="text-xs text-gray-500">{time}</span>
-      </div>
-    </div>
-    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-      sentiment === 'Bullish' ? 'bg-green-50 text-green-700' :
-      sentiment === 'Bearish' ? 'bg-red-50 text-red-700' :
-      'bg-blue-50 text-blue-700'
-    }`}>
-      {sentiment}
-    </div>
-  </div>
-);
 
 // Mock data
 const mockMetrics = [
@@ -390,38 +295,6 @@ const mockMetrics = [
   }
 ];
 
-const mockNews = [
-  {
-    title: "Bitcoin Surges Past $42,000 as Institutional Investors Flood In",
-    source: "CoinDesk",
-    time: "2 hours ago",
-    sentiment: "Bullish"
-  },
-  {
-    title: "Regulatory Crackdown Fears Cause Altcoin Market to Plummet", 
-    source: "Bloomberg Crypto",
-    time: "5 hours ago",
-    sentiment: "Bearish"
-  },
-  {
-    title: "Fed Chair Powell Suggests Rate Cuts May Come Later Than Expected",
-    source: "Financial Times",
-    time: "8 hours ago", 
-    sentiment: "Neutral"
-  },
-  {
-    title: "Ethereum ETF Approval Rumors Spark Rally in ETH and L2 Tokens",
-    source: "The Block",
-    time: "12 hours ago",
-    sentiment: "Bullish"
-  },
-  {
-    title: "Major Exchange Hack Results in $200M Loss, Market Reacts Negatively",
-    source: "CryptoSlate",
-    time: "14 hours ago",
-    sentiment: "Bearish"
-  }
-];
 
 const chartTabs = [
   { id: 'btc', label: 'BTC', active: true },
@@ -445,18 +318,7 @@ export const DashboardPage = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <select 
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value)}
-                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option>Last 24h</option>
-                <option>Last 7d</option>
-                <option>Last 30d</option>
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
+
             
             <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
               <RefreshCw className="h-4 w-4" />
