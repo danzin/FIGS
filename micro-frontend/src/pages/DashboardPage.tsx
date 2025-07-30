@@ -249,7 +249,7 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 //     fearGreed: { name: 'fear_greed_index', value: 54, timestamp: new Date().toISOString(), source: 'Alternative.me', change_24h: 2, time: new Date() },
 // };
 
-import { TrendingUp, TrendingDown, RefreshCw, ChevronDown, BarChart3, PieChart, DollarSign, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, RefreshCw, ChevronDown, BarChart3, PieChart, DollarSign, Activity, Hash } from 'lucide-react';
 
 // Mock news
 const mockNews = [
@@ -270,6 +270,14 @@ const mockMetrics = [
     changePercent: 1.2,
     description: "Bitcoin market cap dominance",
     icon: BarChart3
+  },
+    {
+    label: "Coinbase Rank",
+    value: 16,
+    unit: "",
+    changePercent: null,
+    description: "Coinbase AppStore Rank",
+    icon: Hash
   },
   {
     label: "VIX Level", 

@@ -16,7 +16,7 @@ interface EnhancedMetricCardProps {
   value?: number;
   unit?: string;
   change?: number;
-  changePercent?: number;
+  changePercent?: number | null;
   precision?: number;
   description?: string;
   icon?: React.ComponentType<{ className?: string }>;
@@ -35,8 +35,7 @@ export const EnhancedMetricCard: React.FC<EnhancedMetricCardProps> = ({
   isPositive 
 }) => {
   const displayValue = value !== undefined ? value.toFixed(precision) : '--';
-  if(changePercent === undefined) {
-    console.error('EnhancedMetricCard: changePercent is undefined');
+  if(changePercent === undefined || changePercent === null) {
     changePercent = 0;
   }
   const isChangePositive = changePercent > 0;
@@ -78,27 +77,29 @@ export const EnhancedMetricCard: React.FC<EnhancedMetricCardProps> = ({
           {unit !== '$' && unit && <span className="text-lg font-semibold text-gray-900">{unit}</span>}
         </div>
         
+      </div>
+      <div className="flex items-end justify-between">
         {changePercent !== undefined && (
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-            isChangePositive 
-              ? 'bg-green-50 text-green-700' 
-              : 'bg-red-50 text-red-700'
-          }`}>
-            {isChangePositive ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            <span>{Math.abs(changePercent).toFixed(1)}%</span>
-          </div>
+          <>
+            <div className="mt-2">
+              <span className="text-xs text-gray-500">24h change</span>
+            </div>
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+              isChangePositive 
+                ? 'bg-green-50 text-green-700' 
+                : 'bg-red-50 text-red-700'
+            }`}>
+              {isChangePositive ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              <span>{Math.abs(changePercent).toFixed(1)}%</span>
+            </div>
+          </>
         )}
       </div>
-      
-      {changePercent !== undefined && (
-        <div className="mt-2">
-          <span className="text-xs text-gray-500">24h change</span>
-        </div>
-      )}
+
     </div>
   );
 };
