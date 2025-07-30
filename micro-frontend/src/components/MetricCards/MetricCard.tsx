@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid'; 
 import { IndicatorData } from '../../types/Indicators';
 import { TrendingDown, TrendingUp } from 'lucide-react';
+import { FearGreedCard } from './FearGreedCard';
 
 interface MetricCardProps {
   label: string;
@@ -21,6 +22,13 @@ interface EnhancedMetricCardProps {
   description?: string;
   icon?: React.ComponentType<{ className?: string }>;
   isPositive?: boolean;
+  feargreed?: boolean;
+}
+
+type Sentiment = {
+  label: string;
+  color: string;
+  width: string;
 }
 
 export const EnhancedMetricCard: React.FC<EnhancedMetricCardProps> = ({ 
@@ -32,7 +40,8 @@ export const EnhancedMetricCard: React.FC<EnhancedMetricCardProps> = ({
   precision, 
   description, 
   icon: Icon,
-  isPositive 
+  isPositive,
+  feargreed
 }) => {
   const displayValue = value !== undefined ? value.toFixed(precision) : '--';
   console.log('EnhancedMetricCard', { label, value, unit, change, changePercent, precision, description, isPositive });
@@ -40,7 +49,11 @@ export const EnhancedMetricCard: React.FC<EnhancedMetricCardProps> = ({
     changePercent = 0;
   }
   const isChangePositive = changePercent > 0;
-  
+  if (feargreed) {
+    return (
+      <FearGreedCard indicator={{ value: value ?? 0 }} />
+    );
+  } 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 flex-1 flex flex-col h-40">
       <div className="flex items-start justify-between mb-4">

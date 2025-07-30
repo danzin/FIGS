@@ -1,6 +1,8 @@
-import { IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 
-export const FearGreedCard: React.FC<{ indicator?: IndicatorDataPoint }> = ({ indicator }) => {
+type FearGreedIndicator = {
+  value: number | null;
+}
+export const FearGreedCard: React.FC<{ indicator?: FearGreedIndicator  }> = ({ indicator }) => {
 
   type Sentiment = {
     label: string;
@@ -25,12 +27,11 @@ export const FearGreedCard: React.FC<{ indicator?: IndicatorDataPoint }> = ({ in
     const sentiment = getSentiment(value);
     
     return (
-      <div className="bg-blue-900/20 border border-blue-800 p-4 rounded-lg shadow-lg flex-1">
+      <div className=" border p-4 rounded-lg shadow-lg flex-1">
+
           <div className="flex justify-between items-start">
             <span className="text-sm text-gray-400">Fear & Greed Index</span>
-              <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
-                🧠
-            </div>
+   
           </div>
           <div className="mt-2 text-3xl font-bold">{typeof value === 'number' ? value : '--'}</div>
           <div className="mt-2">

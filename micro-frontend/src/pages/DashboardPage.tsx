@@ -14,7 +14,7 @@ const supportedIntervals: {label: string, value: Interval}[] = [
 // export const DashboardPage: React.FC = () => {
 
 //   const { options: assetOptions } = useAssetNames();
-//   const [selectedAsset, setSelectedAsset] = useState("");
+ 
 //   const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
 
 //   useEffect(() => {
@@ -261,52 +261,7 @@ const mockNews = [
 ];
 
 
-// Mock data
-const mockMetrics = [
-  {
-    label: "BTC Dominance",
-    value: 48.7,
-    precision: 2,
-    unit: "%",
-    changePercent: 1.2,
-    description: "Bitcoin market cap dominance",
-    icon: BarChart3
-  },
-    {
-    label: "Coinbase Rank",
-    value: 16,
-    precision: 0,
-    unit: "",
-    changePercent: null,
-    description: "Coinbase AppStore Rank",
-    icon: Hash
-  },
-  {
-    label: "VIX Level", 
-    value: 19.2,
-    changePercent: -0.8,
-    precision: 2,
-    description: "Volatility of the U.S. stock market",
-    icon: Activity
-  },
-  {
-    label: "SPY Price",
-    value: 452.36,
-    unit: "$",
-    precision: 2,
-    changePercent: 1.4,
-    description: "SPDR S&P 500 ETF",
-    icon: DollarSign
-  },
-  {
-    label: "Fear & Greed Index",
-    value: 54,
-    precision: 0,
-    changePercent: 2.1,
-    description: "Neutral",
-    icon: PieChart
-  }
-];
+
 
 
 const chartTabs = [
@@ -318,8 +273,69 @@ const chartTabs = [
 
 export const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState('btc');
+ const [selectedAsset, setSelectedAsset] = useState("");
+    const [interval, _setInterval] = useState<Interval>(supportedIntervals[2].value);
+    const { options: assetOptions } = useAssetNames();
+      useEffect(() => {
+        if (!selectedAsset && assetOptions.length) {
+          setSelectedAsset(assetOptions[0].value);
+        }
+      }, [assetOptions]);
+ const { indicators, isLoading: indicatorsLoading, error: indicatorsError } = useIndicatorsData();
+// Mock data
+console.log(activeTab, selectedAsset, interval);
+const mockMetrics = [
+  {
+    label: "BTC Dominance",
+    value: indicators.btcDominance?.value || 0,
+    precision: 2,
+    unit: "%",
+    changePercent: 1.2,
+    description: "Bitcoin market cap dominance",
+    icon: BarChart3
+  },
+    {
+    label: "Coinbase Rank",
+    value: indicators.coinbaseRank?.value || 0,
+    precision: 0,
+    unit: "",
+    changePercent: null,
+    description: "Coinbase AppStore Rank",
+    icon: Hash
+  },
+  {
+    label: "VIX Level", 
+    value: indicators.vix?.value || 0,
+    changePercent: -0.8,
+    precision: 2,
+    description: "Volatility of the U.S. stock market",
+    icon: Activity
+  },
+  {
+    label: "SPY Price",
+    value: indicators.spy?.value || 0,
+    unit: "$",
+    precision: 2,
+    changePercent: 1.4,
+    description: "SPDR S&P 500 ETF",
+    icon: DollarSign
+  },
+  {
+    label: "Fear & Greed Index",
+    value: indicators.fearGreedIndex?.value || 0,
+    precision: 0,
+    changePercent: 2.1,
+    description: "Neutral",
+    icon: PieChart,
+    feargreed: true
+  }
+];
 
-  
+  const {
+    data: chartData,
+    loading: _chartLoading,
+    error: _chartError,
+  } = useOhlcData(selectedAsset, interval);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -354,6 +370,7 @@ export const DashboardPage = () => {
               changePercent={metric.changePercent}
               description={metric.description}
               icon={metric.icon}
+              feargreed={metric.feargreed}
             />
           ))}
         </div>
@@ -367,6 +384,7 @@ export const DashboardPage = () => {
               <div className="flex bg-gray-100 rounded-lg p-1">
                 {chartTabs.map((tab) => (
                   <button
+                    value={selectedAsset}
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
@@ -386,9 +404,8 @@ export const DashboardPage = () => {
           <div className="p-6">
             <div className="h-96 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl flex items-center justify-center border-2 border-dashed border-blue-200">
               <div className="text-center">
-                <BarChart3 className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-       
-              </div>
+                <FinancialChart data={chartData} />
+             </div>
             </div>
           </div>
         </div>
