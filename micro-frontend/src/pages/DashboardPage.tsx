@@ -308,7 +308,7 @@ const chartTabs = [
   { id: 'btc', label: 'BTC', active: true },
   { id: 'eth', label: 'ETH', active: false },
   { id: 'sol', label: 'SOL', active: false },
-  { id: 'total', label: 'Total', active: false }
+
 ];
 
 export const DashboardPage = () => {
