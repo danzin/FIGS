@@ -77,4 +77,71 @@ export class SignalsRepository {
     );
     return rows.map((row) => ({ ...row, value: parseFloat(row.value) }));
   }
+
+  public async getMetricChange(
+    metricName: string,
+  ): Promise<{ current: number | null; previous: number | null }> {
+    // Today's most recent value
+    const todayRes = await this.pool.query(
+      `SELECT value FROM public.market_indicators
+      WHERE name = $1 AND time::date = CURRENT_DATE
+      ORDER BY time DESC LIMIT 1`,
+      [metricName],
+    );
+    // Yesterday's last value
+    const yestRes = await this.pool.query(
+      `SELECT value FROM public.market_indicators
+      WHERE name = $1 AND time::date = CURRENT_DATE - INTERVAL '1 day'
+      ORDER BY time DESC LIMIT 1`,
+      [metricName],
+    );
+    return {
+      current:
+        todayRes.rows[0]?.value !== undefined
+          ? parseFloat(todayRes.rows[0].value)
+          : null,
+      previous:
+        yestRes.rows[0]?.value !== undefined
+          ? parseFloat(yestRes.rows[0].value)
+          : null,
+    };
+  }
+
+  /**
+   * Fetches the latest news articles with sentiment analysis.
+   * @param limit - The number of news articles to fetch.
+   * @returns The latest news articles with sentiment analysis.
+   */
+  public async getLatestNewsWithSentiment(limit = 10) {
+    const { rows } = await this.pool.query(
+      `
+      SELECT
+        a.title,
+        a.source,
+        a.url,
+        a.published_at,
+        s.sentiment_label,
+        s.sentiment_score
+      FROM public.news_articles a
+      LEFT JOIN LATERAL (
+        SELECT sentiment_label, sentiment_score
+        FROM public.news_sentiment s
+        WHERE s.article_id = a.id
+        ORDER BY time DESC
+        LIMIT 1
+      ) s ON true
+      ORDER BY a.published_at DESC
+      LIMIT $1
+    `,
+      [limit],
+    );
+    return rows.map((row) => ({
+      title: row.title,
+      source: row.source,
+      url: row.url,
+      published_at: row.published_at,
+      sentiment: row.sentiment_label || 'neutral',
+      sentiment_score: row.sentiment_score,
+    }));
+  }
 }

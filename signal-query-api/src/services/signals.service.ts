@@ -52,4 +52,33 @@ export class SignalsService {
       {} as Record<string, IndicatorDto>,
     );
   }
+
+  /**
+   * Gets the current value and change of a metric.
+   * @param metricName - The name of the metric to get.
+   * @param changeType - The type of change to return.
+   * @returns The current value and change of the metric.
+   */
+  async getMetricWithChange(
+    metricName: string,
+    changeType: 'percent' | 'absolute' = 'percent',
+  ) {
+    const { current, previous } = await this.repo.getMetricChange(metricName);
+    let change: number | null = null;
+    if (current !== null && previous !== null) {
+      if (changeType === 'percent') {
+        change =
+          previous !== 0
+            ? ((current - previous) / Math.abs(previous)) * 100
+            : null;
+      } else {
+        change = current - previous;
+      }
+    }
+    return { name: metricName, current, change, changeType };
+  }
+
+  async getLatestNewsWithSentiment(limit = 10) {
+    return this.repo.getLatestNewsWithSentiment(limit);
+  }
 }
