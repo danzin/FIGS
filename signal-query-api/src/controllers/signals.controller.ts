@@ -55,4 +55,9 @@ export class SignalsController {
   ) {
     return this.signalsService.getMetricWithChange(name, type);
   }
+
+  @Get('latest-news')
+  async getLatestNews() {
+    return this.signalsService.getLatestNewsWithSentiment();
+  }
 }

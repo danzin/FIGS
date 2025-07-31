@@ -77,4 +77,8 @@ export class SignalsService {
     }
     return { name: metricName, current, change, changeType };
   }
+
+  async getLatestNewsWithSentiment(limit = 10) {
+    return this.repo.getLatestNewsWithSentiment(limit);
+  }
 }

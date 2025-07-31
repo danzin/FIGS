@@ -6,41 +6,27 @@ import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard, NewsItem } from '../components';
 import { useOhlcData } from '../hooks/useOhlcData';
 import { useMetricChange } from '../hooks/useMetricChange';
+import { useLatestNews } from '../hooks/useLatestNews';
 const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '15 Minutes', value: '15m' },
   { label: '1 Hour', value: '1h' },
   { label: '1 Day', value: '1d' },
 ];
 
-
-
-// Mock news
-const mockNews = [
-  { source: 'CoinDesk', title: 'Bitcoin Surges Past $42,000 as Institutional Investors Flood In', time: '2 hours ago', sentiment: 'bullish' },
-  { source: 'Bloomberg Crypto', title: 'Regulatory Crackdown Fears Cause Altcoin Market to Plummet', time: '5 hours ago', sentiment: 'bearish' },
-  { source: 'Financial Times', title: 'Fed Chair Powell Suggests Rate Cuts May Come Later Than Expected', time: '8 hours ago', sentiment: 'neutral' },
-  { source: 'The Block', title: 'Ethereum ETF Approval Rumors Spark Rally in ETH and L2 Tokens', time: '12 hours ago', sentiment: 'bullish' },
-  { source: 'CryptoSlate', title: 'Major Exchange Hack Results in $200M Loss, Market Reacts Negatively', time: '14 hours ago', sentiment: 'bearish' },
-];
-
-
-
-
-
 const chartTabs = [
   { id: 'btc', label: 'BTC', active: true },
   { id: 'eth', label: 'ETH', active: false },
   { id: 'sol', label: 'SOL', active: false },
-
 ];
 
 export const DashboardPage = () => {
+  
   const [activeTab, setActiveTab] = useState('bitcoin');
   const [selectedAsset, setSelectedAsset] = useState("bitcoin");
   const [interval, _setInterval] = useState<Interval>(supportedIntervals[2].value);
-
- const { indicators, isLoading: _indicatorsLoading, error: _indicatorsError } = useIndicatorsData();
-// Mock data
+  
+  const { news, loading: _loadingNews } = useLatestNews();
+  const { indicators, isLoading: _indicatorsLoading, error: _indicatorsError } = useIndicatorsData();
   const { data: appStoreRank, loading: _loadingRank } = useMetricChange("Coinbase_Rank", "absolute");
   const { data: fearGreed, loading: _loadingFG } = useMetricChange("fear_greed_index", "percent");
   const { data: btc_dom, loading: _loadingBTCD } = useMetricChange("btc_dominance", "percent");
@@ -192,12 +178,12 @@ const metrics = [
           </div>
           
           <div className="divide-y divide-gray-100">
-            {mockNews.map((news, index) => (
+            {news.map((news, index) => (
               <NewsItem
                 key={index}
                 title={news.title}
                 source={news.source}
-                time={news.time}
+                time={news.published_at}
                 sentiment={news.sentiment}
               />
             ))}
