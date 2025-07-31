@@ -39,8 +39,8 @@ const formatDataForChart = (data: OhlcData[]) => {
         time,
         value: d.volume,
         color: d.close >= d.open
-          ? 'rgba(38, 166, 154, 0.5)'
-          : 'rgba(239, 83, 80, 0.5)',
+          ? 'rgba(16, 185, 129, 0.4)'  // Light emerald for up candles
+          : 'rgba(239, 68, 68, 0.4)',  // Light red for down candles
       });
     }
   }
@@ -70,15 +70,15 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
         width,
         height,
         layout: {
-          background: { type: ColorType.Solid, color: '#1a1a1a' },
-          textColor: '#d1d4dc',
+          background: { type: ColorType.Solid, color: '#ffffff' }, // Pure white background
+          textColor: '#374151', // Dark gray text (tailwind gray-700)
         },
         grid: {
-          vertLines: { color: isMobile ? 'transparent' : '#2b2b30' },
-          horzLines: { color: '#2b2b30' },
+          vertLines: { color: isMobile ? 'transparent' : '#f3f4f6' }, // Light gray grid (tailwind gray-100)
+          horzLines: { color: '#f3f4f6' }, // Light gray horizontal lines
         },
         timeScale: {
-          borderColor: '#485c7b',
+          borderColor: '#d1d5db', // Light gray border (tailwind gray-300)
           timeVisible: true,
           barSpacing: isMobile ? 4 : 12,
           minBarSpacing: 2,
@@ -92,7 +92,7 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
           dateFormat: isMobile ? 'MM/dd' : 'MMM dd, yyyy',
         },
         rightPriceScale: {
-          borderColor: '#485c7b',
+          borderColor: '#d1d5db', // Light gray border (tailwind gray-300)
           autoScale: true,
         },
       });
@@ -101,12 +101,12 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
       candlestickSeriesRef.current = chartRef.current.addSeries(
         CandlestickSeries,
         {
-          upColor: '#26a69a',
-          downColor: '#ef5350',
-          borderDownColor: '#ef5350',
-          borderUpColor: '#26a69a',
-          wickDownColor: '#ef5350',
-          wickUpColor: '#26a69a',
+          upColor: '#10b981', // Emerald green (tailwind emerald-500)
+          downColor: '#ef4444', // Red (tailwind red-500) 
+          borderDownColor: '#ef4444',
+          borderUpColor: '#10b981',
+          wickDownColor: '#ef4444',
+          wickUpColor: '#10b981',
         }
       );
 
@@ -118,7 +118,7 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({ data }) => {
             type: 'volume',
           },
           priceScaleId: 'volume_scale',
-          color: 'rgba(76, 175, 80, 0.5)',
+          color: 'rgba(16, 185, 129, 0.3)', // Semi-transparent emerald
         }
       );
 

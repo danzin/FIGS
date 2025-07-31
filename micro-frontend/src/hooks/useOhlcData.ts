@@ -11,7 +11,6 @@ export const useOhlcData = (assetSymbol: string, interval: Interval) => {
 		if (!assetSymbol) return;
 		setLoading(true);
 		setError(null);
-
 		getOhlcData(assetSymbol, interval)
 			.then((d) => setData(d))
 			.catch((e) => {
