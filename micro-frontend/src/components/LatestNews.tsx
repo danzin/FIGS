@@ -25,10 +25,9 @@ interface NewsItemProps {
   source: string;
   time: string;
   sentiment: string;
-  isPositive?: boolean;
 }
 
-export const NewsItem: React.FC<NewsItemProps> = ({ title, source, time, sentiment, isPositive }) => (
+export const NewsItem: React.FC<NewsItemProps> = ({ title, source, time, sentiment }) => (
   <div className="flex items-start gap-4 p-4 hover:bg-gray-50 rounded-lg transition-colors">
     <div className={`w-1 h-12 rounded-full ${
       sentiment === 'bullish' ? 'bg-green-400' :

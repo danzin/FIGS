@@ -24,12 +24,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   label,
   value,
   unit = '',
-  change,
   changePercent,
   precision = 2,
   description,
   icon: Icon,
-  isPositive,
 }) => {
   const isFearGreed = label.toLowerCase().includes('fear') || label.toLowerCase().includes('greed');
   
