@@ -47,4 +47,12 @@ export class SignalsController {
     // The queryParams.names is optional now in the service
     return this.signalsService.getLatestIndicators(queryParams?.names);
   }
+
+  @Get('metric-change/:name')
+  async getMetricChange(
+    @Param('name') name: string,
+    @Query('type') type: 'percent' | 'absolute' = 'percent',
+  ) {
+    return this.signalsService.getMetricWithChange(name, type);
+  }
 }

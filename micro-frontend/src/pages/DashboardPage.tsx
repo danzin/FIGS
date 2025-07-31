@@ -5,6 +5,7 @@ import type { Interval } from '../types/OhlcData';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard, NewsItem } from '../components';
 import { useOhlcData } from '../hooks/useOhlcData';
+import { useMetricChange } from '../hooks/useMetricChange';
 const supportedIntervals: {label: string, value: Interval}[] = [
   { label: '15 Minutes', value: '15m' },
   { label: '1 Hour', value: '1h' },
@@ -40,20 +41,24 @@ export const DashboardPage = () => {
 
  const { indicators, isLoading: _indicatorsLoading, error: _indicatorsError } = useIndicatorsData();
 // Mock data
-
+  const { data: appStoreRank, loading: _loadingRank } = useMetricChange("Coinbase_Rank", "absolute");
+  const { data: fearGreed, loading: _loadingFG } = useMetricChange("fear_greed_index", "percent");
+  const { data: btc_dom, loading: _loadingBTCD } = useMetricChange("btc_dominance", "percent");
+  const { data: spy, loading: _loadingSpy } = useMetricChange("SPY", "percent");
+  const { data: vix, loading: _loadingVix } = useMetricChange("^VIX", "percent");
 const tabToAssetMap: Record<string, string> = {
   'btc': 'bitcoin',
   'eth': 'ethereum',
   'sol': 'solana'
 } as const;
 
-const mockMetrics = [
+const metrics = [
   {
     label: "BTC Dominance",
     value: indicators.btcDominance?.value || 0,
     precision: 2,
     unit: "%",
-    changePercent: 1.2,
+    changePercent: btc_dom?.change || null,
     description: "Bitcoin market cap dominance",
     icon: BarChart3
   },
@@ -62,14 +67,14 @@ const mockMetrics = [
     value: indicators.coinbaseRank?.value || 0,
     precision: 0,
     unit: "",
-    changePercent: null,
+    changePercent: appStoreRank?.change || null,
     description: "Coinbase AppStore Rank",
     icon: Hash
   },
   {
     label: "VIX Level", 
     value: indicators.vix?.value || 0,
-    changePercent: -0.8,
+    changePercent: vix?.change || null,
     precision: 2,
     description: "Volatility of the U.S. stock market",
     icon: Activity
@@ -79,7 +84,7 @@ const mockMetrics = [
     value: indicators.spy?.value || 0,
     unit: "$",
     precision: 2,
-    changePercent: 1.4,
+    changePercent: spy?.change || null,
     description: "SPDR S&P 500 ETF",
     icon: DollarSign
   },
@@ -87,7 +92,7 @@ const mockMetrics = [
     label: "Fear & Greed Index",
     value: indicators.fearGreedIndex?.value || 0,
     precision: 0,
-    changePercent: 2.1,
+    changePercent: fearGreed?.change || null,
     description: "Neutral",
     icon: PieChart,
     feargreed: true
@@ -124,7 +129,7 @@ const mockMetrics = [
       <div className="p-6 space-y-8">
         {/* Metrics Cards */}
         <div className="flex flex-col sm:flex-row gap-6">
-          {mockMetrics.map((metric, index) => (
+          {metrics.map((metric, index) => (
             <MetricCard
               key={index}
               label={metric.label}

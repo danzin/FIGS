@@ -1,6 +1,8 @@
 import axios from "axios";
 import type { OhlcData, Interval } from "../types/OhlcData";
 import type { IndicatorData } from "../types/Indicators";
+import type { MetricChange } from "../types/MetricChange";
+
 const apiClient = axios.create({
 	baseURL: "/api/v1",
 });
@@ -24,4 +26,14 @@ export const getLatestIndicators = async (indicatorNames: string[]): Promise<Rec
 export const getAssetNames = async (): Promise<string[]> => {
 	const { data } = await apiClient.get<string[]>("/assets");
 	return data;
+};
+
+export const getMetricChange = async (
+	metricName: string,
+	changeType: "percent" | "absolute" = "percent"
+): Promise<MetricChange> => {
+	const response = await apiClient.get<MetricChange>(`/metric-change/${metricName}`, {
+		params: { type: changeType },
+	});
+	return response.data;
 };

@@ -77,4 +77,33 @@ export class SignalsRepository {
     );
     return rows.map((row) => ({ ...row, value: parseFloat(row.value) }));
   }
+
+  public async getMetricChange(
+    metricName: string,
+  ): Promise<{ current: number | null; previous: number | null }> {
+    // Today's most recent value
+    const todayRes = await this.pool.query(
+      `SELECT value FROM public.market_indicators
+      WHERE name = $1 AND time::date = CURRENT_DATE
+      ORDER BY time DESC LIMIT 1`,
+      [metricName],
+    );
+    // Yesterday's last value
+    const yestRes = await this.pool.query(
+      `SELECT value FROM public.market_indicators
+      WHERE name = $1 AND time::date = CURRENT_DATE - INTERVAL '1 day'
+      ORDER BY time DESC LIMIT 1`,
+      [metricName],
+    );
+    return {
+      current:
+        todayRes.rows[0]?.value !== undefined
+          ? parseFloat(todayRes.rows[0].value)
+          : null,
+      previous:
+        yestRes.rows[0]?.value !== undefined
+          ? parseFloat(yestRes.rows[0].value)
+          : null,
+    };
+  }
 }
