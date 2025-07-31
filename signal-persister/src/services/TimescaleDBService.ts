@@ -125,6 +125,7 @@ export class TimescaleDBService implements DatabaseService {
 
 	/**
 	 * Inserts an article into news_articles table and a sentiment score into news_sentiment table.
+	 * It also makes sure the sentiment is not inserted if it already exists for the same article and time.
 	 */
 	public async insertArticleAndSentiment(result: SentimentResult): Promise<void> {
 		const client = await this.pool.connect();
@@ -149,13 +150,21 @@ export class TimescaleDBService implements DatabaseService {
 			// If the insert returned no ID, it means the row already existed
 			// fetch the ID of the existing row
 			let articleId: number;
+			let publishedAt: Date;
 			if (articleRes.rows.length > 0) {
 				articleId = articleRes.rows[0].id;
-			} else {
-				const selectRes = await client.query("SELECT id FROM public.news_articles WHERE external_id = $1", [
-					result.external_id,
+				// Fetch published_at from the DB to guarantee exact match
+				const selectRes = await client.query("SELECT published_at FROM public.news_articles WHERE id = $1", [
+					articleId,
 				]);
+				publishedAt = selectRes.rows[0].published_at;
+			} else {
+				const selectRes = await client.query(
+					"SELECT id, published_at FROM public.news_articles WHERE external_id = $1",
+					[result.external_id]
+				);
 				articleId = selectRes.rows[0].id;
+				publishedAt = selectRes.rows[0].published_at;
 			}
 
 			// Insert the sentiment data linked to the article ID.
@@ -166,7 +175,7 @@ export class TimescaleDBService implements DatabaseService {
             `;
 			await client.query(sentimentInsertQuery, [
 				articleId,
-				new Date(),
+				publishedAt,
 				result.sentiment_score,
 				result.sentiment_label,
 				"sentiment-analysis-service", // The source of the *sentiment*, not the article
