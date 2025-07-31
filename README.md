@@ -20,7 +20,7 @@
   - Possibly adding another DB(PostgreSQL or MongoDB) for handling non-timeseries data
   - **Redis** for caching
   - **AWS ECS** deployment
-  - Frontend redesign
+
   
 ## 📦 Microservices
 
@@ -49,8 +49,10 @@ docker compose up --build
 The frontend is currently minimalistic, only displaying a few signals with a price chart. 
 As I add more data to work with, more data will be displayed.
 
-<img width="1883" height="880" alt="image" src="https://github.com/user-attachments/assets/7b3be4e5-7cf4-42a8-b03a-853f2563a180" />
-<img width="424" height="945" alt="image" src="https://github.com/user-attachments/assets/cda194dd-79f9-4ad1-969d-466f099c9958" />
+<img width="1885" height="1034" alt="Screenshot 2025-07-31 142145" src="https://github.com/user-attachments/assets/0ebeae63-b223-4477-bea7-e27aa1fe661f" />
+<img width="1874" height="861" alt="Screenshot 2025-07-31 142206" src="https://github.com/user-attachments/assets/b51ca961-d495-4999-810d-f8180db8f3ec" />
+<img width="407" height="910" alt="image" src="https://github.com/user-attachments/assets/b26ef91f-59af-420f-b863-cb5fd169d78c" />
+<img width="408" height="911" alt="Screenshot 2025-07-31 142959" src="https://github.com/user-attachments/assets/0eaeb0fc-ed41-4e37-bb4c-71ef6db0cf7f" />
 
 
 The full docker build:
