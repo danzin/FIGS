@@ -205,7 +205,7 @@ BEGIN
     PERFORM add_continuous_aggregate_policy('market_data_1d',
       start_offset => INTERVAL '60 days',
       end_offset   => INTERVAL '1 hour',
-      schedule_interval => INTERVAL '30 minutes');
+      schedule_interval => INTERVAL '15 minutes');
 END
 $$;
 
