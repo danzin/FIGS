@@ -4,6 +4,7 @@ import { FinancialChart } from '../components/Chart/FinancialChart';
 import type { Interval } from '../types/OhlcData';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
 import { MetricCard, NewsItem } from '../components';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { useOhlcData } from '../hooks/useOhlcData';
 import { useMetricChange } from '../hooks/useMetricChange';
 import { useLatestNews } from '../hooks/useLatestNews';
@@ -92,15 +93,21 @@ const metrics = [
     loading: _chartLoading,
     error: _chartError,
   } = useOhlcData(selectedAsset, interval);
+  
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-300">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Financial Insights Dashboard</h1>
-            <p className="text-sm text-gray-600 mt-1">Real-time market data and sentiment analysis</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
+              Financial Insights Dashboard
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">
+              Real-time market data and sentiment analysis
+            </p>
           </div>
+          <ThemeToggle />
         </div>
       </div>
 
@@ -122,12 +129,14 @@ const metrics = [
         </div>
 
         {/* Chart Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-300">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Crypto Market Overview</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors duration-300">
+                Crypto Market Overview
+              </h2>
               
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 transition-colors duration-300">
                 {chartTabs.map((tab) => (
                   <button
                     value={selectedAsset}
@@ -136,10 +145,10 @@ const metrics = [
                       setActiveTab(tab.id);
                       setSelectedAsset(tabToAssetMap[tab.id]);
                     }}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-300 ${
                       activeTab === tab.id
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     {tab.label}
@@ -150,17 +159,17 @@ const metrics = [
           </div>
                    
           {/* Time Interval Picker */}
-          <div className="py-3 border-white bg-white">
+          <div className="py-3 border-white dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors duration-300">
             <div className="flex items-center justify-center">
-              <div className="flex bg-white rounded-lg p-1 shadow-sm border border-gray-200">
+              <div className="flex bg-white dark:bg-gray-700 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-600 transition-colors duration-300">
                 {supportedIntervals.map((intervalOption) => (
                   <button
                     key={intervalOption.value}
                     onClick={() => setInterval(intervalOption.value)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-300 ${
                       interval === intervalOption.value
-                        ? 'bg-blue-500 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
                   >
                     {intervalOption.label}
@@ -169,6 +178,7 @@ const metrics = [
               </div>
             </div>
           </div>
+          
           {/* Chart Placeholder */}
           <div className="p-6">
             <FinancialChart data={chartData} />
@@ -176,14 +186,16 @@ const metrics = [
         </div>
 
         {/* News Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-300">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Latest Market News</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors duration-300">
+                Latest Market News
+              </h2>
             </div>
           </div>
           
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700 transition-colors duration-300">
             {news.map((news, index) => (
               <NewsItem
                 key={index}
@@ -198,4 +210,4 @@ const metrics = [
       </div>
     </div>
   );
-}
+};
