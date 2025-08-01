@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, BarChart3, PieChart, DollarSign, Activity, Hash } from 'lucide-react';
+import { BarChart3, PieChart, DollarSign, Activity, Hash } from 'lucide-react';
 import { FinancialChart } from '../components/Chart/FinancialChart';
 import type { Interval } from '../types/OhlcData';
 import { useIndicatorsData } from '../hooks/useIndicatorsData';
@@ -7,10 +7,11 @@ import { MetricCard, NewsItem } from '../components';
 import { useOhlcData } from '../hooks/useOhlcData';
 import { useMetricChange } from '../hooks/useMetricChange';
 import { useLatestNews } from '../hooks/useLatestNews';
+
 const supportedIntervals: {label: string, value: Interval}[] = [
-  { label: '15 Minutes', value: '15m' },
-  { label: '1 Hour', value: '1h' },
-  { label: '1 Day', value: '1d' },
+  { label: '15m', value: '15m' },
+  { label: '1h', value: '1h' },
+  { label: '1d', value: '1d' },
 ];
 
 const chartTabs = [
@@ -23,7 +24,7 @@ export const DashboardPage = () => {
   
   const [activeTab, setActiveTab] = useState('bitcoin');
   const [selectedAsset, setSelectedAsset] = useState("bitcoin");
-  const [interval, _setInterval] = useState<Interval>(supportedIntervals[2].value);
+  const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
   
   const { news, loading: _loadingNews } = useLatestNews();
   const { indicators, isLoading: _indicatorsLoading, error: _indicatorsError } = useIndicatorsData();
@@ -32,6 +33,7 @@ export const DashboardPage = () => {
   const { data: btc_dom, loading: _loadingBTCD } = useMetricChange("btc_dominance", "percent");
   const { data: spy, loading: _loadingSpy } = useMetricChange("SPY", "percent");
   const { data: vix, loading: _loadingVix } = useMetricChange("^VIX", "percent");
+
 const tabToAssetMap: Record<string, string> = {
   'btc': 'bitcoin',
   'eth': 'ethereum',
@@ -90,7 +92,6 @@ const metrics = [
     loading: _chartLoading,
     error: _chartError,
   } = useOhlcData(selectedAsset, interval);
-  console.log('Chart Data:', chartData);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -99,15 +100,6 @@ const metrics = [
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Financial Insights Dashboard</h1>
             <p className="text-sm text-gray-600 mt-1">Real-time market data and sentiment analysis</p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-
-            
-            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </button>
           </div>
         </div>
       </div>
@@ -125,7 +117,6 @@ const metrics = [
               changePercent={metric.changePercent}
               description={metric.description}
               icon={metric.icon}
-
             />
           ))}
         </div>
@@ -157,12 +148,30 @@ const metrics = [
               </div>
             </div>
           </div>
-          
+                   
+          {/* Time Interval Picker */}
+          <div className="py-3 border-white bg-white">
+            <div className="flex items-center justify-center">
+              <div className="flex bg-white rounded-lg p-1 shadow-sm border border-gray-200">
+                {supportedIntervals.map((intervalOption) => (
+                  <button
+                    key={intervalOption.value}
+                    onClick={() => setInterval(intervalOption.value)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      interval === intervalOption.value
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    {intervalOption.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
           {/* Chart Placeholder */}
           <div className="p-6">
-
-                <FinancialChart data={chartData} />
-
+            <FinancialChart data={chartData} />
           </div>
         </div>
 
@@ -171,9 +180,6 @@ const metrics = [
           <div className="px-6 py-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Latest Market News</h2>
-              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                View all →
-              </button>
             </div>
           </div>
           
@@ -183,7 +189,7 @@ const metrics = [
                 key={index}
                 title={news.title}
                 source={news.source}
-                time={news.published_at}
+                time={new Date(news.published_at).toLocaleString()}
                 sentiment={news.sentiment}
               />
             ))}
