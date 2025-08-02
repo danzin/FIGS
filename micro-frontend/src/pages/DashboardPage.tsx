@@ -39,7 +39,7 @@ const tabToAssetMap: Record<string, string> = {
   'btc': 'bitcoin',
   'eth': 'ethereum',
   'sol': 'solana'
-} as const;
+}; 
 
 const metrics = [
   {
