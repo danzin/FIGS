@@ -29,7 +29,7 @@ async function test() {
 		const result = await scraper.fetch();
 
 		console.log("\nPublishing result...");
-		await mockPublishResult(result); // Call our corrected mock function
+		await mockPublishResult(result);
 	} catch (e) {
 		console.error("Test failed:", e);
 	} finally {

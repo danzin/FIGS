@@ -11,7 +11,6 @@ export class ScraperConfigManager {
 	}
 
 	public setupDefaultSchedules(): void {
-		// Your scraper scheduling logic from index.ts moves here
 		this.scheduler.registerSource({
 			source: new AppStoreRankScraper("coinbase", "Coinbase: Buy BTC, ETH, SOL", "us"),
 			schedule: "0 */5 * * *", // Once every 5 hours
