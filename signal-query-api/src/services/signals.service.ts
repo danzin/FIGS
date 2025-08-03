@@ -75,7 +75,7 @@ export class SignalsService {
         change = current - previous;
       }
     }
-    return { name: metricName, current, change, changeType };
+    return { name: metricName, current, change, changeType, previous };
   }
 
   async getLatestNewsWithSentiment(limit = 10) {
