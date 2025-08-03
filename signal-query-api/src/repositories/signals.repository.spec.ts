@@ -98,4 +98,70 @@ describe('SignalsRepository', () => {
       expect(result).toEqual([{ name: 'SMA', value: 123.45 }]);
     });
   });
+
+  describe('getMetricChange', () => {
+    it('should return current and previous metric values as numbers', async () => {
+      (pool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [{ value: '123.45' }] }) // today
+        .mockResolvedValueOnce({ rows: [{ value: '120.00' }] }); // yesterday
+
+      const result = await repo.getMetricChange('bitcoin_dominance');
+      expect(pool.query).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({ current: 123.45, previous: 120.0 });
+    });
+
+    it('should return nulls if no values found', async () => {
+      (pool.query as jest.Mock)
+        .mockResolvedValueOnce({ rows: [] }) // today
+        .mockResolvedValueOnce({ rows: [] }); // yesterday
+
+      const result = await repo.getMetricChange('bitcoin_dominance');
+      expect(result).toEqual({ current: null, previous: null });
+    });
+  });
+
+  describe('getLatestNewsWithSentiment', () => {
+    it('should return news articles with sentiment', async () => {
+      (pool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [
+          {
+            title: 'Test News',
+            source: 'CoinDesk',
+            url: 'https://coindesk.com/test',
+            published_at: new Date(),
+            sentiment_label: 'bullish',
+            sentiment_score: 0.8,
+          },
+        ],
+      });
+
+      const result = await repo.getLatestNewsWithSentiment(1);
+      expect(pool.query).toHaveBeenCalledWith(expect.any(String), [1]);
+      expect(result[0]).toMatchObject({
+        title: 'Test News',
+        source: 'CoinDesk',
+        url: 'https://coindesk.com/test',
+        sentiment: 'bullish',
+        sentiment_score: 0.8,
+      });
+    });
+
+    it('should default sentiment to neutral if sentiment_label is missing', async () => {
+      (pool.query as jest.Mock).mockResolvedValueOnce({
+        rows: [
+          {
+            title: 'No Sentiment',
+            source: 'CryptoSlate',
+            url: 'https://cryptoslate.com/test',
+            published_at: new Date(),
+            sentiment_label: null,
+            sentiment_score: null,
+          },
+        ],
+      });
+
+      const result = await repo.getLatestNewsWithSentiment(1);
+      expect(result[0].sentiment).toBe('neutral');
+    });
+  });
 });
