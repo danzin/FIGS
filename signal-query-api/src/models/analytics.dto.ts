@@ -30,7 +30,6 @@
 //   @IsString({ each: true })
 //   signalNames: string[];
 
-//   // Reuse your existing query parameters
 //   @ValidateNested()
 //   @Type(() => GetSignalsQueryDto)
 //   queryParams: GetSignalsQueryDto;
