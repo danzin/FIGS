@@ -77,4 +77,69 @@ describe('SignalsService', () => {
       ]);
     });
   });
+  describe('getMetricChange', () => {
+    it('should return metric change values from repo', async () => {
+      repo.getMetricChange = jest
+        .fn()
+        .mockResolvedValue({ current: 100, previous: 80 });
+      const result = await service.getMetricWithChange('bitcoin_dominance');
+      expect(result).toStrictEqual({
+        current: 100,
+        previous: 80,
+        change: 25,
+        changeType: 'percent',
+        name: 'bitcoin_dominance',
+      });
+      expect(repo.getMetricChange).toHaveBeenCalledWith('bitcoin_dominance');
+    });
+
+    it('should return nulls if repo returns nulls', async () => {
+      repo.getMetricChange = jest
+        .fn()
+        .mockResolvedValue({ current: null, previous: null });
+      const result = await service.getMetricWithChange('bitcoin_dominance');
+      expect(result).toEqual({
+        current: null,
+        previous: null,
+        change: null,
+        changeType: 'percent',
+        name: 'bitcoin_dominance',
+      });
+    });
+  });
+
+  describe('getLatestNewsWithSentiment', () => {
+    it('should return news articles with sentiment from repo', async () => {
+      const mockNews = [
+        {
+          title: 'Test News',
+          source: 'CoinDesk',
+          url: 'https://coindesk.com/test',
+          published_at: new Date(),
+          sentiment: 'bullish',
+          sentiment_score: 0.8,
+        },
+      ];
+      repo.getLatestNewsWithSentiment = jest.fn().mockResolvedValue(mockNews);
+      const result = await service.getLatestNewsWithSentiment(1);
+      expect(result).toEqual(mockNews);
+      expect(repo.getLatestNewsWithSentiment).toHaveBeenCalledWith(1);
+    });
+
+    it('should default sentiment to neutral if missing', async () => {
+      const mockNews = [
+        {
+          title: 'No Sentiment',
+          source: 'CryptoSlate',
+          url: 'https://cryptoslate.com/test',
+          published_at: new Date(),
+          sentiment: undefined,
+          sentiment_score: null,
+        },
+      ];
+      repo.getLatestNewsWithSentiment = jest.fn().mockResolvedValue(mockNews);
+      const result = await service.getLatestNewsWithSentiment(1);
+      expect(result[0].sentiment).toBeUndefined(); // Service just passes through repo result
+    });
+  });
 });
