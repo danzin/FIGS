@@ -30,7 +30,7 @@
 - **micro-frontend**: Displays data from signal-query-api
 - **scraper-service**: Spins up headless browsers and scrapes data unavaiable through APIs
 - **sentiment-analysis-service**: Uses AI to perform sentiment analysis on recent news articles
-- **seeder**: Seeds TimeScaleDB with fresh data and manually triggers all continousous aggregates in order to provide OHLC for the frontend chart.
+- **seeder**: Seeds TimeScaleDB with fresh data and manually triggers all continousous aggregates in order to provide OHLC data for candlesticks in the frontend chart.
   
 ## 📊 Features
 
@@ -61,5 +61,6 @@ Full docker build:
 <img width="1585" height="396" alt="image" src="https://github.com/user-attachments/assets/12f453f9-728d-4afd-bc57-e69c463d85ea" />
 
 <img width="1395" height="892" alt="image" src="https://github.com/user-attachments/assets/aeff5b25-048e-4999-a251-d96365a0a58e" />
+
 
 
