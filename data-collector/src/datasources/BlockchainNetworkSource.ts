@@ -168,7 +168,11 @@ export class EthereumNetworkSource implements DataSource {
 			// Gas oracle for current gas prices
 			const gasResponse = await this.callApi("gastracker", "gasoracle");
 			if (gasResponse?.result) {
-				const gasData = gasResponse.result as { SafeGasPrice?: string; ProposeGasPrice?: string; FastGasPrice?: string };
+				const gasData = gasResponse.result as {
+					SafeGasPrice?: string;
+					ProposeGasPrice?: string;
+					FastGasPrice?: string;
+				};
 				if (gasData.ProposeGasPrice) {
 					results.push({
 						name: "eth_gas_price",
@@ -206,10 +210,10 @@ export class EthereumNetworkSource implements DataSource {
 
 	private async callApi(module: string, action: string): Promise<{ status: string; result: unknown } | null> {
 		try {
-			const params: Record<string, string> = { 
-				chainid: "1",  // Ethereum mainnet
-				module, 
-				action 
+			const params: Record<string, string> = {
+				chainid: "1", // Ethereum mainnet
+				module,
+				action,
 			};
 			if (this.apiKey) {
 				params.apikey = this.apiKey;
@@ -252,7 +256,7 @@ export class SolanaNetworkSource implements DataSource {
 				// Calculate average TPS across recent samples
 				const totalTps = samples.reduce((sum, sample) => {
 					// TPS = transactions / time period in seconds
-					return sum + (sample.numTransactions / sample.samplePeriodSecs);
+					return sum + sample.numTransactions / sample.samplePeriodSecs;
 				}, 0);
 				const avgTps = totalTps / samples.length;
 
@@ -271,10 +275,11 @@ export class SolanaNetworkSource implements DataSource {
 			if (feesResponse?.result && Array.isArray(feesResponse.result) && feesResponse.result.length > 0) {
 				const fees = feesResponse.result;
 				// Filter out zero fees for a more accurate average
-				const nonZeroFees = fees.filter(f => f.prioritizationFee > 0);
-				const avgFee = nonZeroFees.length > 0 
-					? nonZeroFees.reduce((sum, f) => sum + f.prioritizationFee, 0) / nonZeroFees.length
-					: 0;
+				const nonZeroFees = fees.filter((f) => f.prioritizationFee > 0);
+				const avgFee =
+					nonZeroFees.length > 0
+						? nonZeroFees.reduce((sum, f) => sum + f.prioritizationFee, 0) / nonZeroFees.length
+						: 0;
 				const maxFee = Math.max(...fees.map((f) => f.prioritizationFee));
 
 				results.push({
