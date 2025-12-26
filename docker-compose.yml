@@ -1,7 +1,24 @@
 x-ampq-url: &ampq-url amqp://user:pass@rabbitmq:5672
-x-cron-schedule: &cron-schedule '0 * * * *'
+x-cron-schedule: &cron-schedule "0 * * * *"
 x-fred-key: &fred_api 3d7c8197c322b5c1ba5a7d57a965bcc3
+x-redis-url: &redis_url redis://redis:6379
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 128M
+
   rabbitmq:
     image: rabbitmq:3
     container_name: rabbitmq
@@ -20,66 +37,68 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
-        reservations: 
-          cpus: '0.1'
+        reservations:
+          cpus: "0.1"
           memory: 128M
-  
+
   timescaledb:
     image: timescale/timescaledb:latest-pg17
     container_name: timescaledb
     ports:
-      - "5432:5432" 
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres 
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: market_signals
     volumes:
-      - timescaledb_data:/var/lib/postgresql/data  
+      - timescaledb_data:/var/lib/postgresql/data
       - ./timescaledb-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "psql -U postgres -d market_signals -c 'SELECT 1 FROM public.assets LIMIT 1'"]
-      interval: 10s  
-      timeout: 5s     
-      retries: 10     
-      start_period: 20s 
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
-
 
   data-collector:
     build:
-      context: .      
+      context: .
       dockerfile: ./data-collector/data-collector.dockerfile
     container_name: data-collector
     ports:
-      - "3000:3000" 
+      - "3000:3000"
     environment:
       FRED_API_KEY: *fred_api
       CRON_SCHEDULE: *cron-schedule
       RABBITMQ_URL: *ampq-url
       HEALTH_HEAP_WARNING_MB: 512
       HEALTH_HEAP_CRITICAL_MB: 768
-      MONITOR_CHECK_INTERVAL_CRON: '*/45 * * * *'
+      MONITOR_CHECK_INTERVAL_CRON: "*/45 * * * *"
       PORT: 3000
+      #ETHERSCAN_API_KEY: ""
+      #GITHUB_TOKEN: ""
+      #OWLRACLE_API_KEY: ""
 
     depends_on:
       rabbitmq:
-        condition: service_healthy 
+        condition: service_healthy
       timescaledb:
-        condition: service_healthy 
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          cpus: '0.3'
+          cpus: "0.3"
           memory: 256M
 
-  signal-persister: 
+  signal-persister:
     build:
       context: .
       dockerfile: ./signal-persister/signal-persister.dockerfile
@@ -90,7 +109,7 @@ services:
       DB_HOST: timescaledb
       DB_NAME: market_signals
       DB_PASSWORD: postgres
-      DB_PORT: '5432'
+      DB_PORT: "5432"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -101,7 +120,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.3'
+          cpus: "0.3"
           memory: 256M
 
   signal-query-api:
@@ -117,18 +136,21 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: market_signals
-      PORT: 3003      
+      PORT: 3003
+      REDIS_URL: *redis_url
     depends_on:
       timescaledb:
         condition: service_healthy
-      seeder: 
+      redis:
+        condition: service_healthy
+      seeder:
         condition: service_completed_successfully
     restart: unless-stopped
 
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
 
   micro-frontend:
@@ -140,13 +162,12 @@ services:
       - "3001:80"
     depends_on:
       signal-query-api:
-       
         condition: service_started
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          cpus: '0.2'
+          cpus: "0.2"
           memory: 128M
   scraper-service:
     build:
@@ -165,43 +186,42 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-      timescaledb: 
-        condition: service_healthy 
+      timescaledb:
+        condition: service_healthy
       sentiment-analysis-service:
         condition: service_healthy
     restart: unless-stopped
-    # Scraping can be memory intensive. 
+    # Scraping can be memory intensive.
     mem_limit: 4gb
     # Playwright needs a large shared memory size to run Chromium.
-    shm_size: '2gb'
+    shm_size: "2gb"
 
   sentiment-analysis-service:
-      build:
-        context: .
-        dockerfile: ./sentiment-analysis-service/sentiment-analysis.dockerfile
-      environment:
-        - RABBITMQ_HOST=rabbitmq
-      depends_on:
-        rabbitmq:
-          condition: service_healthy
-      healthcheck:
-        test: ["CMD-SHELL", "curl -f http://localhost:6220/health || exit 1"]
-        start_period: 60s
-      restart: unless-stopped
-      
+    build:
+      context: .
+      dockerfile: ./sentiment-analysis-service/sentiment-analysis.dockerfile
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6220/health || exit 1"]
+      start_period: 60s
+    restart: unless-stopped
+
   seeder:
     build:
       context: .
-      dockerfile: ./seeder/seeder.dockerfile 
+      dockerfile: ./seeder/seeder.dockerfile
     environment:
-        DB_HOST: timescaledb
-        DB_PORT: 5432
-        DB_USER: postgres
-        DB_PASSWORD: postgres
-        DB_NAME: market_signals
+      DB_HOST: timescaledb
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: market_signals
     depends_on:
       timescaledb:
         condition: service_healthy
-volumes: 
+volumes:
   timescaledb_data:
-  

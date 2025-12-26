@@ -47,15 +47,16 @@ async function insertMarketDataBatch(client: PoolClient, data: MarketDataPoint[]
 
 /**
  * Fetches, transforms, and inserts historical data for ONE single asset.
+ * Uses 1h interval with 720 candles = 30 days of data
  */
 async function seedSingleAsset(client: PoolClient, asset: { binanceSymbol: string; internalSymbol: string }) {
-	console.log(`[Seeder] Fetching ${DAYS_TO_FETCH} days of 15m data for ${asset.internalSymbol}...`);
+	console.log(`[Seeder] Fetching ${DAYS_TO_FETCH} days of 1h data for ${asset.internalSymbol}...`);
 
 	const response = await axios.get("https://api.binance.com/api/v3/klines", {
 		params: {
 			symbol: asset.binanceSymbol,
-			interval: "15m",
-			limit: 1000,
+			interval: "1h", // Changed from 15m to 1h for 30 days coverage
+			limit: 720, // 30 days * 24 hours = 720 candles
 		},
 	});
 
@@ -87,7 +88,7 @@ async function seedSingleAsset(client: PoolClient, asset: { binanceSymbol: strin
 		await insertMarketDataBatch(client, batch);
 	}
 
-	console.log(`[Seeder] -> Seeded ${klines.length} 15-minute records for ${asset.internalSymbol}.`);
+	console.log(`[Seeder] -> Seeded ${klines.length} 1-hour records for ${asset.internalSymbol}.`);
 }
 
 async function seedDatabase() {

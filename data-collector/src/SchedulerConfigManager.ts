@@ -3,6 +3,13 @@ import { CoinGeckoMarketDataSource } from "./datasources/CoinGeckoMarketDataSour
 import { CoinGeckoIndicatorSource } from "./datasources/CoinGeckoIndicatorSource";
 import { VIXSource, SPYSource, BrentCrudeOilSource } from "./datasources/yahooFinance";
 import { FearGreedSource } from "./datasources/feargreed";
+import { EtherscanGasSource, OwlracleGasSource } from "./datasources/EtherscanGasSource";
+import { GitHubActivitySource } from "./datasources/GitHubActivitySource";
+import {
+	BitcoinNetworkSource,
+	EthereumNetworkSource,
+	SolanaNetworkSource,
+} from "./datasources/BlockchainNetworkSource";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
@@ -57,6 +64,60 @@ export class SchedulerConfigManager {
 			maxRetries: 2,
 			retryDelay: 120000,
 		});
+
+		// =====================================
+		// GAS PRICES - Network Congestion Monitoring
+		// =====================================
+
+		// Ethereum gas from Etherscan (every 5 minutes)
+		this.registerHighFrequencySource(new EtherscanGasSource(config.ETHERSCAN_API_KEY), "*/5 * * * *", {
+			maxRetries: 2,
+			retryDelay: 30000,
+		});
+
+		// Multi-chain gas from Owlracle (every 10 minutes - 100 req/hr limit)
+		if (config.OWLRACLE_API_KEY) {
+			this.registerMediumFrequencySource(new OwlracleGasSource("polygon", config.OWLRACLE_API_KEY), "*/10 * * * *", {
+				maxRetries: 2,
+				retryDelay: 60000,
+			});
+		}
+
+		// =====================================
+		// BLOCKCHAIN NETWORK METRICS
+		// =====================================
+
+		// Bitcoin network (daily transactions, hash rate, mempool)
+		this.registerMediumFrequencySource(
+			new BitcoinNetworkSource(),
+			"0 */2 * * *", // Every 2 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Ethereum network metrics
+		this.registerMediumFrequencySource(
+			new EthereumNetworkSource(config.ETHERSCAN_API_KEY),
+			"0 */2 * * *", // Every 2 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Solana network (priority fees, epoch info)
+		this.registerMediumFrequencySource(
+			new SolanaNetworkSource(),
+			"0 */1 * * *", // Every hour
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// =====================================
+		// DEVELOPER ACTIVITY - GitHub
+		// =====================================
+
+		// Core blockchain repos activity (daily - data is weekly anyway)
+		this.registerLowFrequencySource(
+			new GitHubActivitySource(undefined, config.GITHUB_TOKEN),
+			"0 8 * * *", // 8 AM UTC daily
+			{ maxRetries: 3, retryDelay: 300000 }
+		);
 
 		// LOW FREQUENCY - Daily or less frequent
 		// FRED data (M2 Money Supply - monthly updates, check daily)
