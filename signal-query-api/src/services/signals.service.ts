@@ -12,17 +12,10 @@ import {
 export class SignalsService {
   constructor(private readonly repo: SignalsRepository) {}
 
-  /**
-   * Gets the list of crypto asset names via repository.
-   */
   async listAssetNames(): Promise<AssetNameDto[]> {
     return this.repo.listCryptoNames();
   }
 
-  /**
-   * Gets OHLC data for the given asset symbol and query params.
-   * Throws NotFoundException if no data is returned.
-   */
   async getOhlcData(
     assetSymbol: string,
     queryParams: GetOhlcQueryDto,
@@ -36,10 +29,6 @@ export class SignalsService {
     return data;
   }
 
-  /**
-   * Gets the latest indicators, optionally filtered by names.
-   * Returns indicators as a keyed object: { [indicatorName]: IndicatorDto }
-   */
   async getLatestIndicators(
     names?: string[],
   ): Promise<Record<string, IndicatorDto>> {
@@ -53,12 +42,6 @@ export class SignalsService {
     );
   }
 
-  /**
-   * Gets the current value and change of a metric.
-   * @param metricName - The name of the metric to get.
-   * @param changeType - The type of change to return.
-   * @returns The current value and change of the metric.
-   */
   async getMetricWithChange(
     metricName: string,
     changeType: 'percent' | 'absolute' = 'percent',

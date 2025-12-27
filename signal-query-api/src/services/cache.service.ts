@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-// Redis client type - optional dependency
+// Redis client type
 type RedisClientType = {
   connect(): Promise<void>;
   quit(): Promise<void>;
@@ -122,9 +122,6 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Get cached value
-   */
   async get<T>(key: string): Promise<T | null> {
     if (!this.client || !this.isConnected) return null;
 
@@ -137,9 +134,6 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Set cached value
-   */
   async set<T>(
     key: string,
     value: T,
@@ -183,9 +177,6 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Publish message to Redis channel (for WebSocket broadcasts)
-   */
   async publish(channel: string, message: unknown): Promise<void> {
     if (!this.client || !this.isConnected) return;
 
