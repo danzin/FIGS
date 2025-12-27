@@ -25,6 +25,10 @@ RAW_NEWS_EXCHANGE = 'raw_news'
 SENTIMENT_RESULTS_EXCHANGE = 'sentiment_results'
 SENTIMENT_ANALYSIS_QUEUE = 'sentiment_analysis_queue'
 
+# MODEL CHOICE: Use 1.5-flash for the high free-tier quota. 
+# 2.0-flash experimental is currently too restricted for high-volume news.
+MODEL_NAME = 'gemini-1.5-flash-8b' 
+
 logging.basicConfig(
   level=logging.INFO,
   format='%(asctime)s - %(levelname)s - [SentimentService] - %(message)s',
@@ -36,7 +40,7 @@ class HealthHandler(BaseHTTPRequestHandler):
   def do_GET(self):
     if self.path == '/health':
       if service_ready:
-        self.send_response(200) # All good
+        self.send_response(200) 
         self.send_header('Content-type', 'application/json')
         self.end_headers()
         health_status = {
@@ -47,7 +51,7 @@ class HealthHandler(BaseHTTPRequestHandler):
         }
         self.wfile.write(json.dumps(health_status).encode())
       else:
-        self.send_response(503)  # Service Unavailable
+        self.send_response(503) 
         self.send_header('Content-type', 'application/json')
         self.end_headers()
         health_status = {
@@ -58,7 +62,6 @@ class HealthHandler(BaseHTTPRequestHandler):
         }
         self.wfile.write(json.dumps(health_status).encode())
     elif self.path == '/ready':
-      # Kubernetes readiness probe endpoint
       if service_ready:
         self.send_response(200)
         self.end_headers()
@@ -72,11 +75,9 @@ class HealthHandler(BaseHTTPRequestHandler):
       self.end_headers()
   
   def log_message(self, format, *args):
-      # Suppress HTTP server logs to keep output clean
       pass
 
 def start_health_server():
-  """Start health check server in background thread"""
   try:
     with socketserver.TCPServer(("", 6220), HealthHandler) as httpd:
       logging.info("Health check server started on port 6220")
@@ -85,77 +86,57 @@ def start_health_server():
     logging.error(f"Failed to start health server: {e}")
 
 def analyze_title_sentiment(title: str) -> dict:
-  """
-  Analyzes sentiment using Google Gemini API.
-  Returns normalized score and label.
-  """
   if not isinstance(title, str) or not title.strip():
     return {"score": 0.0, "label": "neutral"}
 
   prompt = f"""
 Analyze this crypto/financial news headline for market sentiment: "{title}"
-
-Return ONLY valid JSON with no additional text: {{"sentiment": "bullish" | "bearish" | "neutral", "score": -1.0 to 1.0}}
-
-Scoring rules:
-- Score ranges from -1.0 (extremely bearish) to 1.0 (extremely bullish), 0.0 is neutral
-- "Breaking support", "crash", "plunge", "hack", "exploit", "bankruptcy", "layoffs" = BEARISH (negative score)
-- "Breaking resistance", "rally", "surge", "partnership", "adoption", "ATH", "buying the dip" = BULLISH (positive score)
-- Regulatory crackdowns = BEARISH
-- ETF approvals, institutional buying = BULLISH
-- Mixed or unclear = NEUTRAL (score near 0)
+Return ONLY valid JSON: {{"sentiment": "bullish" | "bearish" | "neutral", "score": -1.0 to 1.0}}
 """
+
+  # Force a 5-second gap to stay under 15 RPM (1 request every 4s is the limit)
+  time.sleep(5)
 
   try:
     response = client.models.generate_content(
-      model='gemini-2.0-flash',
+      model=MODEL_NAME, # UPDATED: Using 1.5-flash
       contents=prompt,
       config=types.GenerateContentConfig(
         response_mime_type='application/json',
-        temperature=0.0  # Deterministic for consistency
+        temperature=0.0
       )
     )
     
-    # Parse the JSON response
     result = json.loads(response.text)
-    
     score = float(result.get('score', 0.0))
-    # Clamp score to valid range
     score = max(-1.0, min(1.0, score))
     
     label = result.get('sentiment', 'neutral').lower()
     if label not in ['bullish', 'bearish', 'neutral']:
       label = 'neutral'
     
-    return {
-      "score": round(score, 3),
-      "label": label
-    }
+    return {"score": round(score, 3), "label": label}
       
   except Exception as e:
+    # Handle Quota Exhaustion with a longer backoff
+    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+        logging.warning("Quota hit. Backing off for 30 seconds...")
+        time.sleep(30)
+    
     logging.error(f"Gemini analysis failed: {e}")
     return {"score": 0.0, "label": "neutral"}
 
 def on_message_callback(ch, method, properties, body):
-  """
-  This function is called for every message received from the raw news queue.
-  """
   try:
-    # Decode the message body from bytes to a Python dictionary
     article = json.loads(body.decode('utf-8'))
-    logging.info(f"Received article: {article.get('id')}")
-
-    # Ensure the article has a title
     title = article.get('title')
+    
     if not title:
-      logging.warning(f"Article {article.get('id')} has no title. Discarding.")
-      ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+      ch.basic_ack(delivery_tag=method.delivery_tag)
       return
 
-    # Perform the analysis
     sentiment_data = analyze_title_sentiment(title)
 
-    # Construct the result message to be published
     sentiment_result = {
       "external_id": article.get('id'),
       "source": article.get('source'),
@@ -167,38 +148,25 @@ def on_message_callback(ch, method, properties, body):
       "analyzed_at": datetime.now(timezone.utc).isoformat()
     }
 
-    # Publish the result to the next exchange in the pipeline
     ch.basic_publish(
       exchange=SENTIMENT_RESULTS_EXCHANGE,
-      routing_key='',  # routing_key is ignored for fanout exchanges
+      routing_key='',
       body=json.dumps(sentiment_result),
       properties=pika.BasicProperties(
         content_type='application/json',
         delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE,
       )
     )
-    logging.info(f"Published sentiment for article: {article.get('id')}")
-
-    # Acknowledge the original message, removing it from the queue
+    logging.info(f"Analyzed: {title[:50]}... [{sentiment_data['label']}]")
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
-  except json.JSONDecodeError as e:
-    logging.error(f"Failed to decode JSON message body: {e}. Discarding message.")
-    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
   except Exception as e:
-    logging.error(f"An unexpected error occurred in callback: {e}. Discarding message.")
-    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+    logging.error(f"Callback error: {e}")
+    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
 def main():
-  """
-  Main function to set up RabbitMQ connection, channels, queues,
-  and start consuming messages.
-  """
   global service_ready
   
-  logging.info("Sentiment Analysis Service is starting...")
-  
-  # Start health check server immediately (but service_ready = False)
   health_thread = threading.Thread(target=start_health_server, daemon=True)
   health_thread.start()
   
@@ -207,46 +175,25 @@ def main():
     try:
       credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
       connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials))
-      logging.info("Successfully connected to RabbitMQ.")
-    except pika.exceptions.AMQPConnectionError as e:
-      logging.error(f"Failed to connect to RabbitMQ: {e}. Retrying in 5 seconds...")
+      logging.info("Connected to RabbitMQ.")
+    except Exception:
       time.sleep(5)
 
   channel = connection.channel()
-
-  # Declare the exchange to listen to (published by the scraper)
   channel.exchange_declare(exchange=RAW_NEWS_EXCHANGE, exchange_type='fanout', durable=True)
-  
-  # Declare the exchange to publish to (listened to by the persister)
   channel.exchange_declare(exchange=SENTIMENT_RESULTS_EXCHANGE, exchange_type='fanout', durable=True)
-
-  # Declare a durable queue to consume messages from
   channel.queue_declare(queue=SENTIMENT_ANALYSIS_QUEUE, durable=True)
-
-  # Bind the queue to the raw news exchange
   channel.queue_bind(exchange=RAW_NEWS_EXCHANGE, queue=SENTIMENT_ANALYSIS_QUEUE)
 
-  logging.info(f"Queue '{SENTIMENT_ANALYSIS_QUEUE}' is bound to exchange '{RAW_NEWS_EXCHANGE}'.")
-
-  # Set Quality of Service: process one message at a time
+  # Process ONE message at a time to respect Gemini rate limits
   channel.basic_qos(prefetch_count=1)
-
-  # Register the callback function to handle messages
   channel.basic_consume(queue=SENTIMENT_ANALYSIS_QUEUE, on_message_callback=on_message_callback)
 
-  # Mark service as ready ONLY after everything is set up
   service_ready = True
-  logging.info("Waiting for messages. To exit press CTRL+C")
-  
   try:
     channel.start_consuming()
   except KeyboardInterrupt:
-    logging.info("Shutting down...")
-    service_ready = False
-    channel.stop_consuming()
-  finally:
     connection.close()
-    logging.info("RabbitMQ connection closed.")
 
 if __name__ == '__main__':
     main()

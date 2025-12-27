@@ -12,9 +12,6 @@ import {
 export class SignalsRepository {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
 
-  /**
-   * Fetches all crypto asset names from the database.
-   */
   public async listCryptoNames(): Promise<AssetNameDto[]> {
     const { rows } = await this.pool.query<AssetNameDto>(
       `SELECT name

@@ -30,6 +30,8 @@ const formatValue = (value: number | string, unit?: string): string => {
 	}
 
 	if (unit === "gwei") {
+		// Show more decimals for very low gas prices
+		if (value < 0.1) return `${value.toFixed(2)} gwei`;
 		return `${value.toFixed(1)} gwei`;
 	}
 

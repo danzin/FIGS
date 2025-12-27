@@ -406,7 +406,13 @@ export class AdvancedIndicatorsService {
       }
     }
 
-    const totalOI = latest.get('binance_btc_oi') || 0;
+    // Try multiple sources for total OI (CoinGecko preferred, Binance fallback)
+    const totalOI =
+      latest.get('btc_open_interest_usd') ||
+      latest.get('binance_btc_oi') ||
+      latest.get('total_open_interest_usd') ||
+      latest.get('total_btc_oi_btc') ||
+      0;
     const oiChange30d = latest.get('binance_btc_oi_change_30d') || 0;
     const leverageStatus = latest.get('btc_leverage_status') || 0;
 
@@ -414,11 +420,11 @@ export class AdvancedIndicatorsService {
     if (leverageStatus === 1 || oiChange30d > 40) status = 'overheated';
     else if (leverageStatus === -1 || oiChange30d < -15) status = 'flushed';
 
-    // Get historical OI data
+    // Get historical OI data - try CoinGecko source first, then Binance
     const historyQuery = `
       SELECT time as timestamp, value
       FROM public.market_indicators
-      WHERE name = 'binance_btc_oi'
+      WHERE name IN ('btc_open_interest_usd', 'binance_btc_oi', 'total_open_interest_usd')
       ORDER BY time DESC
       LIMIT 90
     `;

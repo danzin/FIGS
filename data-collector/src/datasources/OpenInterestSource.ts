@@ -210,3 +210,133 @@ export class AggregatedOISource implements DataSource {
 		}
 	}
 }
+
+/**
+ * CoinGecko Derivatives Source - fetches open interest from /derivatives endpoint
+ * This is a free API that provides OI data from multiple exchanges
+ */
+export class CoinGeckoDerivativesSource implements DataSource {
+	public readonly key = "coingecko_derivatives";
+	private readonly baseUrl = "https://api.coingecko.com/api/v3";
+	private lastFetchTime: Date | null = null;
+
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
+		const now = new Date();
+		const results: IndicatorDataPoint[] = [];
+
+		// Rate limit check - don't fetch more than once per hour even if scheduler calls more frequently
+		if (this.lastFetchTime && now.getTime() - this.lastFetchTime.getTime() < 3600000) {
+			console.log(
+				`[CoinGeckoDerivatives] Skipping - last fetch was ${Math.round((now.getTime() - this.lastFetchTime.getTime()) / 60000)} minutes ago`
+			);
+			return null;
+		}
+
+		try {
+			console.log(`[CoinGeckoDerivatives] Fetching open interest data from CoinGecko...`);
+
+			// Fetch all derivatives contracts
+			const response = await axios.get(`${this.baseUrl}/derivatives`, {
+				headers: {
+					Accept: "application/json",
+					"User-Agent": "FIGS-DataCollector/1.0",
+				},
+				timeout: 30000,
+			});
+
+			const contracts = response.data || [];
+
+			// Aggregate open interest by asset (BTC, ETH, SOL)
+			const oiByAsset: Record<string, { total: number; contracts: number }> = {
+				BTC: { total: 0, contracts: 0 },
+				ETH: { total: 0, contracts: 0 },
+				SOL: { total: 0, contracts: 0 },
+			};
+
+			for (const contract of contracts) {
+				const indexId = contract.index_id?.toUpperCase() || "";
+				const oi = parseFloat(contract.open_interest) || 0;
+
+				// Match common index IDs (BTC, XBT -> BTC, ETH, SOL)
+				if ((indexId === "BTC" || indexId === "XBT" || indexId.includes("BTC") || indexId.includes("XBT")) && oi > 0) {
+					oiByAsset.BTC.total += oi;
+					oiByAsset.BTC.contracts++;
+				} else if ((indexId === "ETH" || indexId.includes("ETH")) && oi > 0) {
+					oiByAsset.ETH.total += oi;
+					oiByAsset.ETH.contracts++;
+				} else if ((indexId === "SOL" || indexId.includes("SOL")) && oi > 0) {
+					oiByAsset.SOL.total += oi;
+					oiByAsset.SOL.contracts++;
+				}
+			}
+
+			// Store aggregated OI for each asset
+			if (oiByAsset.BTC.total > 0) {
+				results.push({
+					name: "btc_open_interest_usd",
+					time: now,
+					value: oiByAsset.BTC.total,
+					source: "CoinGecko",
+				});
+				console.log(
+					`[CoinGeckoDerivatives] BTC OI: $${(oiByAsset.BTC.total / 1e6).toFixed(2)}M from ${oiByAsset.BTC.contracts} contracts`
+				);
+			}
+
+			if (oiByAsset.ETH.total > 0) {
+				results.push({
+					name: "eth_open_interest_usd",
+					time: now,
+					value: oiByAsset.ETH.total,
+					source: "CoinGecko",
+				});
+				console.log(
+					`[CoinGeckoDerivatives] ETH OI: $${(oiByAsset.ETH.total / 1e6).toFixed(2)}M from ${oiByAsset.ETH.contracts} contracts`
+				);
+			}
+
+			if (oiByAsset.SOL.total > 0) {
+				results.push({
+					name: "sol_open_interest_usd",
+					time: now,
+					value: oiByAsset.SOL.total,
+					source: "CoinGecko",
+				});
+				console.log(
+					`[CoinGeckoDerivatives] SOL OI: $${(oiByAsset.SOL.total / 1e6).toFixed(2)}M from ${oiByAsset.SOL.contracts} contracts`
+				);
+			}
+
+			// Calculate total OI across all assets
+			const totalOI = oiByAsset.BTC.total + oiByAsset.ETH.total + oiByAsset.SOL.total;
+			if (totalOI > 0) {
+				results.push({
+					name: "total_open_interest_usd",
+					time: now,
+					value: totalOI,
+					source: "CoinGecko",
+				});
+			}
+
+			console.log(
+				`[CoinGeckoDerivativesSource] Fetched ${results.length} OI metrics from ${contracts.length} contracts`
+			);
+
+			// Update last fetch time on success
+			this.lastFetchTime = now;
+
+			return results.length > 0 ? results : null;
+		} catch (error: unknown) {
+			// Handle rate limit errors specifically
+			if (axios.isAxiosError(error) && error.response?.status === 429) {
+				console.warn(`[CoinGeckoDerivativesSource] Rate limited by CoinGecko. Will retry on next scheduled run.`);
+			} else {
+				console.error(
+					"[CoinGeckoDerivativesSource] Error fetching OI data:",
+					error instanceof Error ? error.message : error
+				);
+			}
+			return null;
+		}
+	}
+}

@@ -3,7 +3,7 @@ import { CoinGeckoMarketDataSource } from "./datasources/CoinGeckoMarketDataSour
 import { CoinGeckoIndicatorSource } from "./datasources/CoinGeckoIndicatorSource";
 import { VIXSource, SPYSource, BrentCrudeOilSource } from "./datasources/yahooFinance";
 import { FearGreedSource } from "./datasources/feargreed";
-import { EtherscanGasSource, OwlracleGasSource } from "./datasources/EtherscanGasSource";
+import { EtherscanGasSource } from "./datasources/EtherscanGasSource";
 import { GitHubActivitySource } from "./datasources/GitHubActivitySource";
 import {
 	BitcoinNetworkSource,
@@ -11,7 +11,7 @@ import {
 	SolanaNetworkSource,
 } from "./datasources/BlockchainNetworkSource";
 import { DefiLlamaStablecoinSource, StablecoinBreakdownSource } from "./datasources/DefiLlamaSource";
-import { BinanceOpenInterestSource, AggregatedOISource } from "./datasources/OpenInterestSource";
+import { CoinGeckoDerivativesSource } from "./datasources/OpenInterestSource";
 import { HashRateExtendedSource, MiningDifficultySource } from "./datasources/HashRateSource";
 import { PowerLawIndicatorSource } from "./datasources/PowerLawSource";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
@@ -78,14 +78,6 @@ export class SchedulerConfigManager {
 			maxRetries: 2,
 			retryDelay: 30000,
 		});
-
-		// Multi-chain gas from Owlracle (every 10 minutes - 100 req/hr limit)
-		if (config.OWLRACLE_API_KEY) {
-			this.registerMediumFrequencySource(new OwlracleGasSource("polygon", config.OWLRACLE_API_KEY), "*/10 * * * *", {
-				maxRetries: 2,
-				retryDelay: 60000,
-			});
-		}
 
 		// =====================================
 		// BLOCKCHAIN NETWORK METRICS
@@ -162,18 +154,13 @@ export class SchedulerConfigManager {
 			{ maxRetries: 3, retryDelay: 120000 }
 		);
 
-		// Open Interest from Binance Futures
-		this.registerMediumFrequencySource(
-			new BinanceOpenInterestSource(),
-			"0 */1 * * *", // Every hour
-			{ maxRetries: 2, retryDelay: 60000 }
-		);
-
-		// Aggregated OI from CoinGecko (broader view)
-		this.registerMediumFrequencySource(
-			new AggregatedOISource(),
-			"0 */2 * * *", // Every 2 hours
-			{ maxRetries: 2, retryDelay: 120000 }
+		// CoinGecko Derivatives - aggregate OI from /derivatives endpoint
+		// Runs every 6 hours to avoid rate limits on CoinGecko free tier
+		// This is the primary OI source - aggregates BTC, ETH, SOL OI from all exchanges
+		this.registerLowFrequencySource(
+			new CoinGeckoDerivativesSource(),
+			"0 */6 * * *", // Every 6 hours (0:00, 6:00, 12:00, 18:00 UTC)
+			{ maxRetries: 3, retryDelay: 300000 } // 5 min retry delay
 		);
 
 		// Extended hash rate data for ribbon indicator

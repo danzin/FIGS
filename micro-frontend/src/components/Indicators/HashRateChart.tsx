@@ -84,9 +84,11 @@ export const HashRateChart: React.FC<HashRateChartProps> = ({ data, isLoading })
 	}, [data]);
 
 	const formatHashRate = (value: number) => {
-		if (value >= 1e9) return `${(value / 1e9).toFixed(0)} EH/s`;
-		if (value >= 1e6) return `${(value / 1e6).toFixed(0)} PH/s`;
-		return `${(value / 1e3).toFixed(0)} TH/s`;
+		// Value comes in TH/s from database (Blockchain.com API)
+		// 1 EH/s = 1,000,000 TH/s = 1e6 TH/s
+		if (value >= 1e6) return `${(value / 1e6).toFixed(1)} EH/s`;
+		if (value >= 1e3) return `${(value / 1e3).toFixed(1)} PH/s`;
+		return `${value.toFixed(1)} TH/s`;
 	};
 
 	const getRibbonStatusColor = (status: string) => {

@@ -9,7 +9,7 @@ import { DataSource, IndicatorDataPoint } from "@financialsignalsgatheringsystem
 export class EtherscanGasSource implements DataSource {
 	public readonly key = "etherscan_gas";
 	private readonly apiKey: string;
-	private readonly baseUrl = "https://api.etherscan.io/api";
+	private readonly baseUrl = "https://api.etherscan.io/v2/api";
 
 	constructor(apiKey?: string) {
 		// Etherscan works without API key but with rate limits
@@ -19,6 +19,7 @@ export class EtherscanGasSource implements DataSource {
 	async fetch(): Promise<IndicatorDataPoint[] | null> {
 		try {
 			const params: Record<string, string> = {
+				chainid: "1", // Ethereum mainnet
 				module: "gastracker",
 				action: "gasoracle",
 			};
