@@ -82,9 +82,10 @@ services:
       HEALTH_HEAP_CRITICAL_MB: 768
       MONITOR_CHECK_INTERVAL_CRON: "*/45 * * * *"
       PORT: 3000
-      #ETHERSCAN_API_KEY: ""
-      #GITHUB_TOKEN: ""
-      #OWLRACLE_API_KEY: ""
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      OWLRACLE_API_KEY: ${OWLRACLE_API_KEY}
 
     depends_on:
       rabbitmq:
@@ -202,13 +203,22 @@ services:
       dockerfile: ./sentiment-analysis-service/sentiment-analysis.dockerfile
     environment:
       - RABBITMQ_HOST=rabbitmq
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       rabbitmq:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:6220/health || exit 1"]
-      start_period: 60s
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 3
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 128M
 
   seeder:
     build:

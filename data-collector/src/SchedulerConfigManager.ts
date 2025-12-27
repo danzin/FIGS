@@ -10,6 +10,10 @@ import {
 	EthereumNetworkSource,
 	SolanaNetworkSource,
 } from "./datasources/BlockchainNetworkSource";
+import { DefiLlamaStablecoinSource, StablecoinBreakdownSource } from "./datasources/DefiLlamaSource";
+import { BinanceOpenInterestSource, AggregatedOISource } from "./datasources/OpenInterestSource";
+import { HashRateExtendedSource, MiningDifficultySource } from "./datasources/HashRateSource";
+import { PowerLawIndicatorSource } from "./datasources/PowerLawSource";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
@@ -138,6 +142,59 @@ export class SchedulerConfigManager {
 			new FredSource(config.FRED_API_KEY!, datapoints.get("UNR") as string), // Unemployment Rate
 			"0 9 * * 1", // Monday 9 AM UTC (weekly check)
 			{ maxRetries: 5, retryDelay: 300000 }
+		);
+
+		// =====================================
+		// ADVANCED INDICATORS - New Sources
+		// =====================================
+
+		// Stablecoin liquidity (DefiLlama - updates daily)
+		this.registerMediumFrequencySource(
+			new DefiLlamaStablecoinSource(),
+			"0 */4 * * *", // Every 4 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Stablecoin breakdown (USDT, USDC, DAI, FDUSD)
+		this.registerLowFrequencySource(
+			new StablecoinBreakdownSource(),
+			"0 */6 * * *", // Every 6 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Open Interest from Binance Futures
+		this.registerMediumFrequencySource(
+			new BinanceOpenInterestSource(),
+			"0 */1 * * *", // Every hour
+			{ maxRetries: 2, retryDelay: 60000 }
+		);
+
+		// Aggregated OI from CoinGecko (broader view)
+		this.registerMediumFrequencySource(
+			new AggregatedOISource(),
+			"0 */2 * * *", // Every 2 hours
+			{ maxRetries: 2, retryDelay: 120000 }
+		);
+
+		// Extended hash rate data for ribbon indicator
+		this.registerMediumFrequencySource(
+			new HashRateExtendedSource(),
+			"0 */4 * * *", // Every 4 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Mining difficulty
+		this.registerLowFrequencySource(
+			new MiningDifficultySource(),
+			"0 */6 * * *", // Every 6 hours (difficulty changes ~every 2 weeks)
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Power Law and MVRV calculations
+		this.registerLowFrequencySource(
+			new PowerLawIndicatorSource(),
+			"0 */4 * * *", // Every 4 hours
+			{ maxRetries: 3, retryDelay: 180000 }
 		);
 	}
 

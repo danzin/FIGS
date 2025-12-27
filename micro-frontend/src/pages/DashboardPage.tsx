@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { MultiPaneChart } from "../components/Chart/MultiPaneChart";
 import { MarketHeartbeat } from "../components/MarketHeartbeat";
 import { VolatilitySqueeze } from "../components/VolatilitySqueeze";
@@ -11,6 +11,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { useOhlcData } from "../hooks/useOhlcData";
 import { useLatestNews } from "../hooks/useLatestNews";
 import { useRsiHeatmap, useVolatilitySqueeze, useMarketHeartbeat, useOnChainMetrics } from "../hooks/useAnalytics";
+import { Home, BarChart3 } from "lucide-react";
 
 const supportedIntervals: { label: string; value: Interval }[] = [
 	{ label: "15m", value: "15m" },
@@ -24,7 +25,11 @@ const chartTabs = [
 	{ id: "sol", label: "SOL", active: false },
 ];
 
-export const DashboardPage = () => {
+interface DashboardPageProps {
+	onNavigate: (page: "dashboard" | "indicators") => void;
+}
+
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 	const [activeTab, setActiveTab] = useState("btc");
 	const [selectedAsset, setSelectedAsset] = useState("bitcoin");
 	const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
@@ -46,7 +51,6 @@ export const DashboardPage = () => {
 
 	const { data: chartData, loading: _chartLoading, error: _chartError } = useOhlcData(selectedAsset, interval);
 
-	// Get fear/greed label
 	const getFearGreedLabel = (value: number): string => {
 		if (value <= 25) return "Extreme Fear";
 		if (value <= 45) return "Fear";
@@ -80,6 +84,19 @@ export const DashboardPage = () => {
 			{/* Header */}
 			<div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-300">
 				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-4">
+						<button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+							<Home className="w-4 h-4" />
+							Dashboard
+						</button>
+						<button
+							onClick={() => onNavigate("indicators")}
+							className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+						>
+							<BarChart3 className="w-4 h-4" />
+							Indicators
+						</button>
+					</div>
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
 							Financial Insights Dashboard
@@ -184,6 +201,7 @@ export const DashboardPage = () => {
 								source={newsItem.source}
 								time={new Date(newsItem.published_at).toLocaleString()}
 								sentiment={newsItem.sentiment}
+								url={newsItem.url}
 							/>
 						))}
 					</div>

@@ -6,19 +6,16 @@ import sys
 import time
 import threading
 from datetime import datetime, timezone
-from transformers import pipeline
+from google import genai
+from google.genai import types
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import socketserver
 
 # Global variable to track service readiness
 service_ready = False
 
-# Initialize sentiment pipeline (this takes time)
-sentiment_pipeline = pipeline(
-    "sentiment-analysis", 
-    model="ProsusAI/finbert",  # FinBERT model
-    return_all_scores=False    # Simplify output
-)
+# Initialize Gemini client
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'user')
@@ -89,34 +86,54 @@ def start_health_server():
 
 def analyze_title_sentiment(title: str) -> dict:
   """
-  Analyzes sentiment using FinBERT (financial BERT model).
+  Analyzes sentiment using Google Gemini API.
   Returns normalized score and label.
   """
   if not isinstance(title, str) or not title.strip():
     return {"score": 0.0, "label": "neutral"}
 
+  prompt = f"""
+Analyze this crypto/financial news headline for market sentiment: "{title}"
+
+Return ONLY valid JSON with no additional text: {{"sentiment": "bullish" | "bearish" | "neutral", "score": -1.0 to 1.0}}
+
+Scoring rules:
+- Score ranges from -1.0 (extremely bearish) to 1.0 (extremely bullish), 0.0 is neutral
+- "Breaking support", "crash", "plunge", "hack", "exploit", "bankruptcy", "layoffs" = BEARISH (negative score)
+- "Breaking resistance", "rally", "surge", "partnership", "adoption", "ATH", "buying the dip" = BULLISH (positive score)
+- Regulatory crackdowns = BEARISH
+- ETF approvals, institutional buying = BULLISH
+- Mixed or unclear = NEUTRAL (score near 0)
+"""
+
   try:
-    result = sentiment_pipeline(title)[0]
+    response = client.models.generate_content(
+      model='gemini-2.0-flash',
+      contents=prompt,
+      config=types.GenerateContentConfig(
+        response_mime_type='application/json',
+        temperature=0.0  # Deterministic for consistency
+      )
+    )
     
-    label_map = {
-      'positive': 'bullish',
-      'negative': 'bearish',
-      'neutral': 'neutral'
-    }
+    # Parse the JSON response
+    result = json.loads(response.text)
     
-    score = result['score'] * 2 - 1  # Scale from 0-1 to -1-1
+    score = float(result.get('score', 0.0))
+    # Clamp score to valid range
+    score = max(-1.0, min(1.0, score))
     
-    # Adjust score direction for negative labels
-    if result['label'] == 'negative':
-      score = -abs(score)
-        
+    label = result.get('sentiment', 'neutral').lower()
+    if label not in ['bullish', 'bearish', 'neutral']:
+      label = 'neutral'
+    
     return {
-      "score": round(score, 3),  # 3 decimal places
-      "label": label_map[result['label']]
+      "score": round(score, 3),
+      "label": label
     }
       
   except Exception as e:
-    logging.error(f"FinBERT analysis failed: {e}")
+    logging.error(f"Gemini analysis failed: {e}")
     return {"score": 0.0, "label": "neutral"}
 
 def on_message_callback(ch, method, properties, body):
