@@ -118,9 +118,6 @@ export class AnalyticsService {
     return { assets: assetLabels, matrix };
   }
 
-  /**
-   * Calculate RSI for top crypto assets
-   */
   async getRsiHeatmap(): Promise<RsiData[]> {
     const cacheKey = this.cacheService.getCacheKey.rsiHeatmap();
 
@@ -180,9 +177,6 @@ export class AnalyticsService {
     return results.sort((a, b) => a.rsi - b.rsi);
   }
 
-  /**
-   * Calculate volatility squeeze (Bollinger Band Width analysis)
-   */
   async getVolatilitySqueeze(assetSymbol: string): Promise<VolatilityState> {
     const cacheKey = this.cacheService.getCacheKey.volatility(assetSymbol);
 
@@ -272,9 +266,6 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Get market heartbeat data for header
-   */
   async getMarketHeartbeat(): Promise<MarketHeartbeatData> {
     const cacheKey = this.cacheService.getCacheKey.heartbeat();
 
@@ -288,7 +279,6 @@ export class AnalyticsService {
   private async fetchMarketHeartbeat(): Promise<MarketHeartbeatData> {
     const result: MarketHeartbeatData = {};
 
-    // Fetch BTC price
     const btcQuery = `
       SELECT value, time FROM public.market_data 
       WHERE asset_symbol = 'bitcoin' AND type = 'price'
@@ -308,7 +298,6 @@ export class AnalyticsService {
       }
     } catch {}
 
-    // Fetch ETH price
     const ethQuery = `
       SELECT value, time FROM public.market_data 
       WHERE asset_symbol = 'ethereum' AND type = 'price'
@@ -328,7 +317,6 @@ export class AnalyticsService {
       }
     } catch {}
 
-    // Fetch SOL price
     const solQuery = `
       SELECT value, time FROM public.market_data 
       WHERE asset_symbol = 'solana' AND type = 'price'
@@ -348,7 +336,6 @@ export class AnalyticsService {
       }
     } catch {}
 
-    // Fetch BTC Dominance
     const domQuery = `
       SELECT value FROM public.market_indicators 
       WHERE name = 'btc_dominance'
@@ -367,7 +354,6 @@ export class AnalyticsService {
       }
     } catch {}
 
-    // Fetch Fear & Greed Index
     const fgQuery = `
       SELECT value FROM public.market_indicators 
       WHERE name = 'fear_greed_index'
@@ -388,7 +374,6 @@ export class AnalyticsService {
       }
     } catch {}
 
-    // Fetch ETH Gas Price (from Etherscan data)
     const gasQuery = `
       SELECT value FROM public.market_indicators 
       WHERE name = 'eth_gas_standard'
@@ -409,9 +394,6 @@ export class AnalyticsService {
     return result;
   }
 
-  /**
-   * Get developer activity metrics from GitHub
-   */
   async getDeveloperActivity(): Promise<
     { asset: string; commits: number; contributors: number }[]
   > {
@@ -473,9 +455,6 @@ export class AnalyticsService {
     return results.sort((a, b) => b.commits - a.commits);
   }
 
-  /**
-   * Get network health metrics (transaction counts, hash rates, etc.)
-   */
   async getNetworkMetrics(): Promise<
     Record<string, { value: number; label: string }[]>
   > {
@@ -547,9 +526,6 @@ export class AnalyticsService {
     return metrics;
   }
 
-  /**
-   * Detect whale movements (volume > 5x 30-day average)
-   */
   async getWhaleMovements(
     assetSymbol: string,
   ): Promise<{ time: string; volume: number }[]> {
@@ -578,9 +554,6 @@ export class AnalyticsService {
     }));
   }
 
-  /**
-   * Get on-chain metrics - active addresses, hash rate, dev activity, etc.
-   */
   async getOnChainMetrics(): Promise<OnChainMetricsByAsset> {
     const cacheKey = 'analytics:onchain';
 
