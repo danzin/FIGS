@@ -41,7 +41,7 @@ class SentimentResponse(BaseModel):
 
 llm = ChatGroq(
     temperature=0, 
-    model_name="llama-3.1-8b-instant",
+    model_name="gpt-oss-120b",
     api_key=GROQ_API_KEY,
     max_retries=2
 )
@@ -54,6 +54,12 @@ prompt_template = ChatPromptTemplate.from_messages([
 ])
 
 chain = prompt_template | structured_llm
+
+NEWS_BUFFER = []
+BUFFER_LOCK = threading.Lock()
+BATCH_INTERVAL = 4 * 60 * 60 # 4 hours
+RATE_LIMIT_CHUNK = 5
+RATE_LIMIT_SLEEP = 60
 
 def analyze_sentiment(title: str) -> dict:
     try:
@@ -68,6 +74,65 @@ def analyze_sentiment(title: str) -> dict:
         # Graceful fallback
         return {"score": 0.0, "label": "neutral"}
     
+def process_buffered_news():
+    """Background thread to process accumulated news every 4 hours."""
+    logging.info(f"Batch processor started. Will run every {BATCH_INTERVAL} seconds.")
+    while True:
+        time.sleep(BATCH_INTERVAL)
+        
+        with BUFFER_LOCK:
+            if not NEWS_BUFFER:
+                logging.info("No news to process in this batch.")
+                continue
+            processing_queue = NEWS_BUFFER[:]
+            NEWS_BUFFER.clear()
+            
+        logging.info(f"Starting batch processing of {len(processing_queue)} articles.")
+        
+        try:
+            # Create a dedicated connection for the publisher thread
+            credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials))
+            channel = connection.channel()
+            # Ensure exchanges exist
+            channel.exchange_declare(exchange=SENTIMENT_RESULTS_EXCHANGE, exchange_type='fanout', durable=True)
+            
+            total = len(processing_queue)
+            for i in range(0, total, RATE_LIMIT_CHUNK):
+                chunk = processing_queue[i : i + RATE_LIMIT_CHUNK]
+                
+                for article in chunk:
+                    title = article.get('title')
+                    if not title: 
+                        continue
+                        
+                    sentiment = analyze_sentiment(title)
+                    logging.info(f"Analyzed ({i}/{total}): {title[:30]}... -> {sentiment['label']}")
+                    
+                    result_msg = {
+                        "external_id": article.get('id'),
+                        "title": title,
+                        "sentiment_score": sentiment['score'],
+                        "sentiment_label": sentiment['label'],
+                        "analyzed_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    channel.basic_publish(
+                        exchange=SENTIMENT_RESULTS_EXCHANGE,
+                        routing_key='',
+                        body=json.dumps(result_msg),
+                        properties=pika.BasicProperties(delivery_mode=2)
+                    )
+                
+                # Rate limit sleep if there are more items
+                if i + RATE_LIMIT_CHUNK < total:
+                    time.sleep(RATE_LIMIT_SLEEP)
+            
+            connection.close()
+            logging.info("Batch processing complete.")
+            
+        except Exception as e:
+            logging.error(f"Error during batch processing: {e}")
 
 class HealthHandler(BaseHTTPRequestHandler):
   def do_GET(self):
@@ -80,7 +145,8 @@ class HealthHandler(BaseHTTPRequestHandler):
             "status": "healthy",
             "service": "sentiment-analysis",
             "ready": True,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "buffered_items": len(NEWS_BUFFER)
         }
         self.wfile.write(json.dumps(health_status).encode())
       else:
@@ -121,34 +187,16 @@ def start_health_server():
 def on_message(ch, method, properties, body):
     try:
         article = json.loads(body)
-        title = article.get('title')
         
-        if not title:
-            ch.basic_ack(delivery_tag=method.delivery_tag)
-            return
-
-        sentiment = analyze_sentiment(title)
-        
-        logging.info(f"Analyzed: {title[:40]}... -> [{sentiment['label']} / {sentiment['score']}]")
-
-        result_msg = {
-            "external_id": article.get('id'),
-            "title": title,
-            "sentiment_score": sentiment['score'],
-            "sentiment_label": sentiment['label'],
-            "analyzed_at": datetime.now(timezone.utc).isoformat()
-        }
-
-        ch.basic_publish(
-            exchange=SENTIMENT_RESULTS_EXCHANGE,
-            routing_key='',
-            body=json.dumps(result_msg),
-            properties=pika.BasicProperties(delivery_mode=2)
-        )
+        with BUFFER_LOCK:
+            NEWS_BUFFER.append(article)
+            
+        # Ack immediately to prevent queue buildup on RMQ side, 
+        # moving responsibility to local memory buffer.
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     except Exception as e:
-        logging.error(f"Error processing message: {e}")
+        logging.error(f"Error buffering message: {e}")
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         
 def main():
@@ -156,6 +204,9 @@ def main():
   
   health_thread = threading.Thread(target=start_health_server, daemon=True)
   health_thread.start()
+  
+  batch_thread = threading.Thread(target=process_buffered_news, daemon=True)
+  batch_thread.start()
   
   connection = None
   while connection is None:
