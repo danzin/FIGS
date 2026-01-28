@@ -2,9 +2,10 @@ import os
 import json
 import pika
 import logging
-import sys
 import time
 import threading
+import socketserver
+
 from datetime import datetime, timezone
 from typing import Literal
 from pydantic import BaseModel, Field
@@ -15,16 +16,14 @@ from langchain_core.prompts import ChatPromptTemplate
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'user')
 RABBITMQ_PASS = os.getenv('RABBITMQ_PASS', 'pass')
-GROQ_API_KEY = os.getenv('GROQ_API_KEY') # Make sure this is in your .env
+GROQ_API_KEY = os.getenv('GROQ_API_KEY') 
 
-# Queue Config
 RAW_NEWS_EXCHANGE = 'raw_news'
 SENTIMENT_RESULTS_EXCHANGE = 'sentiment_results'
 SENTIMENT_ANALYSIS_QUEUE = 'sentiment_analysis_queue'
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [SentimentService] - %(message)s')
 
-# --- DEFINING THE STRUCTURE ---
 class SentimentResponse(BaseModel):
     sentiment: Literal["bullish", "bearish", "neutral"] = Field(
         ..., 
@@ -37,8 +36,6 @@ class SentimentResponse(BaseModel):
         le=1.0
     )
 
-# --- INITIALIZE LANGCHAIN ---
-# llama-3.1-8b-instant is the "Speed King" (Groq Free Tier: ~30 RPM)
 llm = ChatGroq(
     temperature=0, 
     model_name="llama-3.1-8b-instant",
@@ -46,22 +43,17 @@ llm = ChatGroq(
     max_retries=2
 )
 
-# Create the Structured Output Chain
-# This tells Groq: "Force your output to match the SentimentResponse class"
 structured_llm = llm.with_structured_output(SentimentResponse)
 
-# Define the Prompt
 prompt_template = ChatPromptTemplate.from_messages([
     ("system", "You are a crypto market sentiment analyzer. Analyze the following headline and extract the sentiment score and label."),
     ("human", "{headline}"),
 ])
 
-# Create the Runnable Chain
 chain = prompt_template | structured_llm
 
 def analyze_sentiment(title: str) -> dict:
     try:
-        # LangChain handles the retry, the JSON parsing, and the validation
         result: SentimentResponse = chain.invoke({"headline": title})
         
         return {
@@ -72,8 +64,57 @@ def analyze_sentiment(title: str) -> dict:
         logging.error(f"Groq Analysis Failed: {e}")
         # Graceful fallback
         return {"score": 0.0, "label": "neutral"}
+    
 
-# --- RABBITMQ CONSUMER (Standard Boilerplate) ---
+class HealthHandler(BaseHTTPRequestHandler):
+  def do_GET(self):
+    if self.path == '/health':
+      if service_ready:
+        self.send_response(200) 
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        health_status = {
+            "status": "healthy",
+            "service": "sentiment-analysis",
+            "ready": True,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        self.wfile.write(json.dumps(health_status).encode())
+      else:
+        self.send_response(503) 
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        health_status = {
+          "status": "initializing",
+          "service": "sentiment-analysis", 
+          "ready": False,
+          "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        self.wfile.write(json.dumps(health_status).encode())
+    elif self.path == '/ready':
+      if service_ready:
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'ready')
+      else:
+        self.send_response(503)
+        self.end_headers()
+        self.wfile.write(b'not ready')
+    else:
+      self.send_response(404)
+      self.end_headers()
+  
+  def log_message(self, format, *args):
+      pass
+
+def start_health_server():
+  try:
+    with socketserver.TCPServer(("", 6220), HealthHandler) as httpd:
+      logging.info("Health check server started on port 6220")
+      httpd.serve_forever()
+  except Exception as e:
+    logging.error(f"Failed to start health server: {e}")
+
 def on_message(ch, method, properties, body):
     try:
         article = json.loads(body)
@@ -83,7 +124,6 @@ def on_message(ch, method, properties, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        # CALL THE CHAIN
         sentiment = analyze_sentiment(title)
         
         logging.info(f"Analyzed: {title[:40]}... -> [{sentiment['label']} / {sentiment['score']}]")
@@ -92,7 +132,7 @@ def on_message(ch, method, properties, body):
             "external_id": article.get('id'),
             "title": title,
             "sentiment_score": sentiment['score'],
-            "sentiment_label": sentiment['sentiment_label'], # Fixed typo mapping
+            "sentiment_label": sentiment['sentiment_label'],
             "analyzed_at": datetime.now(timezone.utc).isoformat()
         }
 
@@ -107,16 +147,36 @@ def on_message(ch, method, properties, body):
     except Exception as e:
         logging.error(f"Error processing message: {e}")
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-def main():
-    # (Connection logic same as before...)
-    # Just ensure you load your GROQ_API_KEY
-    if not GROQ_API_KEY:
-        logging.error("CRITICAL: GROQ_API_KEY is missing!")
-        sys.exit(1)
         
-    logging.info("Starting LangChain + Groq Sentiment Service...")
-    # ... (RabbitMQ connection code) ...
+def main():
+  global service_ready
+  
+  health_thread = threading.Thread(target=start_health_server, daemon=True)
+  health_thread.start()
+  
+  connection = None
+  while connection is None:
+    try:
+      credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+      connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials))
+      logging.info("Connected to RabbitMQ.")
+    except Exception:
+      time.sleep(5)
 
-if __name__ == "__main__":
+  channel = connection.channel()
+  channel.exchange_declare(exchange=RAW_NEWS_EXCHANGE, exchange_type='fanout', durable=True)
+  channel.exchange_declare(exchange=SENTIMENT_RESULTS_EXCHANGE, exchange_type='fanout', durable=True)
+  channel.queue_declare(queue=SENTIMENT_ANALYSIS_QUEUE, durable=True)
+  channel.queue_bind(exchange=RAW_NEWS_EXCHANGE, queue=SENTIMENT_ANALYSIS_QUEUE)
+
+  channel.basic_qos(prefetch_count=1)
+  channel.basic_consume(queue=SENTIMENT_ANALYSIS_QUEUE, on_message_callback=on_message)
+
+  service_ready = True
+  try:
+    channel.start_consuming()
+  except KeyboardInterrupt:
+    connection.close()
+
+if __name__ == '__main__':
     main()
