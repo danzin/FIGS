@@ -203,7 +203,9 @@ services:
       dockerfile: ./sentiment-analysis-service/sentiment-analysis.dockerfile
     environment:
       - RABBITMQ_HOST=rabbitmq
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - RABBITMQ_USER=user
+      - RABBITMQ_PASS=pass
+      - GROQ_API_KEY=${GROQ_API_KEY}
     depends_on:
       rabbitmq:
         condition: service_healthy
