@@ -5,6 +5,7 @@ import logging
 import time
 import threading
 import socketserver
+from http.server import BaseHTTPRequestHandler
 
 from datetime import datetime, timezone
 from typing import Literal
@@ -23,6 +24,8 @@ SENTIMENT_RESULTS_EXCHANGE = 'sentiment_results'
 SENTIMENT_ANALYSIS_QUEUE = 'sentiment_analysis_queue'
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [SentimentService] - %(message)s')
+
+service_ready = False
 
 class SentimentResponse(BaseModel):
     sentiment: Literal["bullish", "bearish", "neutral"] = Field(
@@ -132,7 +135,7 @@ def on_message(ch, method, properties, body):
             "external_id": article.get('id'),
             "title": title,
             "sentiment_score": sentiment['score'],
-            "sentiment_label": sentiment['sentiment_label'],
+            "sentiment_label": sentiment['label'],
             "analyzed_at": datetime.now(timezone.utc).isoformat()
         }
 
