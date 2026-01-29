@@ -11,8 +11,6 @@ from datetime import datetime, timezone
 from typing import Literal
 from pydantic import BaseModel, Field
 
-from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'user')
