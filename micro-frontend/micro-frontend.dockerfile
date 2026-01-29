@@ -23,9 +23,14 @@ RUN npm run build --workspaces --include-workspace-root=false --workspace=micro-
 # ─── Stage 2: Serve ────────────────────────────────
 FROM nginx:1.27-alpine
 
-# 5. Copy the one dist output you actually need
-COPY --from=builder /usr/src/monorepo/micro-frontend/dist /usr/share/nginx/html
+# 5. Copy the dist output required
+COPY --from=builder --chown=nginx:nginx /usr/src/monorepo/micro-frontend/dist /usr/share/nginx/html
 COPY micro-frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
+RUN mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp /var/run \
+    && touch /var/run/nginx.pid \
+    && chown -R nginx:nginx /usr/share/nginx/html /etc/nginx/conf.d /var/cache/nginx /var/run/nginx.pid
+
+USER nginx
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

@@ -29,15 +29,16 @@ ENV NODE_ENV=production
 WORKDIR /usr/src/app
 
 # 1. Copy the pruned, production-only node_modules from the builder stage.
-COPY --from=builder /usr/src/monorepo/node_modules ./node_modules
+COPY --from=builder --chown=node:node /usr/src/monorepo/node_modules ./node_modules
 
 # 2. Copy the built common library into the final node_modules.
-COPY --from=builder /usr/src/monorepo/common ./node_modules/@financialsignalsgatheringsystem/common
+COPY --from=builder --chown=node:node /usr/src/monorepo/common ./node_modules/@financialsignalsgatheringsystem/common
 
 # 3. Copy the built application code for THIS specific service.
-COPY --from=builder /usr/src/monorepo/signal-query-api/dist ./dist
+COPY --from=builder --chown=node:node /usr/src/monorepo/signal-query-api/dist ./dist
 
 # 4. Copy this service's package.json for runtime context 
-COPY --from=builder /usr/src/monorepo/signal-query-api/package.json ./
+COPY --from=builder --chown=node:node /usr/src/monorepo/signal-query-api/package.json ./
 
+USER node
 CMD ["node", "dist/main.js"]

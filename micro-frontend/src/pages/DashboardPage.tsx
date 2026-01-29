@@ -180,8 +180,28 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 				{/* Analytics Grid */}
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					{/* Volatility Squeeze */}
-					<div className="lg:col-span-1">
+					<div className="lg:col-span-1 gap-2">
 						<VolatilitySqueeze data={volatilityData} isLoading={volatilityLoading} />
+						<div className="lg:row-auto gap-2">
+							<MetricCard
+								label="VIX"
+								value={indicators.vixLevel?.value ?? null}
+								unit=""
+								precision={2}
+								changePercent={vixChange?.change ?? null}
+								description="CBOE Volatility Index"
+								icon={AlertTriangle}
+							/>
+							<MetricCard
+								label="SPY"
+								value={indicators.spyPrice?.value ?? null}
+								unit="$"
+								precision={2}
+								changePercent={spyChange?.change ?? null}
+								description="S&P 500 ETF"
+								icon={TrendingUp}
+							/>
+						</div>
 					</div>
 
 					{/* RSI Heatmap */}
@@ -192,28 +212,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
 				{/* Correlation Matrix */}
 				<CorrelationMatrix data={correlationData} isLoading={correlationLoading} />
-
-				{/* Macro Indicators */}
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<MetricCard
-						label="VIX"
-						value={indicators.vixLevel?.value ?? null}
-						unit=""
-						precision={2}
-						changePercent={vixChange?.change ?? null}
-						description="CBOE Volatility Index"
-						icon={AlertTriangle}
-					/>
-					<MetricCard
-						label="SPY"
-						value={indicators.spyPrice?.value ?? null}
-						unit="$"
-						precision={2}
-						changePercent={spyChange?.change ?? null}
-						description="S&P 500 ETF"
-						icon={TrendingUp}
-					/>
-				</div>
 
 				{/* On-Chain Metrics */}
 				<OnChainMetrics data={onChainData} isLoading={onChainLoading} />
