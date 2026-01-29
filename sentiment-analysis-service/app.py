@@ -17,7 +17,7 @@ from langchain_core.prompts import ChatPromptTemplate
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'user')
 RABBITMQ_PASS = os.getenv('RABBITMQ_PASS', 'pass')
-GROQ_API_KEY = os.getenv('GROQ_API_KEY') 
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
 RAW_NEWS_EXCHANGE = 'raw_news'
 SENTIMENT_RESULTS_EXCHANGE = 'sentiment_results'
@@ -39,9 +39,15 @@ class SentimentResponse(BaseModel):
         le=1.0
     )
 
+MODEL_NAME = os.getenv('GROQ_MODEL', 'mixtral-8x7b-32768')
+MAX_ITEMS_PER_BATCH = int(os.getenv('SENTIMENT_BATCH_LIMIT', '50'))
+BATCH_INTERVAL = int(os.getenv('SENTIMENT_BATCH_INTERVAL_SECONDS', str(60 * 60)))
+RATE_LIMIT_CHUNK = int(os.getenv('SENTIMENT_RATE_LIMIT_CHUNK', '3'))
+RATE_LIMIT_SLEEP = int(os.getenv('SENTIMENT_RATE_LIMIT_SLEEP', '30'))
+
 llm = ChatGroq(
-    temperature=0, 
-    model_name="gpt-oss-120b",
+    temperature=0,
+    model_name=MODEL_NAME,
     api_key=GROQ_API_KEY,
     max_retries=2
 )
@@ -57,9 +63,6 @@ chain = prompt_template | structured_llm
 
 NEWS_BUFFER = []
 BUFFER_LOCK = threading.Lock()
-BATCH_INTERVAL = 4 * 60 * 60 # 4 hours
-RATE_LIMIT_CHUNK = 5
-RATE_LIMIT_SLEEP = 60
 
 def analyze_sentiment(title: str) -> dict:
     try:
@@ -75,7 +78,7 @@ def analyze_sentiment(title: str) -> dict:
         return {"score": 0.0, "label": "neutral"}
     
 def process_buffered_news():
-    """Background thread to process accumulated news every 4 hours."""
+    """Background thread to process accumulated news every interval."""
     logging.info(f"Batch processor started. Will run every {BATCH_INTERVAL} seconds.")
     while True:
         time.sleep(BATCH_INTERVAL)
@@ -84,8 +87,8 @@ def process_buffered_news():
             if not NEWS_BUFFER:
                 logging.info("No news to process in this batch.")
                 continue
-            processing_queue = NEWS_BUFFER[:]
-            NEWS_BUFFER.clear()
+            processing_queue = NEWS_BUFFER[:MAX_ITEMS_PER_BATCH]
+            del NEWS_BUFFER[:len(processing_queue)]
             
         logging.info(f"Starting batch processing of {len(processing_queue)} articles.")
         
@@ -103,15 +106,20 @@ def process_buffered_news():
                 
                 for article in chunk:
                     title = article.get('title')
-                    if not title: 
+                    if not title:
                         continue
-                        
+
                     sentiment = analyze_sentiment(title)
                     logging.info(f"Analyzed ({i}/{total}): {title[:30]}... -> {sentiment['label']}")
-                    
+
                     result_msg = {
                         "external_id": article.get('id'),
+                        "source": article.get('source'),
                         "title": title,
+                        "url": article.get('url'),
+                        "published_at": article.get('publishedAt'),
+                        "summary": article.get('summary'),
+                        "image_url": article.get('imageUrl'),
                         "sentiment_score": sentiment['score'],
                         "sentiment_label": sentiment['label'],
                         "analyzed_at": datetime.now(timezone.utc).isoformat()

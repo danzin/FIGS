@@ -17,6 +17,10 @@ export class CoinDeskSource implements DataSource {
 			title: item.title || "No title",
 			url: item.link!,
 			publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+			summary: item.contentSnippet || item.content || item.summary || undefined,
+			imageUrl:
+				(item.enclosure && "url" in item.enclosure ? item.enclosure.url : undefined) ||
+				((item as { image?: { url?: string } })?.image?.url ?? undefined),
 		}));
 	}
 }

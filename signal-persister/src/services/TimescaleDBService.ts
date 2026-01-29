@@ -8,6 +8,8 @@ interface SentimentResult {
 	title: string;
 	url: string;
 	published_at: string; // Comes as ISO string
+	summary?: string;
+	image_url?: string;
 	sentiment_score: number;
 	sentiment_label: string;
 }
@@ -134,9 +136,9 @@ export class TimescaleDBService implements DatabaseService {
 
 			// Insert the article, and if it already exists, do nothing and return the existing ID.
 			const articleInsertQuery = `
-                INSERT INTO public.news_articles (external_id, source, title, url, published_at)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (external_id) DO UPDATE SET title = EXCLUDED.title 
+                INSERT INTO public.news_articles (external_id, source, title, url, published_at, summary, image_url)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (external_id) DO UPDATE SET title = EXCLUDED.title, summary = EXCLUDED.summary, image_url = EXCLUDED.image_url
                 RETURNING id;
             `;
 			const articleRes = await client.query(articleInsertQuery, [
@@ -145,6 +147,8 @@ export class TimescaleDBService implements DatabaseService {
 				result.title,
 				result.url,
 				new Date(result.published_at),
+				result.summary || null,
+				result.image_url || null,
 			]);
 
 			// If the insert returned no ID, it means the row already existed

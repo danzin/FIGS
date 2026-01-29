@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS public.news_articles (
   url TEXT UNIQUE NOT NULL,
   published_at TIMESTAMPTZ NOT NULL,
   body TEXT,
+  summary TEXT,
+  image_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

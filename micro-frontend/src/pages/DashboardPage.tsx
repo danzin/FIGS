@@ -6,12 +6,19 @@ import { RsiHeatmap } from "../components/RsiHeatmap";
 import { OnChainMetrics } from "../components/OnChainMetrics";
 import type { Interval } from "../types/OhlcData";
 import { useIndicatorsData } from "../hooks/useIndicatorsData";
-import { NewsItem } from "../components";
+import { NewsCard, MetricCard, CorrelationMatrix } from "../components";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { useOhlcData } from "../hooks/useOhlcData";
 import { useLatestNews } from "../hooks/useLatestNews";
-import { useRsiHeatmap, useVolatilitySqueeze, useMarketHeartbeat, useOnChainMetrics } from "../hooks/useAnalytics";
-import { Home, BarChart3 } from "lucide-react";
+import {
+	useRsiHeatmap,
+	useVolatilitySqueeze,
+	useMarketHeartbeat,
+	useOnChainMetrics,
+	useCorrelationMatrix,
+} from "../hooks/useAnalytics";
+import { Home, BarChart3, TrendingUp, AlertTriangle } from "lucide-react";
+import { useMetricChange } from "../hooks/useMetricChange";
 
 const supportedIntervals: { label: string; value: Interval }[] = [
 	{ label: "15m", value: "15m" },
@@ -42,6 +49,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 	const { data: volatilityData, isLoading: volatilityLoading } = useVolatilitySqueeze(selectedAsset);
 	const { data: heartbeatData, isLoading: heartbeatLoading } = useMarketHeartbeat();
 	const { data: onChainData, isLoading: onChainLoading } = useOnChainMetrics();
+	const { data: correlationData, isLoading: correlationLoading } = useCorrelationMatrix();
+	const { data: vixChange } = useMetricChange("vix_level");
+	const { data: spyChange } = useMetricChange("spy_price");
 
 	const tabToAssetMap: Record<string, string> = {
 		btc: "bitcoin",
@@ -180,6 +190,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 					</div>
 				</div>
 
+				{/* Correlation Matrix */}
+				<CorrelationMatrix data={correlationData} isLoading={correlationLoading} />
+
+				{/* Macro Indicators */}
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+					<MetricCard
+						label="VIX"
+						value={indicators.vixLevel?.value ?? null}
+						unit=""
+						precision={2}
+						changePercent={vixChange?.change ?? null}
+						description="CBOE Volatility Index"
+						icon={AlertTriangle}
+					/>
+					<MetricCard
+						label="SPY"
+						value={indicators.spyPrice?.value ?? null}
+						unit="$"
+						precision={2}
+						changePercent={spyChange?.change ?? null}
+						description="S&P 500 ETF"
+						icon={TrendingUp}
+					/>
+				</div>
+
 				{/* On-Chain Metrics */}
 				<OnChainMetrics data={onChainData} isLoading={onChainLoading} />
 
@@ -193,16 +228,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 						</div>
 					</div>
 
-					<div className="divide-y divide-gray-100 dark:divide-gray-700 transition-colors duration-300">
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
 						{news.map((newsItem, index) => (
-							<NewsItem
+							<div
 								key={index}
-								title={newsItem.title}
-								source={newsItem.source}
-								time={new Date(newsItem.published_at).toLocaleString()}
-								sentiment={newsItem.sentiment}
-								url={newsItem.url}
-							/>
+								className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white/60 dark:bg-gray-900/30 shadow-sm"
+							>
+								<NewsCard
+									title={newsItem.title}
+									source={newsItem.source}
+									time={new Date(newsItem.published_at).toLocaleString()}
+									sentiment={newsItem.sentiment}
+									url={newsItem.url}
+									summary={newsItem.summary}
+									imageUrl={newsItem.image_url}
+								/>
+							</div>
 						))}
 					</div>
 				</div>

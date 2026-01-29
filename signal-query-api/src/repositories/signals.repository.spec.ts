@@ -28,9 +28,17 @@ describe('SignalsRepository', () => {
 
   describe('getOhlcData', () => {
     it('should return parsed OHLC data', async () => {
+      const timestamp = new Date('2024-01-01T00:00:00Z');
       (pool.query as jest.Mock).mockResolvedValueOnce({
         rows: [
-          { open: '1', high: '2', low: '0.5', close: '1.5', volume: '1000' },
+          {
+            timestamp,
+            open: '1',
+            high: '2',
+            low: '0.5',
+            close: '1.5',
+            volume: '1000',
+          },
         ],
       });
 
@@ -46,7 +54,7 @@ describe('SignalsRepository', () => {
       ]);
 
       expect(result).toEqual([
-        { open: 1, high: 2, low: 0.5, close: 1.5, volume: 1000 },
+        { timestamp, open: 1, high: 2, low: 0.5, close: 1.5, volume: 1000 },
       ]);
     });
 
@@ -129,6 +137,8 @@ describe('SignalsRepository', () => {
             source: 'CoinDesk',
             url: 'https://coindesk.com/test',
             published_at: new Date(),
+            summary: 'Summary',
+            image_url: 'https://coindesk.com/image.png',
             sentiment_label: 'bullish',
             sentiment_score: 0.8,
           },
@@ -141,6 +151,8 @@ describe('SignalsRepository', () => {
         title: 'Test News',
         source: 'CoinDesk',
         url: 'https://coindesk.com/test',
+        summary: 'Summary',
+        image_url: 'https://coindesk.com/image.png',
         sentiment: 'bullish',
         sentiment_score: 0.8,
       });

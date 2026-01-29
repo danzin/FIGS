@@ -211,21 +211,26 @@ export class AdvancedIndicatorsService {
 
     const daysSinceGenesis =
       indicators.get('btc_days_since_genesis') ||
-      Math.floor(
-        (Date.now() - this.GENESIS_DATE.getTime()) / (1000 * 60 * 60 * 24),
+      Math.max(
+        1,
+        Math.floor(
+          (Date.now() - this.GENESIS_DATE.getTime()) / (1000 * 60 * 60 * 24),
+        ),
       );
 
     const fairValue =
       indicators.get('btc_power_law_fair_value') ||
-      Math.pow(
-        10,
-        this.POWER_LAW_INTERCEPT +
-          this.POWER_LAW_SLOPE * Math.log10(daysSinceGenesis),
-      );
+      (daysSinceGenesis > 0
+        ? Math.pow(
+            10,
+            this.POWER_LAW_INTERCEPT +
+              this.POWER_LAW_SLOPE * Math.log10(daysSinceGenesis),
+          )
+        : 0);
 
     const drawdown =
       indicators.get('btc_power_law_deviation') ||
-      ((currentPrice - fairValue) / fairValue) * 100;
+      (fairValue > 0 ? ((currentPrice - fairValue) / fairValue) * 100 : 0);
 
     // Get historical data for chart
     const historyQuery = `
@@ -239,14 +244,20 @@ export class AdvancedIndicatorsService {
     const historyResult = await this.pool.query(historyQuery);
     const historicalData = historyResult.rows.reverse().map((row) => {
       const timestamp = new Date(row.timestamp);
-      const days = Math.floor(
-        (timestamp.getTime() - this.GENESIS_DATE.getTime()) /
-          (1000 * 60 * 60 * 24),
+      const days = Math.max(
+        1,
+        Math.floor(
+          (timestamp.getTime() - this.GENESIS_DATE.getTime()) /
+            (1000 * 60 * 60 * 24),
+        ),
       );
-      const fv = Math.pow(
-        10,
-        this.POWER_LAW_INTERCEPT + this.POWER_LAW_SLOPE * Math.log10(days),
-      );
+      const fv =
+        days > 0
+          ? Math.pow(
+              10,
+              this.POWER_LAW_INTERCEPT + this.POWER_LAW_SLOPE * Math.log10(days),
+            )
+          : 0;
       return {
         timestamp: timestamp.toISOString(),
         price: parseFloat(row.price),
@@ -287,51 +298,53 @@ export class AdvancedIndicatorsService {
     `;
 
     const result = await this.pool.query(query);
-    const latest = new Map<string, number>();
-    const seen = new Set<string>();
+    const valuesByName = new Map<string, number[]>();
 
     for (const row of result.rows) {
-      if (!seen.has(row.name)) {
-        latest.set(row.name, parseFloat(row.value));
-        seen.add(row.name);
-      }
+      const name = row.name as string;
+      const value = parseFloat(row.value);
+      const bucket = valuesByName.get(name) ?? [];
+      bucket.push(value);
+      valuesByName.set(name, bucket);
     }
 
-    const totalMarketCap = latest.get('stablecoin_total_supply') || 0;
-    const yoyGrowth = latest.get('stablecoin_yoy_growth') || 0;
-    const liquidityFlowIndex = latest.get('stablecoin_liquidity_flow') || 0;
+    const getLatest = (name: string) => valuesByName.get(name)?.[0] ?? 0;
+    const getChange24h = (name: string) => {
+      const values = valuesByName.get(name);
+      if (!values || values.length < 2) return 0;
+      if (values[1] === 0) return values[0] > 0 ? 100 : 0;
+      return ((values[0] - values[1]) / values[1]) * 100;
+    };
+
+    const totalMarketCap = getLatest('stablecoin_total_supply');
+    const yoyGrowth = getLatest('stablecoin_yoy_growth');
+    const liquidityFlowIndex = getLatest('stablecoin_liquidity_flow');
 
     // Get breakdown by stablecoin (only show data that exists)
     const breakdown = [
       {
         name: 'Tether',
         symbol: 'USDT',
-        marketCap: latest.get('stablecoin_usdt_supply') || 0,
-        change24h: 0,
+        marketCap: getLatest('stablecoin_usdt_supply'),
+        change24h: getChange24h('stablecoin_usdt_supply'),
       },
       {
         name: 'USD Coin',
         symbol: 'USDC',
-        marketCap: latest.get('stablecoin_usdc_supply') || 0,
-        change24h: 0,
-      },
-      {
-        name: 'USDS',
-        symbol: 'USDS',
-        marketCap: latest.get('stablecoin_usds_supply') || 0,
-        change24h: 0,
+        marketCap: getLatest('stablecoin_usdc_supply'),
+        change24h: getChange24h('stablecoin_usdc_supply'),
       },
       {
         name: 'DAI',
         symbol: 'DAI',
-        marketCap: latest.get('stablecoin_dai_supply') || 0,
-        change24h: 0,
+        marketCap: getLatest('stablecoin_dai_supply'),
+        change24h: getChange24h('stablecoin_dai_supply'),
       },
       {
         name: 'First Digital USD',
         symbol: 'FDUSD',
-        marketCap: latest.get('stablecoin_fdusd_supply') || 0,
-        change24h: 0,
+        marketCap: getLatest('stablecoin_fdusd_supply'),
+        change24h: getChange24h('stablecoin_fdusd_supply'),
       },
     ];
 
@@ -341,38 +354,83 @@ export class AdvancedIndicatorsService {
       FROM public.market_indicators
       WHERE name = 'stablecoin_total_supply'
       ORDER BY time DESC
-      LIMIT 365
+      LIMIT 400
     `;
 
     const historyResult = await this.pool.query(historyQuery);
-    const historicalData = historyResult.rows.reverse().map((row, i, arr) => ({
-      timestamp: new Date(row.timestamp).toISOString(),
-      totalMarketCap: parseFloat(row.value),
-      yoyGrowth:
-        i >= 365
-          ? ((parseFloat(row.value) - parseFloat(arr[0].value)) /
-              parseFloat(arr[0].value)) *
-            100
-          : yoyGrowth,
-      liquidityFlow: liquidityFlowIndex,
-    }));
+    const historyRows = historyResult.rows.reverse();
+    const timestamps = historyRows.map((row) =>
+      new Date(row.timestamp).getTime(),
+    );
+    const dayMs = 24 * 60 * 60 * 1000;
+    const findBackIndex = (currentIndex: number, days: number) => {
+      const target = timestamps[currentIndex] - days * dayMs;
+      for (let i = currentIndex; i >= 0; i--) {
+        if (timestamps[i] <= target) return i;
+      }
+      return -1;
+    };
+
+    const historicalBase = historyRows.map((row, i) => {
+      const currentValue = parseFloat(row.value);
+      const yearBackIndex = findBackIndex(i, 365);
+      const yearBackValue =
+        yearBackIndex >= 0 ? parseFloat(historyRows[yearBackIndex].value) : 0;
+      const yoyValue =
+        yearBackValue > 0
+          ? ((currentValue - yearBackValue) / yearBackValue) * 100
+          : yoyGrowth;
+      return {
+        timestamp: new Date(row.timestamp).toISOString(),
+        totalMarketCap: currentValue,
+        yoyGrowth: yoyValue,
+        liquidityFlow: 0,
+      };
+    });
+    const stablecoinHistory = historicalBase.map((row, i) => {
+      const monthBackIndex = findBackIndex(i, 30);
+      const monthBackValue =
+        monthBackIndex >= 0 ? historicalBase[monthBackIndex].totalMarketCap : 0;
+      const liquidityFlow =
+        monthBackValue > 0
+          ? ((row.totalMarketCap - monthBackValue) / monthBackValue) * 100
+          : liquidityFlowIndex;
+      return {
+        ...row,
+        liquidityFlow,
+      };
+    });
+
+    const latestHistory = stablecoinHistory[stablecoinHistory.length - 1];
+    const finalTotalMarketCap =
+      totalMarketCap || latestHistory?.totalMarketCap || 0;
+    const finalYoYGrowth = latestHistory?.yoyGrowth ?? yoyGrowth;
+    const finalLiquidityFlowIndex =
+      latestHistory?.liquidityFlow ?? liquidityFlowIndex;
 
     // Calculate 24h change
+    const previousDayIndex =
+      stablecoinHistory.length > 0
+        ? findBackIndex(stablecoinHistory.length - 1, 1)
+        : -1;
+    const previousDayTotal =
+      previousDayIndex >= 0
+        ? stablecoinHistory[previousDayIndex].totalMarketCap
+        : 0;
     const marketCapChange24h =
-      historicalData.length >= 2
-        ? ((totalMarketCap -
-            historicalData[historicalData.length - 2]?.totalMarketCap) /
-            historicalData[historicalData.length - 2]?.totalMarketCap) *
-          100
-        : 0.85;
+      previousDayTotal > 0
+        ? ((finalTotalMarketCap - previousDayTotal) / previousDayTotal) * 100
+        : finalTotalMarketCap > 0
+          ? 100
+          : 0;
 
     return {
-      totalMarketCap,
+      totalMarketCap: finalTotalMarketCap,
       marketCapChange24h,
-      yoyGrowth,
-      liquidityFlowIndex,
+      yoyGrowth: finalYoYGrowth,
+      liquidityFlowIndex: finalLiquidityFlowIndex,
       breakdown,
-      historicalData,
+      historicalData: stablecoinHistory,
     };
   }
 
@@ -489,7 +547,12 @@ export class AdvancedIndicatorsService {
 
     const mvrvZScore = latest.get('btc_mvrv_zscore') || 0;
     const sma200Week = latest.get('btc_200_week_sma') || 0;
-    const signalValue = latest.get('btc_mvrv_signal') || 2;
+    const mvrvRatio = latest.get('btc_mvrv_ratio') || 1;
+    const rawSignalValue = latest.get('btc_mvrv_signal');
+    const signalValue =
+      rawSignalValue !== undefined && !isNaN(rawSignalValue)
+        ? Math.max(0, Math.min(4, Math.round(rawSignalValue)))
+        : 2;
 
     const signals: Record<number, MVRVData['signal']> = {
       0: 'extreme_undervalued',
@@ -509,12 +572,37 @@ export class AdvancedIndicatorsService {
     `;
 
     const historyResult = await this.pool.query(historyQuery);
-    const historicalData = historyResult.rows.reverse().map((row) => ({
-      timestamp: new Date(row.timestamp).toISOString(),
-      price: parseFloat(row.price),
-      realizedPrice: sma200Week,
-      zScore: (parseFloat(row.price) - sma200Week) / (sma200Week * 0.3),
-    }));
+    const historyRows = historyResult.rows.reverse();
+    const priceSeries = historyRows
+      .map((row) => parseFloat(row.price))
+      .filter((value) => !Number.isNaN(value));
+
+    const realizedPrice = sma200Week || currentPrice;
+    const mvrvSeries = priceSeries.map((price) =>
+      realizedPrice > 0 ? price / realizedPrice : mvrvRatio,
+    );
+
+    const mean =
+      mvrvSeries.length > 0
+        ? mvrvSeries.reduce((sum, value) => sum + value, 0) / mvrvSeries.length
+        : mvrvRatio;
+    const variance =
+      mvrvSeries.length > 0
+        ? mvrvSeries.reduce((acc, value) => acc + (value - mean) ** 2, 0) /
+          mvrvSeries.length
+        : 0;
+    const stdDev = Math.sqrt(variance) || 1;
+
+    const historicalData = historyRows.map((row) => {
+      const price = parseFloat(row.price);
+      const ratio = realizedPrice > 0 ? price / realizedPrice : mvrvRatio;
+      return {
+        timestamp: new Date(row.timestamp).toISOString(),
+        price,
+        realizedPrice,
+        zScore: (ratio - mean) / stdDev,
+      };
+    });
 
     return {
       mvrvZScore,
@@ -633,7 +721,7 @@ export class AdvancedIndicatorsService {
   private async calculateMomentumCoalescence(): Promise<MomentumCoalescenceData> {
     // Get price data for ROC calculations
     const priceQuery = `
-      SELECT time, close as price
+      SELECT time, close as price, volume
       FROM public.market_data_1d
       WHERE asset_symbol = 'bitcoin' AND type = 'price'
       ORDER BY time DESC
@@ -641,40 +729,67 @@ export class AdvancedIndicatorsService {
     `;
 
     const priceResult = await this.pool.query(priceQuery);
-    const prices = priceResult.rows.reverse().map((r) => parseFloat(r.price));
+    const priceRows = priceResult.rows.reverse().map((r) => ({
+      time: new Date(r.time).toISOString(),
+      price: parseFloat(r.price),
+      volume: r.volume ? parseFloat(r.volume) : 0,
+    }));
+    const prices = priceRows
+      .map((row) => row.price)
+      .filter((value) => !Number.isNaN(value));
 
     // Calculate Rate of Change
     const fastROC =
-      prices.length >= 14
+      prices.length >= 14 && prices[prices.length - 14] > 0
         ? ((prices[prices.length - 1] - prices[prices.length - 14]) /
             prices[prices.length - 14]) *
           100
         : 8.5;
 
     const slowROC =
-      prices.length >= 50
+      prices.length >= 50 && prices[prices.length - 50] > 0
         ? ((prices[prices.length - 1] - prices[prices.length - 50]) /
             prices[prices.length - 50]) *
           100
         : 15.2;
 
     // Get volume data for delta
-    const volumeQuery = `
-      SELECT value FROM public.market_data
-      WHERE asset_symbol = 'bitcoin' AND type = 'volume'
+    const volumeDeltaQuery = `
+      SELECT value FROM public.market_indicators
+      WHERE name = 'btc_volume_delta'
       ORDER BY time DESC LIMIT 1
     `;
-    const volumeResult = await this.pool.query(volumeQuery);
-    const volumeDelta = 55; // Would need buy/sell volume separation
+    const volumeDeltaResult = await this.pool.query(volumeDeltaQuery);
+    let volumeDelta =
+      volumeDeltaResult.rows[0]?.value !== undefined
+        ? parseFloat(volumeDeltaResult.rows[0].value)
+        : null;
 
     // Volatility bias from Bollinger Band position
-    const volatilityBias = 0.65; // Would calculate from BB %B
+    const volatilityQuery = `
+      SELECT value FROM public.market_indicators
+      WHERE name = 'btc_bb_percent_b'
+      ORDER BY time DESC LIMIT 1
+    `;
+    const volatilityResult = await this.pool.query(volatilityQuery);
+    let volatilityBias =
+      volatilityResult.rows[0]?.value !== undefined
+        ? parseFloat(volatilityResult.rows[0].value)
+        : null;
 
     // Calculate composite score (weighted average normalized to 0-100)
     const fastROCNorm = Math.min(100, Math.max(0, 50 + fastROC * 2));
     const slowROCNorm = Math.min(100, Math.max(0, 50 + slowROC));
-    const volumeNorm = volumeDelta;
-    const volBiasNorm = volatilityBias * 100;
+
+    // Use normalized volume/bb_percent if available, otherwise fallback
+    const volumeNorm =
+      volumeDelta !== null ? volumeDelta : fastROCNorm * 0.5 + slowROCNorm * 0.5;
+    const volBiasNorm =
+      volatilityBias !== null ? volatilityBias * 100 : (fastROCNorm + slowROCNorm) / 2;
+
+    // Fallback values for display
+    const displayVolumeDelta = volumeDelta !== null ? volumeDelta : 50;
+    const displayVolatilityBias = volatilityBias !== null ? volatilityBias : 0.5;
 
     const compositeScore =
       fastROCNorm * 0.25 +
@@ -688,11 +803,45 @@ export class AdvancedIndicatorsService {
     else if (compositeScore <= 30) signal = 'strong_sell';
     else if (compositeScore <= 45) signal = 'sell';
 
+    const historicalData = priceRows
+      .map((row, index) => {
+        if (index < 50) return null;
+        const prevPrice14 = priceRows[index - 14]?.price;
+        const prevPrice50 = priceRows[index - 50]?.price;
+        if (!prevPrice14 || prevPrice14 <= 0 || !prevPrice50 || prevPrice50 <= 0)
+          return null;
+
+        const fast = ((row.price - prevPrice14) / prevPrice14) * 100;
+        const slow = ((row.price - prevPrice50) / prevPrice50) * 100;
+        const fastNorm = Math.min(100, Math.max(0, 50 + fast * 2));
+        const slowNorm = Math.min(100, Math.max(0, 50 + slow));
+
+        const histVolume =
+          volumeDelta !== null ? volumeDelta : fastNorm * 0.5 + slowNorm * 0.5;
+        const histVolBias =
+          volatilityBias !== null
+            ? volatilityBias * 100
+            : (fastNorm + slowNorm) / 2;
+
+        const score =
+          fastNorm * 0.25 + slowNorm * 0.25 + histVolume * 0.25 + histVolBias * 0.25;
+        return { timestamp: row.time, compositeScore: score };
+      })
+      .filter(
+        (item): item is { timestamp: string; compositeScore: number } =>
+          item !== null,
+      );
+
     return {
       compositeScore,
-      components: { fastROC, slowROC, volumeDelta, volatilityBias },
+      components: {
+        fastROC,
+        slowROC,
+        volumeDelta: displayVolumeDelta,
+        volatilityBias: displayVolatilityBias,
+      },
       signal,
-      historicalData: [], // TODO: Store momentum history in DB
+      historicalData,
     };
   }
 

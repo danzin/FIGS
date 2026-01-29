@@ -43,8 +43,11 @@ export class DefiLlamaStablecoinSource implements DataSource {
 			}
 
 			// Get the latest data point for total stablecoin supply
-			// The "all" chain aggregates everything
-			const allChainData = Object.values(data).flat();
+			// Prefer the aggregated "all" chain if available
+			const allChainKey = Object.keys(data).find((key) => key.toLowerCase() === "all");
+			const allChainData = allChainKey
+				? data[allChainKey]
+				: Object.values(data).flat();
 
 			if (allChainData.length === 0) {
 				console.warn("[DefiLlamaStablecoinSource] No data points found");
