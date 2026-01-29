@@ -134,6 +134,8 @@ export class TimescaleDBService implements DatabaseService {
 		try {
 			await client.query("BEGIN");
 
+			console.log(`[DB] Inserting article: external_id=${result.external_id}, published_at=${result.published_at}`);
+
 			// Insert the article, and if it already exists, do nothing and return the existing ID.
 			const articleInsertQuery = `
                 INSERT INTO public.news_articles (external_id, source, title, url, published_at, summary, image_url)
@@ -171,6 +173,8 @@ export class TimescaleDBService implements DatabaseService {
 				publishedAt = selectRes.rows[0].published_at;
 			}
 
+			console.log(`[DB] Article persisted with ID=${articleId}, inserting sentiment`);
+
 			// Insert the sentiment data linked to the article ID.
 			const sentimentInsertQuery = `
                 INSERT INTO public.news_sentiment (article_id, time, sentiment_score, sentiment_label, source)
@@ -186,6 +190,7 @@ export class TimescaleDBService implements DatabaseService {
 			]);
 
 			await client.query("COMMIT");
+			console.log(`[DB] Successfully committed article and sentiment for: ${result.external_id}`);
 		} catch (error) {
 			await client.query("ROLLBACK");
 			console.error(`[DbService] Error in insertArticleAndSentiment transaction:`, error);

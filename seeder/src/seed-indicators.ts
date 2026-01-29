@@ -80,6 +80,35 @@ async function fetchYahooHistoricalIndicator(symbol: string, name: string): Prom
 	return points;
 }
 
+async function fetchStooqHistoricalIndicator(symbol: string, name: string): Promise<IndicatorDataPoint[]> {
+	const points: IndicatorDataPoint[] = [];
+	try {
+		const response = await axios.get(`https://stooq.com/q/d/l/`, {
+			params: { s: symbol, i: "d" },
+			responseType: "text",
+			timeout: 15000,
+		});
+		const body = typeof response.data === "string" ? response.data : "";
+		const lines = body.trim().split("\n");
+		if (lines.length <= 1) return points;
+		for (let i = 1; i < lines.length; i++) {
+			const [date, , , , close] = lines[i].split(",");
+			const value = Number(close);
+			if (!date || Number.isNaN(value)) continue;
+			points.push({
+				name,
+				time: new Date(date),
+				value,
+				source: "Stooq-Seed",
+			});
+		}
+		console.log(`[IndicatorSeeder] Fetched ${points.length} historical points from Stooq for ${symbol}`);
+	} catch (err) {
+		console.error(`[IndicatorSeeder] Failed to fetch ${symbol} from Stooq:`, err);
+	}
+	return points;
+}
+
 async function fetchDefiLlamaStablecoinHistory(): Promise<IndicatorDataPoint[]> {
 	const points: IndicatorDataPoint[] = [];
 	try {
@@ -176,8 +205,8 @@ export async function seedIndicators(): Promise<void> {
 
 	// Fetch historical data for multiple indicators
 	const [vixHistory, spyHistory, dominance, fearGreed, stablecoinHistory] = await Promise.all([
-		fetchYahooHistoricalIndicator("^VIX", "^VIX"),
-		fetchYahooHistoricalIndicator("SPY", "SPY"),
+		fetchStooqHistoricalIndicator("vix", "vix_level"),
+		fetchStooqHistoricalIndicator("spy", "spy_price"),
 		fetchCoinGeckoDominanceHistory(),
 		fetchFearGreedHistory(),
 		fetchDefiLlamaStablecoinHistory(),

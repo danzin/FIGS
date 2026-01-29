@@ -10,8 +10,8 @@ export class CoinDeskSource implements DataSource {
 		const feed = await parser.parseURL("https://www.coindesk.com/arc/outboundfeeds/rss/");
 		if (!feed.items?.length) return null;
 
-		// the top 5 items only
-		return feed.items.slice(0, 5).map((item) => ({
+		// the top 20 items only
+		return feed.items.slice(0, 20).map((item) => ({
 			id: item.guid || item.link!,
 			source: "CoinDesk",
 			title: item.title || "No title",

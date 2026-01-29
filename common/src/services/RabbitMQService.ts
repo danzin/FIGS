@@ -112,6 +112,10 @@ export class RabbitMQService implements MessageBroker {
 			const m = msg as MarketDataPoint;
 			return `${m.asset_symbol} ${m.type}`;
 		}
+		if ((msg as any).title && (msg as any).url) {
+			const n = msg as any;
+			return `${n.source}: ${n.title}`;
+		}
 		const i = msg as IndicatorDataPoint;
 		return i.name;
 	}

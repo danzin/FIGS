@@ -206,6 +206,8 @@ services:
       - RABBITMQ_USER=user
       - RABBITMQ_PASS=pass
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - SENTIMENT_BATCH_INTERVAL_SECONDS=60
+      - GROQ_MODEL=llama-3.3-70b-versatile
     depends_on:
       rabbitmq:
         condition: service_healthy

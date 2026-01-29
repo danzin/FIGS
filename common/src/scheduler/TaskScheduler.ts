@@ -67,11 +67,6 @@ export class TaskScheduler {
 		console.log("[TaskScheduler] Starting scheduler...");
 		this.isRunning = true;
 		console.log(this.scheduledSources);
-		for (const [sourceKey, config] of this.scheduledSources) {
-			if (config.enabled) {
-				this.scheduleSource(sourceKey, config);
-			}
-		}
 
 		// Start health monitoring (runs every 5 minutes)
 		this.startHealthMonitoring();

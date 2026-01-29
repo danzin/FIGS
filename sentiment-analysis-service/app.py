@@ -39,9 +39,9 @@ class SentimentResponse(BaseModel):
         le=1.0
     )
 
-MODEL_NAME = os.getenv('GROQ_MODEL', 'mixtral-8x7b-32768')
+MODEL_NAME = os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')
 MAX_ITEMS_PER_BATCH = int(os.getenv('SENTIMENT_BATCH_LIMIT', '50'))
-BATCH_INTERVAL = int(os.getenv('SENTIMENT_BATCH_INTERVAL_SECONDS', str(60 * 60)))
+BATCH_INTERVAL = int(os.getenv('SENTIMENT_BATCH_INTERVAL_SECONDS', '60'))
 RATE_LIMIT_CHUNK = int(os.getenv('SENTIMENT_RATE_LIMIT_CHUNK', '3'))
 RATE_LIMIT_SLEEP = int(os.getenv('SENTIMENT_RATE_LIMIT_SLEEP', '30'))
 
@@ -112,12 +112,18 @@ def process_buffered_news():
                     sentiment = analyze_sentiment(title)
                     logging.info(f"Analyzed ({i}/{total}): {title[:30]}... -> {sentiment['label']}")
 
+                    # Ensure published_at is always present and valid
+                    published_at = article.get('publishedAt')
+                    if not published_at:
+                        logging.warning(f"Article {article.get('id')} missing publishedAt in batch, using current time")
+                        published_at = datetime.now(timezone.utc).isoformat()
+
                     result_msg = {
                         "external_id": article.get('id'),
                         "source": article.get('source'),
                         "title": title,
                         "url": article.get('url'),
-                        "published_at": article.get('publishedAt'),
+                        "published_at": published_at,
                         "summary": article.get('summary'),
                         "image_url": article.get('imageUrl'),
                         "sentiment_score": sentiment['score'],
@@ -141,6 +147,69 @@ def process_buffered_news():
             
         except Exception as e:
             logging.error(f"Error during batch processing: {e}")
+
+def flush_buffered_news():
+    with BUFFER_LOCK:
+        if not NEWS_BUFFER:
+            logging.info("No news to process in startup flush.")
+            return
+        processing_queue = NEWS_BUFFER[:MAX_ITEMS_PER_BATCH]
+        del NEWS_BUFFER[:len(processing_queue)]
+
+    logging.info(f"Starting startup flush of {len(processing_queue)} articles.")
+
+    try:
+        credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials))
+        channel = connection.channel()
+        channel.exchange_declare(exchange=SENTIMENT_RESULTS_EXCHANGE, exchange_type='fanout', durable=True)
+
+        total = len(processing_queue)
+        for i in range(0, total, RATE_LIMIT_CHUNK):
+            chunk = processing_queue[i : i + RATE_LIMIT_CHUNK]
+
+            for article in chunk:
+                title = article.get('title')
+                if not title:
+                    continue
+
+                sentiment = analyze_sentiment(title)
+                logging.info(f"Analyzed ({i}/{total}): {title[:30]}... -> {sentiment['label']}")
+
+                # Ensure published_at is always present and valid
+                published_at = article.get('publishedAt')
+                if not published_at:
+                    logging.warning(f"Article {article.get('id')} missing publishedAt in flush, using current time")
+                    published_at = datetime.now(timezone.utc).isoformat()
+
+                result_msg = {
+                    "external_id": article.get('id'),
+                    "source": article.get('source'),
+                    "title": title,
+                    "url": article.get('url'),
+                    "published_at": published_at,
+                    "summary": article.get('summary'),
+                    "image_url": article.get('imageUrl'),
+                    "sentiment_score": sentiment['score'],
+                    "sentiment_label": sentiment['label'],
+                    "analyzed_at": datetime.now(timezone.utc).isoformat()
+                }
+
+                channel.basic_publish(
+                    exchange=SENTIMENT_RESULTS_EXCHANGE,
+                    routing_key='',
+                    body=json.dumps(result_msg),
+                    properties=pika.BasicProperties(delivery_mode=2)
+                )
+
+            if i + RATE_LIMIT_CHUNK < total:
+                time.sleep(RATE_LIMIT_SLEEP)
+
+        connection.close()
+        logging.info("Startup flush complete.")
+
+    except Exception as e:
+        logging.error(f"Error during startup flush: {e}")
 
 class HealthHandler(BaseHTTPRequestHandler):
   def do_GET(self):
@@ -195,6 +264,10 @@ def start_health_server():
 def on_message(ch, method, properties, body):
     try:
         article = json.loads(body)
+        # Ensure publishedAt is always set with fallback to current time
+        if not article.get('publishedAt'):
+            logging.warning(f"Article {article.get('id', 'unknown')} missing publishedAt, using current time")
+            article['publishedAt'] = datetime.now(timezone.utc).isoformat()
         
         with BUFFER_LOCK:
             NEWS_BUFFER.append(article)
@@ -235,6 +308,8 @@ def main():
   channel.basic_consume(queue=SENTIMENT_ANALYSIS_QUEUE, on_message_callback=on_message)
 
   service_ready = True
+  flush_thread = threading.Thread(target=flush_buffered_news, daemon=True)
+  flush_thread.start()
   try:
     channel.start_consuming()
   except KeyboardInterrupt:

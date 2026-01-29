@@ -11,15 +11,15 @@ export class ScraperConfigManager {
 	}
 
 	public setupDefaultSchedules(): void {
-		this.scheduler.registerSource({
-			source: new AppStoreRankScraper("coinbase", "Coinbase: Buy BTC, ETH, SOL", "us"),
-			schedule: "0 */5 * * *", // Once every 5 hours
-			enabled: true,
-			priority: "medium",
-			maxRetries: 3, // Scrapers are fragile, more retries
-			retryDelay: 15 * 60 * 1000, // 15-minute retry delay
-			consecutiveFailures: 0,
-		});
+		// this.scheduler.registerSource({
+		// 	source: new AppStoreRankScraper("coinbase", "Coinbase: Buy BTC, ETH, SOL", "us"),
+		// 	schedule: "0 */5 * * *", // Once every 5 hours
+		// 	enabled: true,
+		// 	priority: "medium",
+		// 	maxRetries: 3, // Scrapers are fragile, more retries
+		// 	retryDelay: 15 * 60 * 1000, // 15-minute retry delay
+		// 	consecutiveFailures: 0,
+		// });
 		this.scheduler.registerSource({
 			source: new CoinDeskSource(),
 			schedule: "0 */4 * * *", // Once 4 hours
