@@ -131,9 +131,9 @@ describe('SignalsService', () => {
         },
       ];
       repo.getLatestNewsWithSentiment = jest.fn().mockResolvedValue(mockNews);
-      const result = await service.getLatestNewsWithSentiment(1);
+      const result = await service.getLatestNewsWithSentiment(1, 0);
       expect(result).toEqual(mockNews);
-      expect(repo.getLatestNewsWithSentiment).toHaveBeenCalledWith(1);
+      expect(repo.getLatestNewsWithSentiment).toHaveBeenCalledWith(1, 0);
     });
 
     it('should default sentiment to neutral if missing', async () => {

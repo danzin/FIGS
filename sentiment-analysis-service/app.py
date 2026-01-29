@@ -44,6 +44,8 @@ MAX_ITEMS_PER_BATCH = int(os.getenv('SENTIMENT_BATCH_LIMIT', '50'))
 BATCH_INTERVAL = int(os.getenv('SENTIMENT_BATCH_INTERVAL_SECONDS', '60'))
 RATE_LIMIT_CHUNK = int(os.getenv('SENTIMENT_RATE_LIMIT_CHUNK', '3'))
 RATE_LIMIT_SLEEP = int(os.getenv('SENTIMENT_RATE_LIMIT_SLEEP', '30'))
+MAX_ANALYSIS_RETRIES = int(os.getenv('SENTIMENT_ANALYSIS_RETRIES', '2'))
+MAX_ARTICLE_RETRIES = int(os.getenv('SENTIMENT_ARTICLE_RETRIES', '3'))
 
 llm = ChatGroq(
     temperature=0,
@@ -64,18 +66,19 @@ chain = prompt_template | structured_llm
 NEWS_BUFFER = []
 BUFFER_LOCK = threading.Lock()
 
-def analyze_sentiment(title: str) -> dict:
-    try:
-        result: SentimentResponse = chain.invoke({"headline": title})
-        
-        return {
-            "score": result.score,
-            "label": result.sentiment
-        }
-    except Exception as e:
-        logging.error(f"Groq Analysis Failed: {e}")
-        # Graceful fallback
-        return {"score": 0.0, "label": "neutral"}
+def analyze_sentiment(title: str) -> dict | None:
+    for attempt in range(1, MAX_ANALYSIS_RETRIES + 1):
+        try:
+            result: SentimentResponse = chain.invoke({"headline": title})
+            return {
+                "score": result.score,
+                "label": result.sentiment
+            }
+        except Exception as e:
+            logging.warning(f"Groq analysis failed (attempt {attempt}/{MAX_ANALYSIS_RETRIES}): {e}")
+            if attempt < MAX_ANALYSIS_RETRIES:
+                time.sleep(2 ** attempt)
+    return None
     
 def process_buffered_news():
     """Background thread to process accumulated news every interval."""
@@ -101,6 +104,7 @@ def process_buffered_news():
             channel.exchange_declare(exchange=SENTIMENT_RESULTS_EXCHANGE, exchange_type='fanout', durable=True)
             
             total = len(processing_queue)
+            retry_queue = []
             for i in range(0, total, RATE_LIMIT_CHUNK):
                 chunk = processing_queue[i : i + RATE_LIMIT_CHUNK]
                 
@@ -110,6 +114,15 @@ def process_buffered_news():
                         continue
 
                     sentiment = analyze_sentiment(title)
+                    if not sentiment:
+                        attempts = int(article.get('_attempts', 0)) + 1
+                        article['_attempts'] = attempts
+                        if attempts <= MAX_ARTICLE_RETRIES:
+                            logging.warning(f"Re-queueing article after analysis failure (attempt {attempts}): {title[:30]}...")
+                            retry_queue.append(article)
+                            continue
+                        logging.error(f"Max analysis attempts reached, defaulting to neutral: {title[:30]}...")
+                        sentiment = {"score": 0.0, "label": "neutral"}
                     logging.info(f"Analyzed ({i}/{total}): {title[:30]}... -> {sentiment['label']}")
 
                     # Ensure published_at is always present and valid
@@ -143,6 +156,11 @@ def process_buffered_news():
                     time.sleep(RATE_LIMIT_SLEEP)
             
             connection.close()
+
+            if retry_queue:
+                with BUFFER_LOCK:
+                    NEWS_BUFFER.extend(retry_queue)
+                logging.warning(f"Re-queued {len(retry_queue)} articles for next batch.")
             logging.info("Batch processing complete.")
             
         except Exception as e:
@@ -165,6 +183,7 @@ def flush_buffered_news():
         channel.exchange_declare(exchange=SENTIMENT_RESULTS_EXCHANGE, exchange_type='fanout', durable=True)
 
         total = len(processing_queue)
+        retry_queue = []
         for i in range(0, total, RATE_LIMIT_CHUNK):
             chunk = processing_queue[i : i + RATE_LIMIT_CHUNK]
 
@@ -174,6 +193,15 @@ def flush_buffered_news():
                     continue
 
                 sentiment = analyze_sentiment(title)
+                if not sentiment:
+                    attempts = int(article.get('_attempts', 0)) + 1
+                    article['_attempts'] = attempts
+                    if attempts <= MAX_ARTICLE_RETRIES:
+                        logging.warning(f"Re-queueing article after analysis failure (attempt {attempts}): {title[:30]}...")
+                        retry_queue.append(article)
+                        continue
+                    logging.error(f"Max analysis attempts reached, defaulting to neutral: {title[:30]}...")
+                    sentiment = {"score": 0.0, "label": "neutral"}
                 logging.info(f"Analyzed ({i}/{total}): {title[:30]}... -> {sentiment['label']}")
 
                 # Ensure published_at is always present and valid
@@ -206,6 +234,10 @@ def flush_buffered_news():
                 time.sleep(RATE_LIMIT_SLEEP)
 
         connection.close()
+        if retry_queue:
+            with BUFFER_LOCK:
+                NEWS_BUFFER.extend(retry_queue)
+            logging.warning(f"Re-queued {len(retry_queue)} articles for next batch.")
         logging.info("Startup flush complete.")
 
     except Exception as e:

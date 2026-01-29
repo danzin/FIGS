@@ -41,7 +41,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 	const [selectedAsset, setSelectedAsset] = useState("bitcoin");
 	const [interval, setInterval] = useState<Interval>(supportedIntervals[2].value);
 
-	const { news, loading: _loadingNews } = useLatestNews();
+	const { news, loading: _loadingNews, loadMore, loadingMore, hasMore } = useLatestNews();
 	const { indicators, isLoading: _indicatorsLoading, error: _indicatorsError } = useIndicatorsData();
 
 	// New analytics hooks
@@ -245,6 +245,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 								/>
 							</div>
 						))}
+					</div>
+					<div className="px-6 pb-6">
+						<button
+							onClick={loadMore}
+							disabled={!hasMore || loadingMore}
+							className="w-full rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+						>
+							{loadingMore ? "Loading..." : hasMore ? "Load more" : "No more news"}
+						</button>
 					</div>
 				</div>
 			</div>

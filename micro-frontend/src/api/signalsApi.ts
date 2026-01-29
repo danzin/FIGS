@@ -45,8 +45,10 @@ export const getMetricChange = async (
 	return response.data;
 };
 
-export const getLatestNews = async (): Promise<NewsItem[]> => {
-	const response = await apiClient.get<NewsItem[]>("/latest-news");
+export const getLatestNews = async (limit = 10, offset = 0): Promise<NewsItem[]> => {
+	const response = await apiClient.get<NewsItem[]>("/latest-news", {
+		params: { limit, offset },
+	});
 	return response.data;
 };
 

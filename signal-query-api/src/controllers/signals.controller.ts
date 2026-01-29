@@ -5,6 +5,7 @@ import {
   OhlcDataDto,
   IndicatorDto,
   GetLatestIndicatorsQueryDto,
+  GetLatestNewsQueryDto,
 } from '../models/signal.dto';
 
 @Controller('v1')
@@ -57,7 +58,13 @@ export class SignalsController {
   }
 
   @Get('latest-news')
-  async getLatestNews() {
-    return this.signalsService.getLatestNewsWithSentiment();
+  async getLatestNews(
+    @Query(new ValidationPipe({ transform: true }))
+    queryParams: GetLatestNewsQueryDto,
+  ) {
+    return this.signalsService.getLatestNewsWithSentiment(
+      queryParams.limit,
+      queryParams.offset,
+    );
   }
 }

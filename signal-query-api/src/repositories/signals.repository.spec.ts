@@ -145,8 +145,8 @@ describe('SignalsRepository', () => {
         ],
       });
 
-      const result = await repo.getLatestNewsWithSentiment(1);
-      expect(pool.query).toHaveBeenCalledWith(expect.any(String), [1]);
+      const result = await repo.getLatestNewsWithSentiment(1, 0);
+      expect(pool.query).toHaveBeenCalledWith(expect.any(String), [1, 0]);
       expect(result[0]).toMatchObject({
         title: 'Test News',
         source: 'CoinDesk',
@@ -172,7 +172,7 @@ describe('SignalsRepository', () => {
         ],
       });
 
-      const result = await repo.getLatestNewsWithSentiment(1);
+      const result = await repo.getLatestNewsWithSentiment(1, 0);
       expect(result[0].sentiment).toBe('neutral');
     });
   });

@@ -123,7 +123,7 @@ export class SignalsRepository {
    * @param limit - The number of news articles to fetch.
    * @returns The latest news articles with sentiment analysis.
    */
-  public async getLatestNewsWithSentiment(limit = 10) {
+  public async getLatestNewsWithSentiment(limit = 10, offset = 0) {
     const { rows } = await this.pool.query(
       `
       SELECT
@@ -143,10 +143,12 @@ export class SignalsRepository {
         ORDER BY time DESC
         LIMIT 1
       ) s ON true
+      WHERE a.published_at >= NOW() - INTERVAL '14 days'
       ORDER BY a.published_at DESC
       LIMIT $1
+      OFFSET $2
     `,
-      [limit],
+      [limit, offset],
     );
     return rows.map((row) => ({
       title: row.title,

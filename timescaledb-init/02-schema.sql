@@ -109,6 +109,8 @@ CREATE INDEX IF NOT EXISTS idx_mi_source
 -- news_articles indexes
 CREATE INDEX IF NOT EXISTS idx_ns_trime
   ON news_sentiment (time);
+CREATE INDEX IF NOT EXISTS idx_news_articles_published
+  ON public.news_articles (published_at DESC);
 
 
 -- ========================
