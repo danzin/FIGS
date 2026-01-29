@@ -1,41 +1,127 @@
-import React from 'react';
+import React from "react";
+import { ExternalLink } from "lucide-react";
 
 interface NewsItemProps {
-  title: string;
-  source: string;
-  time: string;
-  sentiment: string;
+	title: string;
+	source: string;
+	time: string;
+	sentiment: string;
+	url?: string;
 }
 
-export const NewsItem: React.FC<NewsItemProps> = ({ title, source, time, sentiment }) => (
-  <div className="flex items-start gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-300">
-    <div className={`w-1 h-12 rounded-full transition-colors duration-300 ${
-      sentiment === 'bullish' ? 'bg-green-400 dark:bg-green-500' :
-      sentiment === 'bearish' ? 'bg-red-400 dark:bg-red-500' :
-      'bg-blue-400 dark:bg-blue-500'
-    }`} />
-    <div className="flex-1 min-w-0">
-      <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-5 transition-colors duration-300">
-        {title}
-      </h4>
-      <div className="flex items-center gap-3 mt-2">
-        <span className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
-          {source}
-        </span>
-        <span className="text-xs text-gray-400 dark:text-gray-500 transition-colors duration-300">
-          •
-        </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
-          {time}
-        </span>
-      </div>
-    </div>
-    <div className={`px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
-      sentiment === 'bullish' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-      sentiment === 'bearish' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
-      'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-    }`}>
-      {sentiment}
-    </div>
-  </div>
+interface NewsCardProps extends NewsItemProps {
+	summary?: string | null;
+	imageUrl?: string | null;
+}
+
+const getSnippet = (summary?: string | null): string | null => {
+	if (!summary) return null;
+	const cleaned = summary.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+	if (!cleaned) return null;
+	const sentences = cleaned.match(/[^.!?]+[.!?]+/g);
+	if (sentences && sentences.length > 0) {
+		return sentences.slice(0, 2).join(" ").trim();
+	}
+	return cleaned;
+};
+
+export const NewsCard: React.FC<NewsCardProps> = ({ title, source, time, sentiment, url, summary, imageUrl }) => {
+	const snippet = getSnippet(summary) ?? "Summary unavailable.";
+
+	return (
+		<div className="flex flex-col gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-all duration-300">
+			<div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+				<span>{source}</span>
+				<span>{time}</span>
+			</div>
+			<div className="flex gap-4">
+				<div className="w-28 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+					{imageUrl ? (
+						<img src={imageUrl} alt={title} className="w-full h-full object-cover" loading="lazy" />
+					) : (
+						<span className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500">News</span>
+					)}
+				</div>
+				<div className="flex-1 min-w-0">
+					{url ? (
+						<a href={url} target="_blank" rel="noopener noreferrer" className="group inline-flex items-start gap-1">
+							<h4 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-5 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+								{title}
+							</h4>
+							<ExternalLink className="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-blue-500 transition-colors" />
+						</a>
+					) : (
+						<h4 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-5">{title}</h4>
+					)}
+					<p className="mt-2 text-xs text-gray-600 dark:text-gray-300 line-clamp-3">{snippet}</p>
+				</div>
+			</div>
+			<div className="flex items-center justify-between">
+				<div
+					className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${
+						sentiment === "bullish"
+							? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+							: sentiment === "bearish"
+								? "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+								: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+					}`}
+				>
+					{sentiment}
+				</div>
+				<div
+					className={`h-1.5 w-12 rounded-full ${
+						sentiment === "bullish"
+							? "bg-green-400"
+							: sentiment === "bearish"
+								? "bg-red-400"
+								: "bg-blue-400"
+					}`}
+				/>
+			</div>
+		</div>
+	);
+};
+
+export const NewsItem: React.FC<NewsItemProps> = ({ title, source, time, sentiment, url }) => (
+	<div className="flex items-start gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-300">
+		<div
+			className={`w-1 h-12 rounded-full transition-colors duration-300 ${
+				sentiment === "bullish"
+					? "bg-green-400 dark:bg-green-500"
+					: sentiment === "bearish"
+						? "bg-red-400 dark:bg-red-500"
+						: "bg-blue-400 dark:bg-blue-500"
+			}`}
+		/>
+		<div className="flex-1 min-w-0">
+			{url ? (
+				<a href={url} target="_blank" rel="noopener noreferrer" className="group flex items-start gap-1">
+					<h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-5 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+						{title}
+					</h4>
+					<ExternalLink className="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-blue-500 transition-colors" />
+				</a>
+			) : (
+				<h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-5 transition-colors duration-300">
+					{title}
+				</h4>
+			)}
+			<div className="flex items-center gap-3 mt-2">
+				<span className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">{source}</span>
+				<span className="text-xs text-gray-400 dark:text-gray-500 transition-colors duration-300">•</span>
+				<span className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">{time}</span>
+			</div>
+		</div>
+		<div
+			className={`px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
+				sentiment === "bullish"
+					? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+					: sentiment === "bearish"
+						? "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+						: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+			}`}
+		>
+			{sentiment}
+		</div>
+	</div>
 );

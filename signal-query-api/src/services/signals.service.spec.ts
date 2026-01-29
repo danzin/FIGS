@@ -30,7 +30,15 @@ describe('SignalsService', () => {
 
   describe('getOhlcData', () => {
     it('should return OHLC data if found', async () => {
-      const mockData = [{ open: 1, high: 2, low: 0.5, close: 1.5 }];
+      const mockData = [
+        {
+          timestamp: new Date('2024-01-01T00:00:00Z'),
+          open: 1,
+          high: 2,
+          low: 0.5,
+          close: 1.5,
+        },
+      ];
       repo.getOhlcData.mockResolvedValueOnce(mockData as any);
 
       const result = await service.getOhlcData('BTC', {
@@ -116,14 +124,16 @@ describe('SignalsService', () => {
           source: 'CoinDesk',
           url: 'https://coindesk.com/test',
           published_at: new Date(),
+          summary: 'Summary',
+          image_url: 'https://coindesk.com/image.png',
           sentiment: 'bullish',
           sentiment_score: 0.8,
         },
       ];
       repo.getLatestNewsWithSentiment = jest.fn().mockResolvedValue(mockNews);
-      const result = await service.getLatestNewsWithSentiment(1);
+      const result = await service.getLatestNewsWithSentiment(1, 0);
       expect(result).toEqual(mockNews);
-      expect(repo.getLatestNewsWithSentiment).toHaveBeenCalledWith(1);
+      expect(repo.getLatestNewsWithSentiment).toHaveBeenCalledWith(1, 0);
     });
 
     it('should default sentiment to neutral if missing', async () => {

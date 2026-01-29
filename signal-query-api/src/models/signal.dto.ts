@@ -66,3 +66,18 @@ export class GetLatestIndicatorsQueryDto {
   )
   names?: string[];
 }
+
+export class GetLatestNewsQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  limit?: number = 10;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  offset?: number = 0;
+}

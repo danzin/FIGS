@@ -129,17 +129,91 @@ export class YahooFinanceSource implements DataSource {
 	}
 }
 
-export class VIXSource extends YahooFinanceSource {
-	constructor() {
-		super("^VIX", "price");
-		this.key = "vix_level";
+class StooqFinanceSource implements DataSource {
+	public key: string;
+	private readonly symbol: string;
+
+	constructor(symbol: string, key: string) {
+		this.symbol = symbol;
+		this.key = key;
+	}
+
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
+		try {
+			const response = await axios.get(`https://stooq.com/q/d/l/`, {
+				params: { s: this.symbol, i: "d" },
+				responseType: "text",
+				timeout: 10000,
+			});
+			const body = typeof response.data === "string" ? response.data : "";
+			const lines = body.trim().split("\n");
+			if (lines.length <= 1) return null;
+			const lastLine = lines[lines.length - 1].split(",");
+			const date = lastLine[0];
+			const close = Number(lastLine[4]);
+			if (!date || Number.isNaN(close)) return null;
+			return [
+				{
+					time: new Date(date),
+					name: this.key,
+					value: close,
+					source: "Stooq",
+				},
+			];
+		} catch (error) {
+			console.warn(`[StooqFinanceSource] Failed to fetch ${this.symbol}:`, error);
+			return null;
+		}
 	}
 }
 
-export class SPYSource extends YahooFinanceSource {
-	constructor() {
-		super("SPY", "price");
-		this.key = "spy_price";
+export class VIXSource implements DataSource {
+	private readonly yahoo = new YahooFinanceSource("^VIX", "price");
+	private readonly stooq = new StooqFinanceSource("vix", "vix_level");
+	public key = "vix_level";
+
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
+		try {
+			const result = await this.yahoo.fetch();
+			if (result && result.length > 0) {
+				return [
+					{
+						time: result[0].time,
+						name: this.key,
+						value: result[0].value,
+						source: result[0].source,
+					},
+				];
+			}
+		} catch (error) {
+			console.warn(`[VIXSource] Yahoo fetch failed:`, error);
+		}
+		return this.stooq.fetch();
+	}
+}
+
+export class SPYSource implements DataSource {
+	private readonly yahoo = new YahooFinanceSource("SPY", "price");
+	private readonly stooq = new StooqFinanceSource("spy", "spy_price");
+	public key = "spy_price";
+
+	async fetch(): Promise<IndicatorDataPoint[] | null> {
+		try {
+			const result = await this.yahoo.fetch();
+			if (result && result.length > 0) {
+				return [
+					{
+						time: result[0].time,
+						name: this.key,
+						value: result[0].value,
+						source: result[0].source,
+					},
+				];
+			}
+		} catch (error) {
+			console.warn(`[SPYSource] Yahoo fetch failed:`, error);
+		}
+		return this.stooq.fetch();
 	}
 }
 

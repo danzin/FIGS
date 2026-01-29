@@ -1,14 +1,18 @@
 {
-  "name": "seeder",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+	"name": "seeder",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc",
+		"seed:binance": "node dist/seed-binance.js",
+		"seed:fundamentals": "node dist/seed-fundamentals.js",
+		"seed:indicators": "node dist/seed-indicators.js",
+		"seed:all": "npm run seed:binance && npm run seed:fundamentals && npm run seed:indicators",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs"
 }

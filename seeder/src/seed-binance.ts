@@ -15,8 +15,34 @@ const ASSETS_TO_SEED = [
 	{ binanceSymbol: "ETHUSDT", internalSymbol: "ethereum" },
 	{ binanceSymbol: "SOLUSDT", internalSymbol: "solana" },
 ];
-const DAYS_TO_FETCH = 30;
+const DAYS_TO_FETCH = 200;
 const BATCH_SIZE = 500; // Insert 500 rows at a time
+
+async function ensureAssets(client: PoolClient) {
+	const assets = [
+		{ symbol: "bitcoin", name: "Bitcoin", category: "crypto" },
+		{ symbol: "ethereum", name: "Ethereum", category: "crypto" },
+		{ symbol: "solana", name: "Solana", category: "crypto" },
+	];
+	const query = `
+		INSERT INTO public.assets (symbol, name, category, updated_at)
+		SELECT * FROM UNNEST($1::TEXT[], $2::TEXT[], $3::TEXT[], $4::TIMESTAMPTZ[])
+		ON CONFLICT (symbol) DO UPDATE
+		SET name = EXCLUDED.name, category = EXCLUDED.category, updated_at = EXCLUDED.updated_at;
+	`;
+	const values = assets.reduce(
+		(acc, asset) => {
+			acc[0].push(asset.symbol);
+			acc[1].push(asset.name);
+			acc[2].push(asset.category);
+			acc[3].push(new Date());
+			return acc;
+		},
+		[[], [], [], []] as [string[], string[], string[], Date[]]
+	);
+
+	await client.query(query, values);
+}
 
 /**
  * Inserts a batch of market data points using an efficient UNNEST query.
@@ -47,47 +73,76 @@ async function insertMarketDataBatch(client: PoolClient, data: MarketDataPoint[]
 
 /**
  * Fetches, transforms, and inserts historical data for ONE single asset.
+ * Uses 1h interval, fetching in multiple batches for extended history.
+ * Binance API limits to 1000 candles per request, so we fetch in chunks.
  */
 async function seedSingleAsset(client: PoolClient, asset: { binanceSymbol: string; internalSymbol: string }) {
-	console.log(`[Seeder] Fetching ${DAYS_TO_FETCH} days of 15m data for ${asset.internalSymbol}...`);
+	console.log(`[Seeder] Fetching ${DAYS_TO_FETCH} days of 1h data for ${asset.internalSymbol}...`);
 
-	const response = await axios.get("https://api.binance.com/api/v3/klines", {
-		params: {
-			symbol: asset.binanceSymbol,
-			interval: "15m",
-			limit: 1000,
-		},
-	});
-
-	const klines: any[] = response.data;
+	const totalCandles = DAYS_TO_FETCH * 24; // 200 days * 24 hours = 4800 candles
+	const maxCandlesPerRequest = 1000;
 	const allMarketDataPoints: MarketDataPoint[] = [];
 
-	for (const kline of klines) {
-		const [openTime, , , , close, volume] = kline;
-		const timestamp = new Date(openTime);
+	// Calculate start time (DAYS_TO_FETCH days ago)
+	const now = Date.now();
+	let endTime = now;
 
-		allMarketDataPoints.push({
-			time: timestamp,
-			asset_symbol: asset.internalSymbol,
-			type: "price",
-			value: parseFloat(close),
-			source: "Binance-Seed",
+	// Fetch in reverse chronological order (most recent first), then we'll reverse
+	let candlesFetched = 0;
+	while (candlesFetched < totalCandles) {
+		const limit = Math.min(maxCandlesPerRequest, totalCandles - candlesFetched);
+
+		const response = await axios.get("https://api.binance.com/api/v3/klines", {
+			params: {
+				symbol: asset.binanceSymbol,
+				interval: "1h",
+				endTime: endTime,
+				limit: limit,
+			},
 		});
-		allMarketDataPoints.push({
-			time: timestamp,
-			asset_symbol: asset.internalSymbol,
-			type: "volume",
-			value: parseFloat(volume),
-			source: "Binance-Seed",
-		});
+
+		const klines: any[] = response.data;
+		if (klines.length === 0) break; // No more data available
+
+		for (const kline of klines) {
+			const [openTime, , , , close, volume] = kline;
+			const timestamp = new Date(openTime);
+
+			allMarketDataPoints.push({
+				time: timestamp,
+				asset_symbol: asset.internalSymbol,
+				type: "price",
+				value: parseFloat(close),
+				source: "Binance-Seed",
+			});
+			allMarketDataPoints.push({
+				time: timestamp,
+				asset_symbol: asset.internalSymbol,
+				type: "volume",
+				value: parseFloat(volume),
+				source: "Binance-Seed",
+			});
+		}
+
+		candlesFetched += klines.length;
+		// Set endTime to the earliest candle's open time minus 1ms for next batch
+		endTime = klines[0][0] - 1;
+
+		console.log(`[Seeder] -> Fetched ${candlesFetched}/${totalCandles} candles for ${asset.internalSymbol}`);
+
+		// Small delay to avoid rate limiting
+		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
+
+	// Sort by time ascending (oldest first)
+	allMarketDataPoints.sort((a, b) => a.time.getTime() - b.time.getTime());
 
 	for (let i = 0; i < allMarketDataPoints.length; i += BATCH_SIZE) {
 		const batch = allMarketDataPoints.slice(i, i + BATCH_SIZE);
 		await insertMarketDataBatch(client, batch);
 	}
 
-	console.log(`[Seeder] -> Seeded ${klines.length} 15-minute records for ${asset.internalSymbol}.`);
+	console.log(`[Seeder] -> Seeded ${allMarketDataPoints.length / 2} 1-hour records for ${asset.internalSymbol}.`);
 }
 
 async function seedDatabase() {
@@ -97,6 +152,7 @@ async function seedDatabase() {
 
 	try {
 		client = await pool.connect();
+		await ensureAssets(client);
 
 		const { rows } = await client.query(
 			"SELECT COUNT(*) as count FROM public.market_data WHERE source = 'Binance-Seed'"

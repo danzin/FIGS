@@ -13,9 +13,13 @@ RUN apt-get update \
       curl \
  && rm -rf /var/lib/apt/lists/*
 
-COPY ./sentiment-analysis-service/requirements.txt ./requirements.txt
+RUN useradd --create-home --shell /usr/sbin/nologin appuser
+
+COPY --chown=appuser:appuser ./sentiment-analysis-service/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY --chown=appuser:appuser . .
+
+USER appuser
 
 CMD ["python", "sentiment-analysis-service/app.py"]
