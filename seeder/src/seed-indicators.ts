@@ -80,6 +80,38 @@ async function fetchYahooHistoricalIndicator(symbol: string, name: string): Prom
 	return points;
 }
 
+async function fetchDefiLlamaStablecoinHistory(): Promise<IndicatorDataPoint[]> {
+	const points: IndicatorDataPoint[] = [];
+	try {
+		const response = await axios.get("https://stablecoins.llama.fi/stablecoincharts/all", {
+			headers: { Accept: "application/json" },
+			timeout: 15000,
+		});
+		const data = response.data;
+		if (!data || typeof data !== "object") return points;
+
+		const allChainKey = Object.keys(data).find((key) => key.toLowerCase() === "all");
+		const allChainData = allChainKey ? data[allChainKey] : Object.values(data).flat();
+		if (!Array.isArray(allChainData)) return points;
+
+		const ninetyDaysAgo = Date.now() / 1000 - 90 * 24 * 60 * 60;
+		for (const item of allChainData) {
+			if (!item?.totalCirculatingUSD?.peggedUSD || !item?.date) continue;
+			if (Number(item.date) < ninetyDaysAgo) continue;
+			points.push({
+				name: "stablecoin_total_supply",
+				time: new Date(Number(item.date) * 1000),
+				value: Number(item.totalCirculatingUSD.peggedUSD),
+				source: "DefiLlama-Seed",
+			});
+		}
+		console.log(`[IndicatorSeeder] Fetched ${points.length} stablecoin total supply points`);
+	} catch (err) {
+		console.error("[IndicatorSeeder] Failed to fetch stablecoin history:", err);
+	}
+	return points;
+}
+
 async function fetchCoinGeckoDominanceHistory(): Promise<IndicatorDataPoint[]> {
 	const points: IndicatorDataPoint[] = [];
 	try {
@@ -143,14 +175,15 @@ export async function seedIndicators(): Promise<void> {
 	}
 
 	// Fetch historical data for multiple indicators
-	const [vixHistory, spyHistory, dominance, fearGreed] = await Promise.all([
+	const [vixHistory, spyHistory, dominance, fearGreed, stablecoinHistory] = await Promise.all([
 		fetchYahooHistoricalIndicator("^VIX", "^VIX"),
 		fetchYahooHistoricalIndicator("SPY", "SPY"),
 		fetchCoinGeckoDominanceHistory(),
 		fetchFearGreedHistory(),
+		fetchDefiLlamaStablecoinHistory(),
 	]);
 
-	const allIndicators = [...vixHistory, ...spyHistory, ...dominance, ...fearGreed];
+	const allIndicators = [...vixHistory, ...spyHistory, ...dominance, ...fearGreed, ...stablecoinHistory];
 
 	// Insert in batches
 	const BATCH_SIZE = 500;

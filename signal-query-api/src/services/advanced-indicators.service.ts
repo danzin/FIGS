@@ -488,16 +488,40 @@ export class AdvancedIndicatorsService {
     `;
 
     const historyResult = await this.pool.query(historyQuery);
-    const historicalData = historyResult.rows.reverse().map((row, i, arr) => {
-      const oi = parseFloat(row.value);
+    const historyRows = historyResult.rows.reverse();
+    const historyByName = new Map<string, { timestamp: Date; value: number }[]>();
+
+    for (const row of historyRows) {
+      const name = row.name as string;
+      const bucket = historyByName.get(name) ?? [];
+      bucket.push({ timestamp: new Date(row.timestamp), value: parseFloat(row.value) });
+      historyByName.set(name, bucket);
+    }
+
+    const preferredSeries =
+      historyByName.get('btc_open_interest_usd') ||
+      historyByName.get('binance_btc_oi') ||
+      historyByName.get('total_open_interest_usd') ||
+      [];
+
+    const timestamps = preferredSeries.map((row) => row.timestamp.getTime());
+    const dayMs = 24 * 60 * 60 * 1000;
+    const findBackIndex = (currentIndex: number, days: number) => {
+      const target = timestamps[currentIndex] - days * dayMs;
+      for (let i = currentIndex; i >= 0; i--) {
+        if (timestamps[i] <= target) return i;
+      }
+      return -1;
+    };
+
+    const historicalData = preferredSeries.map((row, i) => {
+      const oi = row.value;
+      const backIndex = findBackIndex(i, 30);
+      const backValue = backIndex >= 0 ? preferredSeries[backIndex].value : 0;
       const change30d =
-        i >= 30
-          ? ((oi - parseFloat(arr[Math.max(0, i - 30)].value)) /
-              parseFloat(arr[Math.max(0, i - 30)].value)) *
-            100
-          : oiChange30d;
+        backValue > 0 ? ((oi - backValue) / backValue) * 100 : oiChange30d;
       return {
-        timestamp: new Date(row.timestamp).toISOString(),
+        timestamp: row.timestamp.toISOString(),
         openInterest: oi,
         change30d,
       };

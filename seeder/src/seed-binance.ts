@@ -18,6 +18,32 @@ const ASSETS_TO_SEED = [
 const DAYS_TO_FETCH = 200;
 const BATCH_SIZE = 500; // Insert 500 rows at a time
 
+async function ensureAssets(client: PoolClient) {
+	const assets = [
+		{ symbol: "bitcoin", name: "Bitcoin", category: "crypto" },
+		{ symbol: "ethereum", name: "Ethereum", category: "crypto" },
+		{ symbol: "solana", name: "Solana", category: "crypto" },
+	];
+	const query = `
+		INSERT INTO public.assets (symbol, name, category, updated_at)
+		SELECT * FROM UNNEST($1::TEXT[], $2::TEXT[], $3::TEXT[], $4::TIMESTAMPTZ[])
+		ON CONFLICT (symbol) DO UPDATE
+		SET name = EXCLUDED.name, category = EXCLUDED.category, updated_at = EXCLUDED.updated_at;
+	`;
+	const values = assets.reduce(
+		(acc, asset) => {
+			acc[0].push(asset.symbol);
+			acc[1].push(asset.name);
+			acc[2].push(asset.category);
+			acc[3].push(new Date());
+			return acc;
+		},
+		[[], [], [], []] as [string[], string[], string[], Date[]]
+	);
+
+	await client.query(query, values);
+}
+
 /**
  * Inserts a batch of market data points using an efficient UNNEST query.
  */
@@ -126,6 +152,7 @@ async function seedDatabase() {
 
 	try {
 		client = await pool.connect();
+		await ensureAssets(client);
 
 		const { rows } = await client.query(
 			"SELECT COUNT(*) as count FROM public.market_data WHERE source = 'Binance-Seed'"
