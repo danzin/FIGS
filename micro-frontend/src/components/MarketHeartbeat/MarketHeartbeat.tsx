@@ -60,7 +60,7 @@ const MetricPill: React.FC<{
 
 	return (
 		<div
-			className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+			className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
 				highlight
 					? "bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20"
 					: isDark
@@ -68,15 +68,15 @@ const MetricPill: React.FC<{
 						: "bg-gray-100/50 hover:bg-gray-100"
 			}`}
 		>
-			<div className={`${highlight ? "text-purple-500" : "text-gray-500 dark:text-gray-400"}`}>{icon}</div>
-			<div className="flex flex-col">
-				<span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
+			<div className={`${highlight ? "text-purple-500" : "text-gray-500 dark:text-gray-400"} flex-shrink-0`}>{icon}</div>
+			<div className="flex flex-col min-w-0">
+				<span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
 					{label}
 				</span>
-				<div className="flex items-center gap-1.5">
-					<span className="text-sm font-bold text-gray-900 dark:text-white">{value}</span>
+				<div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+					<span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{value}</span>
 					{change !== undefined && <ChangeIndicator change={change} />}
-					{subtext && <span className="text-xs text-gray-500 dark:text-gray-400">({subtext})</span>}
+					{subtext && <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">({subtext})</span>}
 				</div>
 			</div>
 		</div>
@@ -117,14 +117,14 @@ export const MarketHeartbeat: React.FC<MarketHeartbeatProps> = ({
 	const gasInfo = ethGas ? getGasStatus(ethGas.value) : null;
 
 	return (
-		<div className="flex items-center gap-2 md:gap-4 px-4 md:px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-x-auto transition-colors duration-300 scrollbar-thin">
+		<div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 px-2 sm:px-4 md:px-6 py-2 sm:py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-x-auto transition-colors duration-300 scrollbar-thin">
 			{/* Live indicator */}
-			<div className="flex items-center gap-1.5 pr-3 border-r border-gray-200 dark:border-gray-700">
+			<div className="flex items-center gap-1 sm:gap-1.5 pr-2 sm:pr-3 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
 				<div className="relative flex h-2 w-2">
 					<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
 					<span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
 				</div>
-				<span className="text-xs font-medium text-gray-600 dark:text-gray-300">LIVE</span>
+				<span className="text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">LIVE</span>
 			</div>
 
 			{/* BTC Price */}
@@ -133,7 +133,7 @@ export const MarketHeartbeat: React.FC<MarketHeartbeatProps> = ({
 					label="BTC"
 					value={`$${formatLargeNumber(btcPrice.value)}`}
 					change={btcPrice.change}
-					icon={<Activity className="w-4 h-4" />}
+					icon={<Activity className="w-3 h-3 sm:w-4 sm:h-4" />}
 					highlight
 				/>
 			)}
@@ -144,7 +144,7 @@ export const MarketHeartbeat: React.FC<MarketHeartbeatProps> = ({
 					label="ETH"
 					value={`$${formatLargeNumber(ethPrice.value)}`}
 					change={ethPrice.change}
-					icon={<Zap className="w-4 h-4" />}
+					icon={<Zap className="w-3 h-3 sm:w-4 sm:h-4" />}
 				/>
 			)}
 
@@ -154,7 +154,7 @@ export const MarketHeartbeat: React.FC<MarketHeartbeatProps> = ({
 					label="SOL"
 					value={`$${formatLargeNumber(solPrice.value)}`}
 					change={solPrice.change}
-					icon={<Activity className="w-4 h-4" />}
+					icon={<Activity className="w-3 h-3 sm:w-4 sm:h-4" />}
 				/>
 			)}
 
@@ -164,63 +164,63 @@ export const MarketHeartbeat: React.FC<MarketHeartbeatProps> = ({
 					label="BTC Dom"
 					value={`${btcDominance.value.toFixed(1)}%`}
 					change={btcDominance.change}
-					icon={<Crown className="w-4 h-4" />}
+					icon={<Crown className="w-3 h-3 sm:w-4 sm:h-4" />}
 				/>
 			)}
 
 			{/* ETH Gas */}
 			{ethGas && gasInfo && (
-				<div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isDark ? "bg-gray-800/50" : "bg-gray-100/50"}`}>
-					<Fuel className={`w-4 h-4 ${gasInfo.color}`} />
-					<div className="flex flex-col">
-						<span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
+				<div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg flex-shrink-0 ${isDark ? "bg-gray-800/50" : "bg-gray-100/50"}`}>
+					<Fuel className={`w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ${gasInfo.color}`} />
+					<div className="flex flex-col min-w-0">
+						<span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
 							ETH Gas
 						</span>
-						<div className="flex items-center gap-1.5">
-							<span className="text-sm font-bold text-gray-900 dark:text-white">{ethGas.value} gwei</span>
-							<span className={`text-xs font-medium ${gasInfo.color}`}>({gasInfo.label})</span>
-						</div>
+						<div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+							<span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{ethGas.value} gwei</span>
+						<span className={`text-[10px] sm:text-xs font-medium ${gasInfo.color} whitespace-nowrap`}>({gasInfo.label})</span>
 					</div>
 				</div>
-			)}
+			</div>
+		)}
 
-			{/* Total Market Cap */}
-			{totalMarketCap && (
-				<MetricPill
-					label="Total MCap"
-					value={`$${formatLargeNumber(totalMarketCap.value)}`}
-					change={totalMarketCap.change}
-					icon={<TrendingUp className="w-4 h-4" />}
+		{/* Total Market Cap */}
+		{totalMarketCap && (
+			<MetricPill
+				label="Total MCap"
+				value={`$${formatLargeNumber(totalMarketCap.value)}`}
+				change={totalMarketCap.change}
+				icon={<TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />}
+			/>
+		)}
+
+		{/* Fear & Greed Index */}
+		{fear_greed && (
+			<div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg flex-shrink-0 ${isDark ? "bg-gray-800/50" : "bg-gray-100/50"}`}>
+				<div
+					className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0 ${
+						fear_greed.value <= 25
+							? "bg-red-500"
+							: fear_greed.value <= 45
+								? "bg-orange-500"
+								: fear_greed.value <= 55
+									? "bg-yellow-500"
+									: fear_greed.value <= 75
+										? "bg-lime-500"
+										: "bg-green-500"
+					}`}
 				/>
-			)}
-
-			{/* Fear & Greed Index */}
-			{fear_greed && (
-				<div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isDark ? "bg-gray-800/50" : "bg-gray-100/50"}`}>
-					<div
-						className={`w-4 h-4 rounded-full ${
-							fear_greed.value <= 25
-								? "bg-red-500"
-								: fear_greed.value <= 45
-									? "bg-orange-500"
-									: fear_greed.value <= 55
-										? "bg-yellow-500"
-										: fear_greed.value <= 75
-											? "bg-lime-500"
-											: "bg-green-500"
-						}`}
-					/>
-					<div className="flex flex-col">
-						<span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">
-							Fear & Greed
-						</span>
-						<div className="flex items-center gap-1.5">
-							<span className="text-sm font-bold text-gray-900 dark:text-white">{fear_greed.value}</span>
-							<span className="text-xs text-gray-500 dark:text-gray-400">({fear_greed.label})</span>
-						</div>
+				<div className="flex flex-col min-w-0">
+					<span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+						Fear & Greed
+					</span>
+					<div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+						<span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{fear_greed.value}</span>
+						<span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">({fear_greed.label})</span>
 					</div>
 				</div>
-			)}
-		</div>
+			</div>
+		)}
+	</div>
 	);
 };

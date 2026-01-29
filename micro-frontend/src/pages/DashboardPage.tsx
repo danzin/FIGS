@@ -92,34 +92,37 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 			/>
 
 			{/* Header */}
-			<div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-300">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-4">
-						<button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-							<Home className="w-4 h-4" />
-							Dashboard
-						</button>
-						<button
-							onClick={() => onNavigate("indicators")}
-							className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-						>
-							<BarChart3 className="w-4 h-4" />
-							Indicators
-						</button>
+			<div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4 transition-colors duration-300">
+				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+					<div className="flex items-center justify-between w-full sm:w-auto gap-2">
+						<div className="flex items-center gap-2">
+							<button className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+								<Home className="w-3 h-3 sm:w-4 sm:h-4" />
+								<span className="hidden xs:inline">Dashboard</span>
+							</button>
+							<button
+								onClick={() => onNavigate("indicators")}
+								className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+							>
+								<BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+								<span className="hidden xs:inline">Indicators</span>
+							</button>
+						</div>
+						<ThemeToggle />
 					</div>
-					<div>
-						<h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
+					<div className="hidden md:block text-center flex-1">
+						<h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
 							Financial Insights Dashboard
 						</h1>
-						<p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">
+						<p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">
 							Real-time market data and sentiment analysis
 						</p>
 					</div>
-					<ThemeToggle />
+					<div className="hidden sm:block sm:w-10 lg:w-auto"></div>
 				</div>
 			</div>
 
-			<div className="p-6 space-y-8">
+			<div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8">
 				{/* Chart Section */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-300">
 					<div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
@@ -151,14 +154,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 					</div>
 
 					{/* Time Interval Picker */}
-					<div className="py-3 border-white dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors duration-300">
+					<div className="py-2 sm:py-3 border-white dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors duration-300">
 						<div className="flex items-center justify-center">
-							<div className="flex bg-white dark:bg-gray-700 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-600 transition-colors duration-300">
+							<div className="flex bg-white dark:bg-gray-700 rounded-lg p-0.5 sm:p-1 shadow-sm border border-gray-200 dark:border-gray-600 transition-colors duration-300">
 								{supportedIntervals.map((intervalOption) => (
 									<button
 										key={intervalOption.value}
 										onClick={() => setInterval(intervalOption.value)}
-										className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-300 ${
+										className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-md transition-all duration-300 ${
 											interval === intervalOption.value
 												? "bg-blue-500 dark:bg-blue-600 text-white shadow-sm"
 												: "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -172,7 +175,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 					</div>
 
 					{/* Multi-Pane Chart */}
-					<div className="p-6">
+					<div className="p-2 sm:p-4 md:p-6">
 						<MultiPaneChart key={`${selectedAsset}-${interval}`} priceData={chartData} showBollingerBands={true} />
 					</div>
 				</div>
@@ -218,15 +221,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
 				{/* News Section */}
 				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-300">
-					<div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
+					<div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
 						<div className="flex items-center justify-between">
-							<h2 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors duration-300">
+							<h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white transition-colors duration-300">
 								Latest Market News
 							</h2>
 						</div>
 					</div>
 
-					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4">
 						{news.map((newsItem, index) => (
 							<div
 								key={index}
@@ -244,11 +247,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 							</div>
 						))}
 					</div>
-					<div className="px-6 pb-6">
+					<div className="px-3 sm:px-6 pb-3 sm:pb-6">
 						<button
 							onClick={loadMore}
 							disabled={!hasMore || loadingMore}
-							className="w-full rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="w-full rounded-lg border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							{loadingMore ? "Loading..." : hasMore ? "Load more" : "No more news"}
 						</button>
