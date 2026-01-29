@@ -27,16 +27,13 @@ ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=0
 WORKDIR /usr/src/app
 
-COPY --from=builder /usr/src/monorepo/node_modules ./node_modules
+COPY --from=builder --chown=pwuser:pwuser /usr/src/monorepo/node_modules ./node_modules
 
 RUN npx playwright install --with-deps
 
-COPY --from=builder /usr/src/monorepo/common ./node_modules/@financialsignalsgatheringsystem/common
-COPY --from=builder /usr/src/monorepo/scraper-service/dist ./dist
-COPY --from=builder /usr/src/monorepo/scraper-service/package.json ./
-
-USER root
-RUN chown -R pwuser:pwuser /usr/src/app
+COPY --from=builder --chown=pwuser:pwuser /usr/src/monorepo/common ./node_modules/@financialsignalsgatheringsystem/common
+COPY --from=builder --chown=pwuser:pwuser /usr/src/monorepo/scraper-service/dist ./dist
+COPY --from=builder --chown=pwuser:pwuser /usr/src/monorepo/scraper-service/package.json ./
 USER pwuser
 
 CMD ["node", "dist/index.js"]

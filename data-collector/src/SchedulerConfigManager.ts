@@ -3,6 +3,17 @@ import { CoinGeckoMarketDataSource } from "./datasources/CoinGeckoMarketDataSour
 import { CoinGeckoIndicatorSource } from "./datasources/CoinGeckoIndicatorSource";
 import { VIXSource, SPYSource, BrentCrudeOilSource } from "./datasources/yahooFinance";
 import { FearGreedSource } from "./datasources/feargreed";
+import { EtherscanGasSource } from "./datasources/EtherscanGasSource";
+import { GitHubActivitySource } from "./datasources/GitHubActivitySource";
+import {
+	BitcoinNetworkSource,
+	EthereumNetworkSource,
+	SolanaNetworkSource,
+} from "./datasources/BlockchainNetworkSource";
+import { DefiLlamaStablecoinSource, StablecoinBreakdownSource } from "./datasources/DefiLlamaSource";
+import { CoinGeckoDerivativesSource } from "./datasources/OpenInterestSource";
+import { HashRateExtendedSource, MiningDifficultySource } from "./datasources/HashRateSource";
+import { PowerLawIndicatorSource } from "./datasources/PowerLawSource";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
@@ -58,6 +69,52 @@ export class SchedulerConfigManager {
 			retryDelay: 120000,
 		});
 
+		// =====================================
+		// GAS PRICES - Network Congestion Monitoring
+		// =====================================
+
+		// Ethereum gas from Etherscan (every 5 minutes)
+		this.registerHighFrequencySource(new EtherscanGasSource(config.ETHERSCAN_API_KEY), "*/5 * * * *", {
+			maxRetries: 2,
+			retryDelay: 30000,
+		});
+
+		// =====================================
+		// BLOCKCHAIN NETWORK METRICS
+		// =====================================
+
+		// Bitcoin network (daily transactions, hash rate, mempool)
+		this.registerMediumFrequencySource(
+			new BitcoinNetworkSource(),
+			"0 */2 * * *", // Every 2 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Ethereum network metrics
+		this.registerMediumFrequencySource(
+			new EthereumNetworkSource(config.ETHERSCAN_API_KEY),
+			"0 */2 * * *", // Every 2 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Solana network (priority fees, epoch info)
+		this.registerMediumFrequencySource(
+			new SolanaNetworkSource(),
+			"0 */1 * * *", // Every hour
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// =====================================
+		// DEVELOPER ACTIVITY - GitHub
+		// =====================================
+
+		// Core blockchain repos activity (daily - data is weekly anyway)
+		this.registerLowFrequencySource(
+			new GitHubActivitySource(undefined, config.GITHUB_TOKEN),
+			"0 8 * * *", // 8 AM UTC daily
+			{ maxRetries: 3, retryDelay: 300000 }
+		);
+
 		// LOW FREQUENCY - Daily or less frequent
 		// FRED data (M2 Money Supply - monthly updates, check daily)
 		this.registerLowFrequencySource(
@@ -77,6 +134,54 @@ export class SchedulerConfigManager {
 			new FredSource(config.FRED_API_KEY!, datapoints.get("UNR") as string), // Unemployment Rate
 			"0 9 * * 1", // Monday 9 AM UTC (weekly check)
 			{ maxRetries: 5, retryDelay: 300000 }
+		);
+
+		// =====================================
+		// ADVANCED INDICATORS - New Sources
+		// =====================================
+
+		// Stablecoin liquidity (DefiLlama - updates daily)
+		this.registerMediumFrequencySource(
+			new DefiLlamaStablecoinSource(),
+			"0 */4 * * *", // Every 4 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Stablecoin breakdown (USDT, USDC, DAI, FDUSD)
+		this.registerLowFrequencySource(
+			new StablecoinBreakdownSource(),
+			"0 */6 * * *", // Every 6 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// CoinGecko Derivatives - aggregate OI from /derivatives endpoint
+		// Runs every 6 hours to avoid rate limits on CoinGecko free tier
+		// This is the primary OI source - aggregates BTC, ETH, SOL OI from all exchanges
+		this.registerLowFrequencySource(
+			new CoinGeckoDerivativesSource(),
+			"0 */6 * * *", // Every 6 hours (0:00, 6:00, 12:00, 18:00 UTC)
+			{ maxRetries: 3, retryDelay: 300000 } // 5 min retry delay
+		);
+
+		// Extended hash rate data for ribbon indicator
+		this.registerMediumFrequencySource(
+			new HashRateExtendedSource(),
+			"0 */4 * * *", // Every 4 hours
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Mining difficulty
+		this.registerLowFrequencySource(
+			new MiningDifficultySource(),
+			"0 */6 * * *", // Every 6 hours (difficulty changes ~every 2 weeks)
+			{ maxRetries: 3, retryDelay: 120000 }
+		);
+
+		// Power Law and MVRV calculations
+		this.registerLowFrequencySource(
+			new PowerLawIndicatorSource(),
+			"0 */4 * * *", // Every 4 hours
+			{ maxRetries: 3, retryDelay: 180000 }
 		);
 	}
 

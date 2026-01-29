@@ -12,9 +12,6 @@ import {
 export class SignalsRepository {
   constructor(@Inject(PG_CONNECTION) private readonly pool: Pool) {}
 
-  /**
-   * Fetches all crypto asset names from the database.
-   */
   public async listCryptoNames(): Promise<AssetNameDto[]> {
     const { rows } = await this.pool.query<AssetNameDto>(
       `SELECT name
@@ -41,14 +38,28 @@ export class SignalsRepository {
         interval,
         limit,
       ]);
-      return rows.map((row) => ({
-        ...row,
-        open: parseFloat(row.open),
-        high: parseFloat(row.high),
-        low: parseFloat(row.low),
-        close: parseFloat(row.close),
-        volume: row.volume ? parseFloat(row.volume) : null,
-      }));
+      return rows
+        .map((row): OhlcDataDto | null => {
+          const timestampValue = row.timestamp ?? row.bucketed_at ?? row.time;
+          const timestamp =
+            timestampValue instanceof Date
+              ? timestampValue
+              : timestampValue
+                ? new Date(timestampValue)
+                : undefined;
+          if (!(timestamp instanceof Date) || isNaN(timestamp.getTime())) {
+            return null;
+          }
+          return {
+            timestamp,
+            open: parseFloat(row.open),
+            high: parseFloat(row.high),
+            low: parseFloat(row.low),
+            close: parseFloat(row.close),
+            volume: row.volume ? parseFloat(row.volume) : null,
+          };
+        })
+        .filter((row): row is OhlcDataDto => Boolean(row));
     } catch (error) {
       if (
         error instanceof Error &&
@@ -112,7 +123,7 @@ export class SignalsRepository {
    * @param limit - The number of news articles to fetch.
    * @returns The latest news articles with sentiment analysis.
    */
-  public async getLatestNewsWithSentiment(limit = 10) {
+  public async getLatestNewsWithSentiment(limit = 10, offset = 0) {
     const { rows } = await this.pool.query(
       `
       SELECT
@@ -120,6 +131,8 @@ export class SignalsRepository {
         a.source,
         a.url,
         a.published_at,
+        a.summary,
+        a.image_url,
         s.sentiment_label,
         s.sentiment_score
       FROM public.news_articles a
@@ -130,16 +143,20 @@ export class SignalsRepository {
         ORDER BY time DESC
         LIMIT 1
       ) s ON true
+      WHERE a.published_at >= NOW() - INTERVAL '14 days'
       ORDER BY a.published_at DESC
       LIMIT $1
+      OFFSET $2
     `,
-      [limit],
+      [limit, offset],
     );
     return rows.map((row) => ({
       title: row.title,
       source: row.source,
       url: row.url,
       published_at: row.published_at,
+      summary: row.summary,
+      image_url: row.image_url,
       sentiment: row.sentiment_label || 'neutral',
       sentiment_score: row.sentiment_score,
     }));

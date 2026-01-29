@@ -10,13 +10,17 @@ export class CryptoSlateSource implements DataSource {
 		const feed = await parser.parseURL("https://cryptoslate.com/feed/");
 		if (!feed.items?.length) return null;
 
-		// top 5 items
-		return feed.items.slice(0, 5).map((item) => ({
+		// top 20 items
+		return feed.items.slice(0, 20).map((item) => ({
 			id: item.guid || item.link!,
 			source: "CryptoSlate",
 			title: item.title || "No title",
 			url: item.link!,
 			publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+			summary: item.contentSnippet || item.content || item.summary || undefined,
+			imageUrl:
+				(item.enclosure && "url" in item.enclosure ? item.enclosure.url : undefined) ||
+				((item as { image?: { url?: string } })?.image?.url ?? undefined),
 		}));
 	}
 }

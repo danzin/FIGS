@@ -19,4 +19,8 @@ export const config = {
 	HEALTH_HEAP_WARNING_MB: parseInt(process.env.HEALTH_HEAP_WARNING_MB || "512", 10),
 	HEALTH_HEAP_CRITICAL_MB: parseInt(process.env.HEALTH_HEAP_CRITICAL_MB || "768", 10),
 	MONITOR_CHECK_INTERVAL_CRON: process.env.MONITOR_CHECK_INTERVAL_CRON || "*/5 * * * *",
+	// Optional API keys for enhanced data sources
+	ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY || "",
+	GITHUB_TOKEN: process.env.GITHUB_TOKEN || "",
+	OWLRACLE_API_KEY: process.env.OWLRACLE_API_KEY || "",
 };

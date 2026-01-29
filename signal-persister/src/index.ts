@@ -76,14 +76,27 @@ class SignalPersisterApp {
 			"sentiment_results",
 			async (message: any): Promise<void> => {
 				const result = message as SentimentResult; // Cast it
+				
+				console.log("[Signal Persister App] Received sentiment result:", {
+					external_id: result.external_id,
+					title: result.title?.substring(0, 50),
+					published_at: result.published_at,
+					published_at_type: typeof result.published_at
+				});
+				
 				// convert date strings for SentimentResult manually here
 				// as it's not part of the SupportedMessage type
 				if (result && typeof result.published_at === "string") {
 					result.published_at = new Date(result.published_at) as any;
 				}
+				if (!result.published_at) {
+					console.warn("[Signal Persister App] SentimentResult missing published_at, skipping:", result.external_id);
+					return;
+				}
 
 				if (this.isValidSentimentResult(result)) {
 					await this.dbService.insertArticleAndSentiment(result);
+					console.log("[Signal Persister App] Successfully persisted article:", result.external_id);
 				} else {
 					console.warn("[Signal Persister App] Received invalid SentimentResult, discarding:", result);
 				}
