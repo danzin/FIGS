@@ -8,7 +8,9 @@
 		"seed:binance": "node dist/seed-binance.js",
 		"seed:fundamentals": "node dist/seed-fundamentals.js",
 		"seed:indicators": "node dist/seed-indicators.js",
-		"seed:all": "npm run seed:binance && npm run seed:fundamentals && npm run seed:indicators",
+		"seed:macro-history": "node dist/seed-macro-history.js",
+		"seed:gdelt-backfill": "node dist/seed-gdelt-backfill.js",
+		"seed:all": "npm run seed:binance && npm run seed:fundamentals && npm run seed:indicators && npm run seed:macro-history && npm run seed:gdelt-backfill",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"keywords": [],

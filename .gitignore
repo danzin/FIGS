@@ -8,6 +8,10 @@ dist/
 # TypeScript build info
 **/tsconfig.tsbuildinfo
 
+# stale source-adjacent TypeScript emit from older local builds
+common/src/**/*.js
+common/src/**/*.d.ts
+
 # environment files
 .env
 
@@ -24,5 +28,10 @@ coverage/
 # Python virtual environments
 venv/
 .venv
+# pycache
+__pycache__
 
+*.tsbuildinfo
+*.map
 data_backup**.sql
+notes.md

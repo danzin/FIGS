@@ -4,8 +4,11 @@ import {
   GetOhlcQueryDto,
   OhlcDataDto,
   IndicatorDto,
+  MetricChangeDto,
+  GetMetricChangeQueryDto,
   GetLatestIndicatorsQueryDto,
   GetLatestNewsQueryDto,
+  LatestNewsWithSentimentDto,
 } from '../models/signal.dto';
 
 @Controller('v1')
@@ -52,16 +55,17 @@ export class SignalsController {
   @Get('metric-change/:name')
   async getMetricChange(
     @Param('name') name: string,
-    @Query('type') type: 'percent' | 'absolute' = 'percent',
-  ) {
-    return this.signalsService.getMetricWithChange(name, type);
+    @Query(new ValidationPipe({ transform: true }))
+    queryParams: GetMetricChangeQueryDto,
+  ): Promise<MetricChangeDto> {
+    return this.signalsService.getMetricWithChange(name, queryParams.type);
   }
 
   @Get('latest-news')
   async getLatestNews(
     @Query(new ValidationPipe({ transform: true }))
     queryParams: GetLatestNewsQueryDto,
-  ) {
+  ): Promise<LatestNewsWithSentimentDto[]> {
     return this.signalsService.getLatestNewsWithSentiment(
       queryParams.limit,
       queryParams.offset,

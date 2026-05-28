@@ -2,6 +2,9 @@ import { MessageBroker, TaskScheduler } from "@financialsignalsgatheringsystem/c
 import { AppStoreRankScraper } from "../scrapers/AppStoreRankScraper";
 import { CoinDeskSource } from "../scrapers/CoinDesk";
 import { CryptoSlateSource } from "../scrapers/CryptoSlate";
+import { MacroPolicyNewsSource } from "../scrapers/MacroPolicyNewsSource";
+import { GeopoliticalRiskSource } from "../scrapers/GeopoliticalRiskSource";
+import { EnergyChokepointSource } from "../scrapers/EnergyChokepointSource";
 
 export class ScraperConfigManager {
 	private scheduler: TaskScheduler;
@@ -36,6 +39,33 @@ export class ScraperConfigManager {
 			priority: "medium",
 			maxRetries: 3, // Scrapers are fragile, more retries
 			retryDelay: 15 * 60 * 1000, // 15-minute retry delay
+			consecutiveFailures: 0,
+		});
+		this.scheduler.registerSource({
+			source: new MacroPolicyNewsSource(),
+			schedule: "0 */4 * * *", // Once 4 hours
+			enabled: true,
+			priority: "medium",
+			maxRetries: 3,
+			retryDelay: 15 * 60 * 1000,
+			consecutiveFailures: 0,
+		});
+		this.scheduler.registerSource({
+			source: new GeopoliticalRiskSource(),
+			schedule: "0 */4 * * *", // Once 4 hours
+			enabled: true,
+			priority: "medium",
+			maxRetries: 3,
+			retryDelay: 15 * 60 * 1000,
+			consecutiveFailures: 0,
+		});
+		this.scheduler.registerSource({
+			source: new EnergyChokepointSource(),
+			schedule: "0 */4 * * *", // Once 4 hours
+			enabled: true,
+			priority: "medium",
+			maxRetries: 3,
+			retryDelay: 15 * 60 * 1000,
 			consecutiveFailures: 0,
 		});
 	}

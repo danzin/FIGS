@@ -10,12 +10,15 @@
     "signal-query-api",
     "micro-frontend",
     "scraper-service",
-    "seeder"
+    "seeder",
+    "macro-event-extractor-service"
   ],
   "scripts": {
     "build": "npm run build -w @financialsignalsgatheringsystem/common && tsc --build --force tsconfig.json",
     "build:all": "npm run build --workspaces --if-present",
-    "dev": "npm run dev --workspaces --parallel"
+    "dev": "npm run dev --workspaces --parallel",
+    "validate": "npm run build && npm run validate:python",
+    "validate:python": "python -m unittest discover -s macro-analyst-engine/tests -p \"test_*.py\" && python -m py_compile macro-analyst-engine/app.py macro-analyst-engine/src/publisher.py sentiment-analysis-service/app.py"
   },
   "keywords": [],
   "author": "",
@@ -36,6 +39,7 @@
     "globals": "^16.3.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.37.0"
   },
   "dependencies": {

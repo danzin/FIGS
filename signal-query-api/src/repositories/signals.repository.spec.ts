@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { AppError } from '../errors/errors';
 import { SignalsRepository } from './signals.repository';
 import { Pool } from 'pg';
 
@@ -21,7 +21,7 @@ describe('SignalsRepository', () => {
 
       const result = await repo.listCryptoNames();
 
-      expect(pool.query).toHaveBeenCalledWith(expect.any(String));
+      expect(pool.query).toHaveBeenCalledWith(expect.any(String), []);
       expect(result).toEqual([{ name: 'BTC' }, { name: 'ETH' }]);
     });
   });
@@ -58,31 +58,44 @@ describe('SignalsRepository', () => {
       ]);
     });
 
-    it('should throw BadRequestException on invalid interval error', async () => {
+    it('should throw a validation AppError on invalid interval error', async () => {
       (pool.query as jest.Mock).mockRejectedValueOnce(
         new Error('Invalid interval'),
       );
+      const resultPromise = repo.getOhlcData('BTC', {});
 
-      await expect(repo.getOhlcData('BTC', {})).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(resultPromise).rejects.toBeInstanceOf(AppError);
+      await expect(resultPromise).rejects.toMatchObject({
+        name: 'ValidationError',
+        statusCode: 400,
+      });
     });
 
-    it('should rethrow other errors', async () => {
+    it('should wrap unexpected database errors', async () => {
       (pool.query as jest.Mock).mockRejectedValueOnce(
         new Error('Database error'),
       );
+      const resultPromise = repo.getOhlcData('BTC', {});
 
-      await expect(repo.getOhlcData('BTC', {})).rejects.toThrow(
-        'Database error',
-      );
+      await expect(resultPromise).rejects.toBeInstanceOf(AppError);
+      await expect(resultPromise).rejects.toMatchObject({
+        name: 'DatabaseError',
+        statusCode: 500,
+      });
     });
   });
 
   describe('getLatestIndicators', () => {
     it('should return indicators filtered by names', async () => {
       (pool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [{ name: 'SMA', value: '123.45' }],
+        rows: [
+          {
+            name: 'SMA',
+            value: '123.45',
+            time: new Date('2024-01-01T00:00:00Z'),
+            source: 'timescaledb',
+          },
+        ],
       } as any);
 
       const result = await repo.getLatestIndicators(['SMA']);
@@ -90,20 +103,42 @@ describe('SignalsRepository', () => {
       expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('ANY'), [
         ['SMA'],
       ]);
-      expect(result).toEqual([{ name: 'SMA', value: 123.45 }]);
+      expect(result).toEqual([
+        {
+          name: 'SMA',
+          value: 123.45,
+          time: new Date('2024-01-01T00:00:00Z'),
+          source: 'timescaledb',
+        },
+      ]);
     });
 
     it('should return all indicators if names not provided', async () => {
       (pool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [{ name: 'SMA', value: '123.45' }],
+        rows: [
+          {
+            name: 'SMA',
+            value: '123.45',
+            time: new Date('2024-01-01T00:00:00Z'),
+            source: 'timescaledb',
+          },
+        ],
       });
 
       const result = await repo.getLatestIndicators();
 
       expect(pool.query).toHaveBeenCalledWith(
         expect.stringContaining('get_latest_indicators();'),
+        [],
       );
-      expect(result).toEqual([{ name: 'SMA', value: 123.45 }]);
+      expect(result).toEqual([
+        {
+          name: 'SMA',
+          value: 123.45,
+          time: new Date('2024-01-01T00:00:00Z'),
+          source: 'timescaledb',
+        },
+      ]);
     });
   });
 

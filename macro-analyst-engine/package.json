@@ -1,0 +1,10 @@
+{
+  "name": "macro-analyst-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Python analyst engine for macro event analogue and lag analysis.",
+  "scripts": {
+    "start": "python app.py",
+    "test": "python -m unittest discover -s tests -p \"test_*.py\""
+  }
+}

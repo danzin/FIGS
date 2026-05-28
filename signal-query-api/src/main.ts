@@ -1,9 +1,11 @@
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ConfigService } from '@nestjs/config';
-import { ValidationPipe } from '@nestjs/common';
+import { GlobalExceptionFilter } from './errors/global-exception.filter';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port') || 3003;
@@ -19,7 +21,9 @@ async function bootstrap() {
     }),
   );
 
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
   await app.listen(Number(port), '0.0.0.0'); // '0.0.0.0' -> accessible from outside the container
-  console.log(`Signal Query API is running on: ${await app.getUrl()}`);
+  logger.log(`Signal Query API is running on: ${await app.getUrl()}`);
 }
 bootstrap();

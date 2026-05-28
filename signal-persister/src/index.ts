@@ -1,133 +1,228 @@
 import {
-	RabbitMQService,
-	MarketDataPoint,
-	IndicatorDataPoint,
-	SentimentResult,
-	SupportedMessage,
+  Errors,
+  RabbitMQService,
+  MarketDataPoint,
+  IndicatorDataPoint,
+  SentimentResult,
+  SupportedMessage,
+  toErrorResponse,
+  wrapError,
 } from "@financialsignalsgatheringsystem/common";
 import { TimescaleDBService } from "./services/TimescaleDBService";
 import { config } from "./utils/config";
 
 class SignalPersisterApp {
-	private readonly messageBroker: RabbitMQService;
-	private readonly dbService: TimescaleDBService;
+  private readonly messageBroker: RabbitMQService;
+  private readonly dbService: TimescaleDBService;
 
-	constructor() {
-		this.messageBroker = new RabbitMQService(config.RABBITMQ_URL!);
-		this.dbService = new TimescaleDBService({
-			host: config.DB_HOST,
-			port: Number(config.DB_PORT),
-			user: config.DB_USER,
-			password: config.DB_PASSWORD,
-			database: config.DB_NAME,
-		});
-	}
+  constructor() {
+    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL!);
+    this.dbService = new TimescaleDBService({
+      host: config.DB_HOST,
+      port: Number(config.DB_PORT),
+      user: config.DB_USER,
+      password: config.DB_PASSWORD,
+      database: config.DB_NAME,
+    });
+  }
 
-	public async start(): Promise<void> {
-		console.log("[Signal Persister App] Starting...");
-		await this.messageBroker.connect();
+  public async start(): Promise<void> {
+    console.log("[Signal Persister App] Starting...");
+    await this.messageBroker.connect();
 
-		await this.setupMarketDataConsumer();
-		await this.setupIndicatorConsumer();
-		await this.setupSentimentResultConsumer();
+    await this.setupMarketDataConsumer();
+    await this.setupIndicatorConsumer();
+    await this.setupSentimentResultConsumer();
 
-		console.log("[Signal Persister App] All consumers started.");
-	}
+    console.log("[Signal Persister App] All consumers started.");
+  }
 
-	private async setupMarketDataConsumer(): Promise<void> {
-		await this.messageBroker.consume(
-			"persist_market_data_queue",
-			"market_data",
-			async (message: SupportedMessage): Promise<void> => {
-				// Use a type guard to ensure right message type
-				if (this.isMarketDataPoint(message)) {
-					if (this.isValidMarketDataPoint(message)) {
-						await this.dbService.insertMarketData(message);
-					} else {
-						console.warn("[Signal Persister App] Received invalid MarketDataPoint, discarding:", message);
-					}
-				}
-			}
-		);
-	}
+  private async setupMarketDataConsumer(): Promise<void> {
+    await this.messageBroker.consume(
+      "persist_market_data_queue",
+      "market_data",
+      async (message: SupportedMessage): Promise<void> => {
+        if (!this.isMarketDataPoint(message)) {
+          throw Errors.validation(
+            "Received unsupported payload on market data persistence queue.",
+            {
+              context: {
+                operation: "setupMarketDataConsumer",
+                queueName: "persist_market_data_queue",
+                service: "signal-persister",
+              },
+            },
+          );
+        }
 
-	private async setupIndicatorConsumer(): Promise<void> {
-		await this.messageBroker.consume(
-			"persist_indicators_queue",
-			"market_indicators",
-			async (message: SupportedMessage): Promise<void> => {
-				if (this.isIndicatorDataPoint(message)) {
-					if (this.isValidIndicatorPoint(message)) {
-						await this.dbService.insertIndicator(message);
-					} else {
-						console.warn("[Signal Persister App] Received invalid IndicatorDataPoint, discarding:", message);
-					}
-				}
-			}
-		);
-	}
+        if (!this.isValidMarketDataPoint(message)) {
+          throw Errors.validation(
+            "Received invalid MarketDataPoint on market data persistence queue.",
+            {
+              context: {
+                assetSymbol: message.asset_symbol,
+                operation: "setupMarketDataConsumer",
+                queueName: "persist_market_data_queue",
+                service: "signal-persister",
+              },
+            },
+          );
+        }
 
-	private async setupSentimentResultConsumer(): Promise<void> {
-		// SentimentResult is not part of SupportedMessage
-		// The RabbitMQService.consume method will pass it as `any`
-		// Must cast and validate it here
-		await this.messageBroker.consume(
-			"persist_sentiment_queue",
-			"sentiment_results",
-			async (message: any): Promise<void> => {
-				const result = message as SentimentResult; // Cast it
-				
-				console.log("[Signal Persister App] Received sentiment result:", {
-					external_id: result.external_id,
-					title: result.title?.substring(0, 50),
-					published_at: result.published_at,
-					published_at_type: typeof result.published_at
-				});
-				
-				// convert date strings for SentimentResult manually here
-				// as it's not part of the SupportedMessage type
-				if (result && typeof result.published_at === "string") {
-					result.published_at = new Date(result.published_at) as any;
-				}
-				if (!result.published_at) {
-					console.warn("[Signal Persister App] SentimentResult missing published_at, skipping:", result.external_id);
-					return;
-				}
+        await this.dbService.insertMarketData(message);
+      },
+    );
+  }
 
-				if (this.isValidSentimentResult(result)) {
-					await this.dbService.insertArticleAndSentiment(result);
-					console.log("[Signal Persister App] Successfully persisted article:", result.external_id);
-				} else {
-					console.warn("[Signal Persister App] Received invalid SentimentResult, discarding:", result);
-				}
-			}
-		);
-	}
+  private async setupIndicatorConsumer(): Promise<void> {
+    await this.messageBroker.consume(
+      "persist_indicators_queue",
+      "market_indicators",
+      async (message: SupportedMessage): Promise<void> => {
+        if (!this.isIndicatorDataPoint(message)) {
+          throw Errors.validation(
+            "Received unsupported payload on indicator persistence queue.",
+            {
+              context: {
+                operation: "setupIndicatorConsumer",
+                queueName: "persist_indicators_queue",
+                service: "signal-persister",
+              },
+            },
+          );
+        }
 
-	private isMarketDataPoint(p: any): p is MarketDataPoint {
-		return p && typeof p.asset_symbol === "string" && typeof p.type === "string";
-	}
+        if (!this.isValidIndicatorPoint(message)) {
+          throw Errors.validation(
+            "Received invalid IndicatorDataPoint on indicator persistence queue.",
+            {
+              context: {
+                indicatorName: message.name,
+                operation: "setupIndicatorConsumer",
+                queueName: "persist_indicators_queue",
+                service: "signal-persister",
+              },
+            },
+          );
+        }
 
-	private isIndicatorDataPoint(p: any): p is IndicatorDataPoint {
-		return p && typeof p.name === "string" && !("asset_symbol" in p);
-	}
+        await this.dbService.insertIndicator(message);
+      },
+    );
+  }
 
-	private isValidMarketDataPoint(p: MarketDataPoint): boolean {
-		return p.time instanceof Date && !isNaN(p.time.getTime()) && typeof p.value === "number";
-	}
+  private async setupSentimentResultConsumer(): Promise<void> {
+    await this.messageBroker.consume<unknown>(
+      "persist_sentiment_queue",
+      "sentiment_results",
+      async (message: unknown): Promise<void> => {
+        if (!this.isValidSentimentResult(message)) {
+          throw Errors.validation(
+            "Received invalid SentimentResult on sentiment persistence queue.",
+            {
+              context: {
+                operation: "setupSentimentResultConsumer",
+                queueName: "persist_sentiment_queue",
+                service: "signal-persister",
+              },
+            },
+          );
+        }
 
-	private isValidIndicatorPoint(p: IndicatorDataPoint): boolean {
-		return p.time instanceof Date && !isNaN(p.time.getTime()) && (typeof p.value === "number" || p.value === null);
-	}
+        const result: SentimentResult = message;
 
-	private isValidSentimentResult(p: any): p is SentimentResult {
-		return p && p.external_id && p.title && p.url && p.published_at && typeof p.sentiment_score === "number";
-	}
+        console.log("[Signal Persister App] Received sentiment result:", {
+          external_id: result.external_id,
+          title: result.title?.substring(0, 50),
+          published_at: result.published_at,
+          published_at_type: typeof result.published_at,
+        });
+
+        await this.dbService.insertArticleAndSentiment(result);
+        console.log(
+          "[Signal Persister App] Successfully persisted article:",
+          result.external_id,
+        );
+      },
+    );
+  }
+
+  private isMarketDataPoint(payload: unknown): payload is MarketDataPoint {
+    return (
+      typeof payload === "object" &&
+      payload !== null &&
+      "asset_symbol" in payload &&
+      typeof payload.asset_symbol === "string" &&
+      "type" in payload &&
+      typeof payload.type === "string"
+    );
+  }
+
+  private isIndicatorDataPoint(
+    payload: unknown,
+  ): payload is IndicatorDataPoint {
+    return (
+      typeof payload === "object" &&
+      payload !== null &&
+      "name" in payload &&
+      typeof payload.name === "string" &&
+      !("asset_symbol" in payload)
+    );
+  }
+
+  private isValidMarketDataPoint(p: MarketDataPoint): boolean {
+    return (
+      p.time instanceof Date &&
+      !isNaN(p.time.getTime()) &&
+      typeof p.value === "number"
+    );
+  }
+
+  private isValidIndicatorPoint(p: IndicatorDataPoint): boolean {
+    return (
+      p.time instanceof Date &&
+      !isNaN(p.time.getTime()) &&
+      (typeof p.value === "number" || p.value === null)
+    );
+  }
+
+  private isValidSentimentResult(payload: unknown): payload is SentimentResult {
+    if (typeof payload !== "object" || payload === null) {
+      return false;
+    }
+
+    if (
+      !("external_id" in payload) ||
+      typeof payload.external_id !== "string" ||
+      !("title" in payload) ||
+      typeof payload.title !== "string" ||
+      !("url" in payload) ||
+      typeof payload.url !== "string" ||
+      !("published_at" in payload) ||
+      typeof payload.published_at !== "string" ||
+      Number.isNaN(new Date(payload.published_at).getTime()) ||
+      !("sentiment_score" in payload) ||
+      typeof payload.sentiment_score !== "number"
+    ) {
+      return false;
+    }
+
+    return true;
+  }
 }
 
 // Start the application
 const app = new SignalPersisterApp();
 app.start().catch((error) => {
-	console.error("[Signal Persister App] Failed to start:", error);
-	process.exit(1);
+  const appError = wrapError(error, "InternalServerError", {
+    context: {
+      operation: "startup",
+      service: "signal-persister",
+    },
+  });
+  console.error(
+    "[Signal Persister App] Failed to start:",
+    toErrorResponse(appError, { includeDebugInfo: true }),
+  );
+  process.exit(1);
 });

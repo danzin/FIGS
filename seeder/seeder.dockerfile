@@ -28,7 +28,7 @@ COPY --from=builder --chown=node:node /usr/src/monorepo/seeder/package.json ./
 
 # Create a startup script to run all seeders
 RUN echo '#!/bin/sh' > /usr/src/app/seed-all.sh && \
-    echo 'node dist/seed-binance.js && node dist/seed-fundamentals.js && node dist/seed-indicators.js' >> /usr/src/app/seed-all.sh && \
+    echo 'npm run seed:all' >> /usr/src/app/seed-all.sh && \
     chmod +x /usr/src/app/seed-all.sh && \
     chown node:node /usr/src/app/seed-all.sh
 

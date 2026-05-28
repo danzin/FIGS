@@ -1,11 +1,17 @@
-x-ampq-url: &ampq-url amqp://user:pass@rabbitmq:5672
+x-ampq-url: &ampq-url amqp://${RABBITMQ_USER:-user}:${RABBITMQ_PASS:-pass}@rabbitmq:5672
 x-cron-schedule: &cron-schedule "0 * * * *"
-x-fred-key: &fred_api 3d7c8197c322b5c1ba5a7d57a965bcc3
+x-fred-key: &fred_api ${FRED_API_KEY:-}
 x-redis-url: &redis_url redis://redis:6379
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
 services:
   redis:
     image: redis:7-alpine
     container_name: redis
+    logging: *default-logging
     ports:
       - "6379:6379"
     healthcheck:
@@ -22,11 +28,12 @@ services:
   rabbitmq:
     image: rabbitmq:3
     container_name: rabbitmq
+    logging: *default-logging
     ports:
       - "5672:5672" # AMQP protocol port
     environment:
-      RABBITMQ_DEFAULT_USER: user
-      RABBITMQ_DEFAULT_PASS: pass
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-pass}
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -46,6 +53,7 @@ services:
   timescaledb:
     image: timescale/timescaledb:latest-pg17
     container_name: timescaledb
+    logging: *default-logging
     ports:
       - "5432:5432"
     environment:
@@ -56,7 +64,11 @@ services:
       - timescaledb_data:/var/lib/postgresql/data
       - ./timescaledb-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "psql -U postgres -d market_signals -c 'SELECT 1 FROM public.assets LIMIT 1'"]
+      test:
+        [
+          "CMD-SHELL",
+          "psql -U postgres -d market_signals -c 'SELECT 1 FROM public.assets LIMIT 1'",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -72,6 +84,7 @@ services:
       context: .
       dockerfile: ./data-collector/data-collector.dockerfile
     container_name: data-collector
+    logging: *default-logging
     ports:
       - "3000:3000"
     environment:
@@ -104,6 +117,7 @@ services:
       context: .
       dockerfile: ./signal-persister/signal-persister.dockerfile
     container_name: signal-persister
+    logging: *default-logging
     environment:
       RABBITMQ_URL: *ampq-url
       DB_USER: postgres
@@ -129,6 +143,7 @@ services:
       context: .
       dockerfile: ./signal-query-api/signal-query-api.dockerfile
     container_name: signal-query-api
+    logging: *default-logging
     ports:
       - "8080:3003"
     environment:
@@ -159,6 +174,7 @@ services:
       context: .
       dockerfile: ./micro-frontend/micro-frontend.dockerfile
     container_name: micro-frontend
+    logging: *default-logging
     ports:
       - "3001:80"
     depends_on:
@@ -175,6 +191,7 @@ services:
       context: .
       dockerfile: ./scraper-service/scraper-service.dockerfile
     container_name: scraper-service
+    logging: *default-logging
     environment:
       DB_HOST: timescaledb
       DB_PORT: 5432
@@ -197,14 +214,76 @@ services:
     # Playwright needs a large shared memory size to run Chromium.
     shm_size: "2gb"
 
+  macro-event-extractor-service:
+    build:
+      context: .
+      dockerfile: ./macro-event-extractor-service/macro-event-extractor-service.dockerfile
+    container_name: macro-event-extractor-service
+    logging: *default-logging
+    environment:
+      RABBITMQ_URL: *ampq-url
+      DB_HOST: timescaledb
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: market_signals
+      EXTRACTION_MODEL: heuristic-extractor-v1
+      EXTRACTION_VERSION: v1
+      EMBEDDING_MODEL: embedding-stub-v1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      scraper-service:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 256M
+
+  macro-analyst-engine:
+    build:
+      context: .
+      dockerfile: ./macro-analyst-engine/macro-analyst-engine.dockerfile
+    container_name: macro-analyst-engine
+    logging: *default-logging
+    environment:
+      RABBITMQ_URL: *ampq-url
+      DB_HOST: timescaledb
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: market_signals
+      ANALYST_ANALOGUE_LIMIT: 8
+      ANALYST_LOOKBACK_DAYS: 180
+      ANALYST_POLICY_LOOKBACK_DAYS: 3650
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      macro-event-extractor-service:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 256M
+
   sentiment-analysis-service:
     build:
       context: .
       dockerfile: ./sentiment-analysis-service/sentiment-analysis.dockerfile
+    container_name: sentiment-analysis-service
+    logging: *default-logging
     environment:
       - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_USER=user
-      - RABBITMQ_PASS=pass
+      - RABBITMQ_USER=${RABBITMQ_USER:-user}
+      - RABBITMQ_PASS=${RABBITMQ_PASS:-pass}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - SENTIMENT_BATCH_INTERVAL_SECONDS=60
       - GROQ_MODEL=llama-3.3-70b-versatile
@@ -228,12 +307,21 @@ services:
     build:
       context: .
       dockerfile: ./seeder/seeder.dockerfile
+    container_name: seeder
+    logging: *default-logging
     environment:
       DB_HOST: timescaledb
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: market_signals
+      RABBITMQ_URL: *ampq-url
+      FRED_API_KEY: *fred_api
+      MACRO_HISTORY_START_DATE: "2008-01-01"
+      GDELT_PUBLISH_TO_QUEUE: "false"
+      GDELT_BACKFILL_WINDOW_HOURS: "24"
+      GDELT_BACKFILL_MAX_RECORDS: "250"
+      GDELT_BACKFILL_DELAY_MS: "1000"
     depends_on:
       timescaledb:
         condition: service_healthy

@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Errors } from '../errors/errors';
 import { SignalsRepository } from '../repositories/signals.repository';
 import {
   AssetDto,
@@ -6,6 +7,9 @@ import {
   OhlcDataDto,
   IndicatorDto,
   AssetNameDto,
+  MetricChangeDto,
+  MetricChangeType,
+  LatestNewsWithSentimentDto,
 } from '../models/signal.dto';
 
 @Injectable()
@@ -22,9 +26,13 @@ export class SignalsService {
   ): Promise<OhlcDataDto[]> {
     const data = await this.repo.getOhlcData(assetSymbol, queryParams);
     if (!data || data.length === 0) {
-      throw new NotFoundException(
-        `No OHLC data found for asset '${assetSymbol}'.`,
-      );
+      throw Errors.notFound('OHLC data', assetSymbol, {
+        context: {
+          operation: 'getOhlcData',
+          assetSymbol,
+          interval: queryParams.interval ?? '1h',
+        },
+      });
     }
     return data;
   }
@@ -44,8 +52,8 @@ export class SignalsService {
 
   async getMetricWithChange(
     metricName: string,
-    changeType: 'percent' | 'absolute' = 'percent',
-  ) {
+    changeType: MetricChangeType = 'percent',
+  ): Promise<MetricChangeDto> {
     const { current, previous } = await this.repo.getMetricChange(metricName);
     let change: number | null = null;
     if (current !== null && previous !== null) {
@@ -61,7 +69,10 @@ export class SignalsService {
     return { name: metricName, current, change, changeType, previous };
   }
 
-  async getLatestNewsWithSentiment(limit = 10, offset = 0) {
+  async getLatestNewsWithSentiment(
+    limit = 10,
+    offset = 0,
+  ): Promise<LatestNewsWithSentimentDto[]> {
     return this.repo.getLatestNewsWithSentiment(limit, offset);
   }
 }

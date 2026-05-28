@@ -1,8 +1,8 @@
 {
   "name": "@financialsignalsgatheringsystem/common",
   "version": "1.0.0",
-   "main": "dist/index.js", 
-  "types": "dist/index.d.ts", 
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
@@ -12,7 +12,6 @@
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.3",
-  
-    "typescript": "^5.0.0"
+    "typescript": "^6.0.3"
   }
 }

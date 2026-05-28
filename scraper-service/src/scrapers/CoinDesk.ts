@@ -1,26 +1,49 @@
 import Parser from "rss-parser";
-import { DataSource, NewsArticle } from "@financialsignalsgatheringsystem/common";
+import {
+  DataSource,
+  NewsArticle,
+} from "@financialsignalsgatheringsystem/common";
+import { toServiceError } from "../utils/errors";
 
 const parser = new Parser();
 
 export class CoinDeskSource implements DataSource {
-	key = "coindesk-latest";
+  key = "coindesk-latest";
 
-	async fetch(): Promise<NewsArticle[] | null> {
-		const feed = await parser.parseURL("https://www.coindesk.com/arc/outboundfeeds/rss/");
-		if (!feed.items?.length) return null;
+  async fetch(): Promise<NewsArticle[] | null> {
+    const url = "https://www.coindesk.com/arc/outboundfeeds/rss/";
 
-		// the top 20 items only
-		return feed.items.slice(0, 20).map((item) => ({
-			id: item.guid || item.link!,
-			source: "CoinDesk",
-			title: item.title || "No title",
-			url: item.link!,
-			publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-			summary: item.contentSnippet || item.content || item.summary || undefined,
-			imageUrl:
-				(item.enclosure && "url" in item.enclosure ? item.enclosure.url : undefined) ||
-				((item as { image?: { url?: string } })?.image?.url ?? undefined),
-		}));
-	}
+    try {
+      const feed = await parser.parseURL(url);
+      if (!feed.items?.length) return null;
+
+      // the top 20 items only
+      return feed.items.slice(0, 20).map((item) => ({
+        id: item.guid || item.link!,
+        source: "CoinDesk",
+        title: item.title || "No title",
+        url: item.link!,
+        publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+        summary:
+          item.contentSnippet || item.content || item.summary || undefined,
+        imageUrl:
+          (item.enclosure && "url" in item.enclosure
+            ? item.enclosure.url
+            : undefined) ||
+          ((item as { image?: { url?: string } })?.image?.url ?? undefined),
+      }));
+    } catch (error) {
+      throw toServiceError(
+        error,
+        {
+          operation: "fetch",
+          service: "scraper-service",
+          scraper: this.key,
+          feed: "rss",
+          url,
+        },
+        "Failed to fetch CoinDesk RSS feed.",
+      );
+    }
+  }
 }

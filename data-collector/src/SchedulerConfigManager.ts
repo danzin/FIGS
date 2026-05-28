@@ -123,6 +123,24 @@ export class SchedulerConfigManager {
 			{ maxRetries: 5, retryDelay: 300000 }
 		);
 
+		this.registerLowFrequencySource(
+			new FredSource(config.FRED_API_KEY!, datapoints.get("CPI") as string), // Consumer Price Index
+			"0 9 * * *", // 9 AM UTC daily
+			{ maxRetries: 5, retryDelay: 300000 }
+		);
+
+		this.registerLowFrequencySource(
+			new FredSource(config.FRED_API_KEY!, datapoints.get("FEDFUNDS") as string), // Fed Funds Rate
+			"0 9 * * *", // 9 AM UTC daily
+			{ maxRetries: 5, retryDelay: 300000 }
+		);
+
+		this.registerLowFrequencySource(
+			new FredSource(config.FRED_API_KEY!, datapoints.get("RRP") as string), // Overnight RRP
+			"0 9 * * *", // 9 AM UTC daily
+			{ maxRetries: 5, retryDelay: 300000 }
+		);
+
 		// More FRED economic indicators
 		// this.registerLowFrequencySource(
 		// 	new FredSource(config.FRED_API_KEY!, datapoints.get("DG") as string), // 10-Year Treasury

@@ -1,27 +1,27 @@
 # Financial Insights Gathering System (FIGS)
 
 ## 📌 Project Vision
- FIGS is a modular system for aggregating, persisting, and querying financial data — primarily focused on the crypto market. It aims to surface actionable insights by combining structured data (e.g., price feeds) with unstructured signals (e.g., app store rankings, AI sentiment analysis etc.)
+
+FIGS is a modular system for aggregating, persisting, and querying financial data - primarily focused on the crypto market. It aims to surface actionable insights by combining structured data (e.g., price feeds) with unstructured signals (e.g., app store rankings, AI sentiment analysis etc.)
 
 ## 🧠 Tech Stack
+
 - ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
 - ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 - ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)
 - ![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
-- ![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white) 
-- ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)   **for the frontend**
-- ![RabbitMQ](https://img.shields.io/badge/Rabbitmq-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)   **for event-based communication**
+- ![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white)
+- ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white) **for the frontend**
+- ![RabbitMQ](https://img.shields.io/badge/Rabbitmq-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white) **for event-based communication**
 - ![TimeScaleDB](https://img.shields.io/badge/TimescaleDB-003B77?style=for-the-badge&logo=timescale&logoColor=white) **for time-series data**
 - ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) **for container orchestration**
 - **Monorepo**
-- **AI Sentiment Analysis** 
-  
+- **AI Sentiment Analysis**
 - Planned:
   - Possibly adding another DB(PostgreSQL or MongoDB) for handling non-timeseries data
   - **Redis** for caching
   - **AWS ECS** deployment
 
-  
 ## 📦 Microservices
 
 - **data-collector**: Consumes and publishes data to RabbitMQ
@@ -31,7 +31,7 @@
 - **scraper-service**: Spins up headless browsers and scrapes data unavaiable through APIs
 - **sentiment-analysis-service**: Uses AI to perform sentiment analysis on recent news articles
 - **seeder**: Seeds TimeScaleDB with fresh data and manually triggers all continousous aggregates in order to provide OHLC for the frontend chart.
-  
+
 ## 📊 Features
 
 - Raw + bucketed query support
@@ -46,7 +46,20 @@ npm install
 docker compose up --build
 ```
 
-The frontend is currently minimalistic, only displaying a few signals with a price chart. 
+To run the stack in the background and inspect logs cleanly:
+
+```bash
+docker compose up --build -d
+docker compose ps
+docker compose logs -f data-collector
+docker compose logs -f scraper-service signal-query-api
+docker logs -f data-collector
+docker logs --tail 200 sentiment-analysis-service
+```
+
+All services now use the Docker `json-file` logging driver with rotation, so `docker compose logs` and `docker logs` both work against the running containers without filling the disk indefinitely.
+
+The frontend is currently minimalistic, only displaying a few signals with a price chart.
 As I add more data to work with, more data will be displayed.
 
 <img width="1885" height="1034" alt="Screenshot 2025-07-31 142145" src="https://github.com/user-attachments/assets/0ebeae63-b223-4477-bea7-e27aa1fe661f" />
@@ -54,12 +67,8 @@ As I add more data to work with, more data will be displayed.
 <img width="407" height="910" alt="image" src="https://github.com/user-attachments/assets/b26ef91f-59af-420f-b863-cb5fd169d78c" />
 <img width="408" height="911" alt="Screenshot 2025-07-31 142959" src="https://github.com/user-attachments/assets/0eaeb0fc-ed41-4e37-bb4c-71ef6db0cf7f" />
 
-
 The full docker build:
-
 
 <img width="1585" height="396" alt="image" src="https://github.com/user-attachments/assets/12f453f9-728d-4afd-bc57-e69c463d85ea" />
 
 <img width="1395" height="892" alt="image" src="https://github.com/user-attachments/assets/aeff5b25-048e-4999-a251-d96365a0a58e" />
-
-

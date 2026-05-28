@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { AppError } from '../errors/errors';
 import { SignalsService } from './signals.service';
 import { SignalsRepository } from '../repositories/signals.repository';
 
@@ -53,20 +53,33 @@ describe('SignalsService', () => {
       });
     });
 
-    it('should throw NotFoundException if no OHLC data is found', async () => {
+    it('should throw a not found AppError if no OHLC data is found', async () => {
       repo.getOhlcData.mockResolvedValueOnce([]);
+      const resultPromise = service.getOhlcData('BTC', {});
 
-      await expect(service.getOhlcData('BTC', {})).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(resultPromise).rejects.toBeInstanceOf(AppError);
+      await expect(resultPromise).rejects.toMatchObject({
+        name: 'NotFoundError',
+        statusCode: 404,
+      });
     });
   });
 
   describe('getLatestIndicators', () => {
     it('should return indicators mapped by name', async () => {
       const mockIndicators = [
-        { name: 'bitcoin_dominance', value: 60 },
-        { name: 'fear_greed', value: 60 },
+        {
+          name: 'bitcoin_dominance',
+          value: 60,
+          source: 'timescaledb',
+          time: new Date('2024-01-01T00:00:00Z'),
+        },
+        {
+          name: 'fear_greed',
+          value: 60,
+          source: 'timescaledb',
+          time: new Date('2024-01-01T00:00:00Z'),
+        },
       ];
       repo.getLatestIndicators.mockResolvedValueOnce(mockIndicators as any);
 
@@ -76,8 +89,18 @@ describe('SignalsService', () => {
       ]);
 
       expect(result).toEqual({
-        bitcoin_dominance: { name: 'bitcoin_dominance', value: 60 },
-        fear_greed: { name: 'fear_greed', value: 60 },
+        bitcoin_dominance: {
+          name: 'bitcoin_dominance',
+          value: 60,
+          source: 'timescaledb',
+          time: new Date('2024-01-01T00:00:00Z'),
+        },
+        fear_greed: {
+          name: 'fear_greed',
+          value: 60,
+          source: 'timescaledb',
+          time: new Date('2024-01-01T00:00:00Z'),
+        },
       });
       expect(repo.getLatestIndicators).toHaveBeenCalledWith([
         'bitcoin_dominance',
@@ -136,20 +159,22 @@ describe('SignalsService', () => {
       expect(repo.getLatestNewsWithSentiment).toHaveBeenCalledWith(1, 0);
     });
 
-    it('should default sentiment to neutral if missing', async () => {
+    it('should pass through repository news payloads unchanged', async () => {
       const mockNews = [
         {
           title: 'No Sentiment',
           source: 'CryptoSlate',
           url: 'https://cryptoslate.com/test',
           published_at: new Date(),
-          sentiment: undefined,
+          summary: null,
+          image_url: null,
+          sentiment: 'neutral',
           sentiment_score: null,
         },
       ];
       repo.getLatestNewsWithSentiment = jest.fn().mockResolvedValue(mockNews);
       const result = await service.getLatestNewsWithSentiment(1);
-      expect(result[0].sentiment).toBeUndefined(); // Service just passes through repo result
+      expect(result[0].sentiment).toBe('neutral');
     });
   });
 });

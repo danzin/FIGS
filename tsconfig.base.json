@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-     "paths": {
-      "@financialsignalsgatheringsystem/common": ["common/src"], 
+    "paths": {
+      "@financialsignalsgatheringsystem/common": ["common/src"],
       "@financialsignalsgatheringsystem/common/*": ["common/src/*"]
     },
     "rootDir": ".",
@@ -16,6 +16,7 @@
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   }

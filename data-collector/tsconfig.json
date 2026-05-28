@@ -10,8 +10,8 @@
     "skipLibCheck": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist"],    
-   "references": [
+  "exclude": ["node_modules", "dist", "src/tests"],
+  "references": [
     { "path": "../common" } // This tells TS compiler to be aware of the common project when building data-collector
   ]
 }

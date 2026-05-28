@@ -55,6 +55,33 @@ export class IndicatorDto {
   source!: string;
 }
 
+export type MetricChangeType = 'percent' | 'absolute';
+
+export class GetMetricChangeQueryDto {
+  @IsOptional()
+  @IsIn(['percent', 'absolute'])
+  type?: MetricChangeType = 'percent';
+}
+
+export interface MetricChangeDto {
+  name: string;
+  current: number | null;
+  previous: number | null;
+  change: number | null;
+  changeType: MetricChangeType;
+}
+
+export interface LatestNewsWithSentimentDto {
+  title: string;
+  source: string | null;
+  url: string | null;
+  published_at: Date;
+  summary: string | null;
+  image_url: string | null;
+  sentiment: string;
+  sentiment_score: number | null;
+}
+
 export class GetLatestIndicatorsQueryDto {
   @IsOptional()
   @IsArray()
