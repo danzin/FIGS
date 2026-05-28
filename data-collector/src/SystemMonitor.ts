@@ -24,9 +24,16 @@ export interface HealthHistoryEntry {
 interface AlertData {
 	title: string;
 	message: string;
-	details: any;
+	details: Record<string, unknown>;
 	severity: "info" | "warning" | "critical";
 }
+
+type CreateAlertData = (
+	title: string,
+	message: string,
+	details: Record<string, unknown>,
+	severity: "info" | "warning" | "critical",
+) => AlertData;
 
 interface AlertState {
 	status: string;
@@ -245,7 +252,7 @@ export class SystemMonitor {
 		this.evaluateMetricThresholds(health, createAlertData);
 	}
 
-	private evaluateOverallSystemHealth(health: SystemHealth, createAlertData: Function): void {
+	private evaluateOverallSystemHealth(health: SystemHealth, createAlertData: CreateAlertData): void {
 		const currentStatus = health.status;
 		const lastOverallState = this.lastLoggedAlertState.get("SYSTEM_OVERALL_STATUS");
 
@@ -304,7 +311,7 @@ export class SystemMonitor {
 		});
 	}
 
-	private evaluateComponentHealth(health: SystemHealth, createAlertData: Function): void {
+	private evaluateComponentHealth(health: SystemHealth, createAlertData: CreateAlertData): void {
 		Object.entries(health.components).forEach(([componentName, componentHealth]) => {
 			const componentKey = `${componentName.toUpperCase()}_STATE`;
 			const lastComponentState = this.lastLoggedAlertState.get(componentKey);
@@ -320,7 +327,7 @@ export class SystemMonitor {
 						{
 							component: componentName,
 							status: currentStatus,
-							...componentHealth.details,
+							...(componentHealth.details ?? {}),
 						},
 						"critical"
 					)
@@ -334,7 +341,7 @@ export class SystemMonitor {
 						{
 							component: componentName,
 							status: currentStatus,
-							...componentHealth.details,
+							...(componentHealth.details ?? {}),
 						},
 						"warning"
 					)
@@ -368,7 +375,7 @@ export class SystemMonitor {
 		});
 	}
 
-	private evaluateMetricThresholds(health: SystemHealth, createAlertData: Function): void {
+	private evaluateMetricThresholds(health: SystemHealth, createAlertData: CreateAlertData): void {
 		// Memory usage threshold (configurable)
 		const memoryThresholdMB = config.HEALTH_HEAP_WARNING_MB || 512;
 		const memoryDetails = health.components.memory.details as { heapUsed: number } | undefined;

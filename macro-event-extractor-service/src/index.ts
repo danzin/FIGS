@@ -18,6 +18,16 @@ import { EventPersister } from "./services/EventPersister";
 import { Publisher } from "./services/Publisher";
 import { config } from "./utils/config";
 
+/** Safely coerces a wire-format date (string, number, or Date) to a Date object. */
+function toDate(value: unknown): Date | undefined {
+  if (value instanceof Date) return isNaN(value.getTime()) ? undefined : value;
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? undefined : d;
+  }
+  return undefined;
+}
+
 class MacroEventExtractorApp {
   private readonly messageBroker: RabbitMQService;
   private readonly persister: EventPersister;
@@ -113,26 +123,27 @@ class MacroEventExtractorApp {
   private isMacroRawArticle(
     message: SupportedMessage,
   ): message is MacroRawArticle {
-    const candidate = message as Partial<MacroRawArticle>;
+    // Use content_hash as discriminator, unique to MacroRawArticle in SupportedMessage.
+    // Also validate required string fields since messages arrive over the wire as JSON.
     return (
-      typeof candidate.id === "string" &&
-      typeof candidate.source === "string" &&
-      typeof candidate.content_hash === "string" &&
-      candidate.fetched_at !== undefined
+      "content_hash" in message &&
+      typeof message.id === "string" &&
+      typeof message.source === "string" &&
+      typeof message.content_hash === "string" &&
+      message.fetched_at !== undefined
     );
   }
 
   private normalizeIncomingDates(article: MacroRawArticle): MacroRawArticle {
-    const fetchedAt = new Date(article.fetched_at as unknown as string | Date);
-    const publishedAt = article.published_at
-      ? new Date(article.published_at as unknown as string | Date)
-      : undefined;
+    // Messages arrive as JSON, date fields may be strings rather than Date objects.
+    // toDate handles both cases safely without double assertions.
+    const fetchedAt = toDate(article.fetched_at as unknown) ?? new Date();
+    const publishedAt = toDate(article.published_at as unknown);
 
     return {
       ...article,
-      fetched_at: !isNaN(fetchedAt.getTime()) ? fetchedAt : new Date(),
-      published_at:
-        publishedAt && !isNaN(publishedAt.getTime()) ? publishedAt : undefined,
+      fetched_at: fetchedAt,
+      published_at: publishedAt,
     };
   }
 
@@ -166,7 +177,10 @@ class MacroEventExtractorApp {
     process.on("SIGINT", () => shutdown("SIGINT"));
     process.on("uncaughtException", (error) => {
       const appError = wrapError(error, "InternalServerError", {
-        context: { operation: "uncaughtException", service: "macro-event-extractor-service" },
+        context: {
+          operation: "uncaughtException",
+          service: "macro-event-extractor-service",
+        },
       });
       console.error(
         "[MacroEventExtractor] Uncaught exception:",
@@ -175,9 +189,13 @@ class MacroEventExtractorApp {
       void shutdown("uncaughtException");
     });
     process.on("unhandledRejection", (reason) => {
-      const error = reason instanceof Error ? reason : new Error(String(reason));
+      const error =
+        reason instanceof Error ? reason : new Error(String(reason));
       const appError = wrapError(error, "InternalServerError", {
-        context: { operation: "unhandledRejection", service: "macro-event-extractor-service" },
+        context: {
+          operation: "unhandledRejection",
+          service: "macro-event-extractor-service",
+        },
       });
       console.error(
         "[MacroEventExtractor] Unhandled rejection:",

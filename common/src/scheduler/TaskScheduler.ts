@@ -3,6 +3,7 @@ import {
   Errors,
   isAppError,
   NewsArticle,
+  MacroRawArticle,
   ScheduledDataSource,
   toErrorResponse,
 } from "@financialsignalsgatheringsystem/common";
@@ -367,24 +368,25 @@ export class TaskScheduler {
   }
 
   private getDataPointType(
-    point: any,
+    point: unknown,
   ):
     | "MarketDataPoint"
     | "IndicatorDataPoint"
     | "NewsArticle"
     | "MacroRawArticle"
     | "Unknown" {
+    if (typeof point !== "object" || point === null) return "Unknown";
+    const p = point as Record<string, unknown>;
     const hasAssetSymbol =
-      "asset_symbol" in point && typeof point.asset_symbol === "string";
-    const hasName = "name" in point && typeof point.name === "string";
-    const hasTime = "time" in point && point.time instanceof Date;
-    const hasValue = "value" in point; // We don't care about the type of value here
-    const hasTitle = "title" in point && typeof point.title === "string";
-    const hasUrl = "url" in point && typeof point.url === "string";
+      "asset_symbol" in p && typeof p.asset_symbol === "string";
+    const hasName = "name" in p && typeof p.name === "string";
+    const hasTime = "time" in p && p.time instanceof Date;
+    const hasValue = "value" in p;
+    const hasTitle = "title" in p && typeof p.title === "string";
+    const hasUrl = "url" in p && typeof p.url === "string";
     const hasContentHash =
-      "content_hash" in point && typeof point.content_hash === "string";
-    const hasFetchedAt =
-      "fetched_at" in point && point.fetched_at instanceof Date;
+      "content_hash" in p && typeof p.content_hash === "string";
+    const hasFetchedAt = "fetched_at" in p && p.fetched_at instanceof Date;
 
     if (hasAssetSymbol && hasTime && hasValue) {
       return "MarketDataPoint";
@@ -392,7 +394,7 @@ export class TaskScheduler {
     if (hasName && hasTime && hasValue) {
       return "IndicatorDataPoint";
     }
-    if (hasContentHash && hasFetchedAt && typeof point.source === "string") {
+    if (hasContentHash && hasFetchedAt && typeof p.source === "string") {
       return "MacroRawArticle";
     }
     if (hasTitle && hasUrl) {
@@ -402,53 +404,62 @@ export class TaskScheduler {
   }
 
   // Validation functions
-  private validateMarketDataPoint(point: any): point is MarketDataPoint {
+  private validateMarketDataPoint(point: unknown): point is MarketDataPoint {
+    if (typeof point !== "object" || point === null) return false;
+    const { time, asset_symbol, type, value, source } =
+      point as Record<string, unknown>;
     // Value MUST be a number and not null.
     return (
-      point &&
-      point.time instanceof Date &&
-      !isNaN(point.time.getTime()) &&
-      typeof point.asset_symbol === "string" &&
-      typeof point.type === "string" &&
-      typeof point.value === "number" &&
-      !isNaN(point.value) &&
-      typeof point.source === "string"
+      time instanceof Date &&
+      !isNaN(time.getTime()) &&
+      typeof asset_symbol === "string" &&
+      typeof type === "string" &&
+      typeof value === "number" &&
+      !isNaN(value) &&
+      typeof source === "string"
     );
   }
 
-  private validateMacroRawArticle(article: any): boolean {
+  private validateMacroRawArticle(article: unknown): article is MacroRawArticle {
+    if (typeof article !== "object" || article === null) return false;
+    const { id, source, fetched_at, content_hash } =
+      article as Record<string, unknown>;
     return (
-      article &&
-      typeof article.id === "string" &&
-      typeof article.source === "string" &&
-      article.fetched_at instanceof Date &&
-      !isNaN(article.fetched_at.getTime()) &&
-      typeof article.content_hash === "string"
+      typeof id === "string" &&
+      typeof source === "string" &&
+      fetched_at instanceof Date &&
+      !isNaN(fetched_at.getTime()) &&
+      typeof content_hash === "string"
     );
   }
 
-  private validateNewsArticle(article: any): article is NewsArticle {
+  private validateNewsArticle(article: unknown): article is NewsArticle {
+    if (typeof article !== "object" || article === null) return false;
+    const { id, source, title, url, publishedAt } =
+      article as Record<string, unknown>;
     return (
-      article &&
-      typeof article.id === "string" &&
-      typeof article.source === "string" &&
-      typeof article.title === "string" &&
-      typeof article.url === "string" &&
+      typeof id === "string" &&
+      typeof source === "string" &&
+      typeof title === "string" &&
+      typeof url === "string" &&
       // `publishedAt` will be a Date object from the scraper
-      article.publishedAt instanceof Date &&
-      !isNaN(article.publishedAt.getTime())
+      publishedAt instanceof Date &&
+      !isNaN(publishedAt.getTime())
     );
   }
 
-  private validateIndicatorDataPoint(point: any): point is IndicatorDataPoint {
+  private validateIndicatorDataPoint(
+    point: unknown,
+  ): point is IndicatorDataPoint {
+    if (typeof point !== "object" || point === null) return false;
+    const { time, name, value, source } = point as Record<string, unknown>;
     // Value CAN be a number OR null.
     return (
-      point &&
-      point.time instanceof Date &&
-      !isNaN(point.time.getTime()) &&
-      typeof point.name === "string" &&
-      (typeof point.value === "number" || point.value === null) &&
-      typeof point.source === "string"
+      time instanceof Date &&
+      !isNaN(time.getTime()) &&
+      typeof name === "string" &&
+      (typeof value === "number" || value === null) &&
+      typeof source === "string"
     );
   }
 

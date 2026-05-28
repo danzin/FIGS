@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_CONNECTION } from '../database/database.constants';
 import { CacheService } from './cache.service';
@@ -108,6 +108,7 @@ export interface CompositeIndicatorData {
 
 @Injectable()
 export class AdvancedIndicatorsService {
+  private readonly logger = new Logger(AdvancedIndicatorsService.name);
   private readonly GENESIS_DATE = new Date('2009-01-03');
   // Power Law "Pro" params (On-Chain Mind / Santostasi model)
   // For 6,202 days (Dec 2025): 10^(-17.06 + 5.83 * 3.7925) = $112,000
@@ -185,8 +186,9 @@ export class AdvancedIndicatorsService {
         return livePrice;
       }
     } catch (err) {
-      console.warn(
+      this.logger.warn(
         `[AdvancedIndicatorsService] Live price fetch failed for ${assetSymbol}`,
+        err instanceof Error ? err.stack : String(err),
       );
     }
 

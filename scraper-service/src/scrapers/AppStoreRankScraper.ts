@@ -3,6 +3,13 @@ import { Scraper } from "../models/Scraper.interface";
 import { IndicatorDataPoint } from "@financialsignalsgatheringsystem/common";
 import { toServiceError } from "../utils/errors";
 
+/** Playwright injects these properties during automation; we delete them to avoid detection. */
+interface PlaywrightWindow extends Window {
+  __playwright?: unknown;
+  __pw_manual?: unknown;
+  __PW_inspect?: unknown;
+}
+
 export class AppStoreRankScraper implements Scraper {
   public readonly key: string;
   private readonly appName: string;
@@ -52,7 +59,7 @@ export class AppStoreRankScraper implements Scraper {
       const originalQuery = navigator.permissions.query.bind(
         navigator.permissions,
       );
-      navigator.permissions.query = (params: any) => {
+      navigator.permissions.query = (params: PermissionDescriptor) => {
         // Return realistic permission states instead of automation defaults
         const fakeResult = { state: "denied" } as PermissionStatus;
         return Promise.resolve(fakeResult);
@@ -77,9 +84,10 @@ export class AppStoreRankScraper implements Scraper {
       });
 
       // Hide automation-specific properties that might leak
-      delete (window as any).__playwright;
-      delete (window as any).__pw_manual;
-      delete (window as any).__PW_inspect;
+      const pw = window as PlaywrightWindow;
+      delete pw.__playwright;
+      delete pw.__pw_manual;
+      delete pw.__PW_inspect;
 
       // Mock realistic connection properties
       Object.defineProperty(navigator, "connection", {

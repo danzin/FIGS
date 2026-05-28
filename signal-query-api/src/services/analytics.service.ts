@@ -172,7 +172,7 @@ export class AnalyticsService {
           priceChange24h: priceChange,
         });
       } catch (error) {
-        console.error(`Failed to calculate RSI for ${asset.symbol}:`, error);
+        this.logger.error(`Failed to calculate RSI for ${asset.symbol}`, error instanceof Error ? error.stack : String(error));
       }
     }
 

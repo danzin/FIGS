@@ -131,7 +131,7 @@ export class TimescaleDBService implements DatabaseService {
 
       if (res.rowCount === 0) {
         console.warn(
-          `[TimescaleDBService] No rows inserted for indicator — possible duplicate: ${point.name} at ${point.time}`,
+          `[TimescaleDBService] No rows inserted for indicator: possible duplicate: ${point.name} at ${point.time}`,
         );
       }
     } catch (error) {

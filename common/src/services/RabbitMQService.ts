@@ -19,6 +19,12 @@ import {
   MarketDataPoint,
   IndicatorDataPoint,
   SupportedMessage,
+  isMarketDataPoint,
+  isNewsArticle,
+  isMacroRawArticle,
+  isMacroEvent,
+  isMacroScenarioReport,
+  isMacroAnalysisRun,
 } from "@financialsignalsgatheringsystem/common";
 
 interface ResolvedExchangeOptions {
@@ -135,9 +141,13 @@ export class RabbitMQService implements MessageBroker {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30_000) + Math.random() * 1000;
+    const delay =
+      Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30_000) +
+      Math.random() * 1000;
     this.reconnectAttempts++;
-    console.log(`[RabbitMQService] Scheduling reconnect in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts})...`);
+    console.log(
+      `[RabbitMQService] Scheduling reconnect in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts})...`,
+    );
     this.reconnectTimeout = setTimeout(async () => {
       this.reconnectTimeout = null;
       try {
@@ -612,28 +622,26 @@ export class RabbitMQService implements MessageBroker {
   }
 
   private getMessageIdentifier(msg: SupportedMessage): string {
-    if ((msg as MarketDataPoint).asset_symbol) {
-      const m = msg as MarketDataPoint;
-      return `${m.asset_symbol} ${m.type}`;
+    if (isMarketDataPoint(msg)) {
+      return `${msg.asset_symbol} ${msg.type}`;
     }
-    if ((msg as any).title && (msg as any).url) {
-      const n = msg as any;
-      return `${n.source}: ${n.title}`;
+    if (isNewsArticle(msg)) {
+      return `${msg.source}: ${msg.title}`;
     }
-    if ((msg as any).event_type && (msg as any).canonical_text) {
-      const e = msg as any;
-      return `Event: ${e.event_type} (${e.id})`;
+    if (isMacroRawArticle(msg)) {
+      return `RawArticle: ${msg.source} (${msg.id})`;
     }
-    if ((msg as any).report_text) {
-      const r = msg as any;
-      return `Scenario Report for event: ${r.event_id}`;
+    if (isMacroEvent(msg)) {
+      return `Event: ${msg.event_type} (${msg.id})`;
     }
-    if ((msg as any).methodology && (msg as any).result_json) {
-      const a = msg as any;
-      return `Analysis Run: ${a.methodology} (${a.id})`;
+    if (isMacroScenarioReport(msg)) {
+      return `Scenario Report for event: ${msg.event_id}`;
     }
-    const i = msg as IndicatorDataPoint;
-    return i.name || "Unknown Message";
+    if (isMacroAnalysisRun(msg)) {
+      return `Analysis Run: ${msg.methodology} (${msg.id})`;
+    }
+    // IndicatorDataPoint - only remaining union member
+    return msg.name || "Unknown Message";
   }
 
   public async publish(

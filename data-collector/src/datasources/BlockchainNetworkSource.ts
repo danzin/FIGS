@@ -115,7 +115,8 @@ export class BitcoinNetworkSource implements DataSource {
 		try {
 			const response = await axios.get(`${this.baseUrl}${endpoint}`);
 			return response.data as BlockchainChartData;
-		} catch {
+		} catch (err) {
+			console.warn(`[BlockchainNetworkSource] Failed to fetch metric ${endpoint}:`, err instanceof Error ? err.message : err);
 			return null;
 		}
 	}

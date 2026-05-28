@@ -28,6 +28,27 @@ export type SupportedMessage =
 	| MacroAnalysisRun
 	| MacroScenarioReport;
 
+// Type guards using unique structural discriminators for each SupportedMessage member.
+// These replace unsafe `as any` casts when narrowing the union.
+export const isMarketDataPoint = (msg: SupportedMessage): msg is MarketDataPoint =>
+	'asset_symbol' in msg;
+
+// NewsArticle uses camelCase `publishedAt`; MacroRawArticle uses snake_case `published_at`
+export const isNewsArticle = (msg: SupportedMessage): msg is NewsArticle =>
+	'publishedAt' in msg;
+
+export const isMacroRawArticle = (msg: SupportedMessage): msg is MacroRawArticle =>
+	'content_hash' in msg;
+
+export const isMacroEvent = (msg: SupportedMessage): msg is MacroEvent =>
+	'event_type' in msg;
+
+export const isMacroScenarioReport = (msg: SupportedMessage): msg is MacroScenarioReport =>
+	'report_text' in msg;
+
+export const isMacroAnalysisRun = (msg: SupportedMessage): msg is MacroAnalysisRun =>
+	'methodology' in msg;
+
 export interface ScheduledDataSource {
 	source: DataSource;
 	schedule: string; // cron expression

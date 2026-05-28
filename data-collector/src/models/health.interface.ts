@@ -20,6 +20,6 @@ export interface SystemHealth {
 export interface ComponentHealth {
 	status: "healthy" | "degraded" | "unhealthy";
 	message?: string;
-	details?: any;
+	details?: Record<string, unknown>;
 	lastChecked: string;
 }

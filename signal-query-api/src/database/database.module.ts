@@ -1,7 +1,9 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { PG_CONNECTION } from './database.constants';
+
+const logger = new Logger('DatabaseModule');
 
 const dbProvider = {
   provide: PG_CONNECTION,
@@ -17,14 +19,14 @@ const dbProvider = {
 
     try {
       const client = await pool.connect();
-      console.log('[DatabaseModule] Successfully connected to TimescaleDB.');
-      client.release(); // Fixed memory leak caused by not releasing client
+      logger.log('Successfully connected to TimescaleDB.');
+      client.release();
     } catch (error) {
-      console.error(
-        '[DatabaseModule] Failed to connect to TimescaleDB:',
-        error,
+      logger.error(
+        'Failed to connect to TimescaleDB.',
+        error instanceof Error ? error.stack : String(error),
       );
-      throw error; // Fail on DB connection error
+      throw error;
     }
     return pool;
   },
