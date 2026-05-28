@@ -183,9 +183,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 				{/* Analytics Grid */}
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					{/* Volatility Squeeze */}
-					<div className="lg:col-span-1 gap-2">
+						<div className="lg:col-span-1 flex flex-col gap-2">
 						<VolatilitySqueeze data={volatilityData} isLoading={volatilityLoading} />
-						<div className="lg:row-auto gap-2">
+							<div className="flex flex-col gap-2">
 							<MetricCard
 								label="VIX"
 								value={indicators.vixLevel?.value ?? null}

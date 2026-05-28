@@ -37,36 +37,37 @@ export const IndicatorsPage: React.FC<IndicatorsPageProps> = ({ onNavigate }) =>
 	return (
 		<div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
 			{/* Header */}
-			<div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-300 sticky top-0 z-50">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-4">
-						<button
-							onClick={() => onNavigate("dashboard")}
-							className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-						>
-							<Home className="w-4 h-4" />
-							Dashboard
-						</button>
-						<button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-							<BarChart3 className="w-4 h-4" />
-							Indicators
-						</button>
-					</div>
-					<div className="flex items-center gap-4">
-						<div>
-							<h1 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
-								Advanced Indicators
-							</h1>
-							<p className="text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">
-								Power Law, Liquidity, Leverage & Momentum Models
-							</p>
+			<div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4 transition-colors duration-300 sticky top-0 z-50">
+				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+					<div className="flex items-center justify-between w-full sm:w-auto gap-2">
+						<div className="flex items-center gap-2">
+							<button
+								onClick={() => onNavigate("dashboard")}
+								className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+							>
+								<Home className="w-3 h-3 sm:w-4 sm:h-4" />
+								<span className="hidden xs:inline">Dashboard</span>
+							</button>
+							<button className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+								<BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+								<span className="hidden xs:inline">Indicators</span>
+							</button>
 						</div>
+						<ThemeToggle />
 					</div>
-					<ThemeToggle />
+					<div className="hidden md:block text-center flex-1">
+						<h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
+							Advanced Indicators
+						</h1>
+						<p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">
+							Power Law, Liquidity, Leverage & Momentum Models
+						</p>
+					</div>
+					<div className="hidden sm:block sm:w-10 lg:w-auto"></div>
 				</div>
 			</div>
 
-			<div className="p-6 space-y-8">
+			<div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8">
 				{/* Composite Score - Full Width at Top */}
 				<CompositeIndicator data={compositeData} isLoading={compositeLoading} />
 
