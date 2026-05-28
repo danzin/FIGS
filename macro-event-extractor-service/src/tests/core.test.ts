@@ -3,7 +3,7 @@ import { MacroRawArticle } from "@financialsignalsgatheringsystem/common";
 import { RecentHashDedupe } from "../pipeline/dedupe";
 import { extractRegion, inferAffectedAssets, normalizeMacroArticle } from "../pipeline/entityNormalizer";
 import { inferMacroChannel, isMacroRelevant, calculateSeverity } from "../pipeline/keywordFilter";
-import { extractMacroEvent } from "../pipeline/llmExtractor";
+import { extractMacroEvent } from "../pipeline/heuristicExtractor";
 
 type TestCase = {
 	name: string;

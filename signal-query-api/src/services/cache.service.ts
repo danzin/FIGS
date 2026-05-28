@@ -5,22 +5,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { createClient } from 'redis';
 
-// Redis client type
-type RedisClientType = {
-  connect(): Promise<void>;
-  quit(): Promise<void>;
-  get(key: string): Promise<string | null>;
-  setEx(key: string, seconds: number, value: string): Promise<void>;
-  del(keys: string | string[]): Promise<number>;
-  keys(pattern: string): Promise<string[]>;
-  publish(channel: string, message: string): Promise<number>;
-  on(event: string, callback: (...args: unknown[]) => void): void;
-};
 
 @Injectable()
 export class CacheService implements OnModuleInit, OnModuleDestroy {
-  private client: RedisClientType | null = null;
+  private client: ReturnType<typeof createClient> | null = null;
   private isConnected = false;
   private readonly logger = new Logger(CacheService.name);
 
@@ -52,7 +42,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       }
       this.client = redis.createClient({
         url: redisUrl,
-      }) as unknown as RedisClientType;
+      });
 
       this.client.on('error', (err: unknown) => {
         this.logger.error('Redis error:', err);
@@ -71,17 +61,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Dynamically load Redis module if available
-   */
-  private async loadRedisModule(): Promise<{
-    createClient: (config: { url: string }) => unknown;
-  } | null> {
+  private async loadRedisModule(): Promise<typeof import('redis') | null> {
     try {
-      // Use eval to bypass TypeScript's static module resolution
-      // This allows the app to work without redis being installed
-      // eslint-disable-next-line no-eval
-      return await eval('import("redis")');
+      return await import('redis');
     } catch {
       return null;
     }

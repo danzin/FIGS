@@ -10,9 +10,9 @@ import {
   wrapError,
 } from "@financialsignalsgatheringsystem/common";
 import { normalizeMacroArticle } from "./pipeline/entityNormalizer";
-import { enrichWithEmbeddingMetadata } from "./pipeline/embeddingClient";
+import { enrichWithEmbeddingMetadata } from "./pipeline/fingerprintClient";
 import { RecentHashDedupe } from "./pipeline/dedupe";
-import { extractMacroEvent } from "./pipeline/llmExtractor";
+import { extractMacroEvent } from "./pipeline/heuristicExtractor";
 import { isMacroRelevant } from "./pipeline/keywordFilter";
 import { EventPersister } from "./services/EventPersister";
 import { Publisher } from "./services/Publisher";
@@ -26,7 +26,7 @@ class MacroEventExtractorApp {
   private isShuttingDown = false;
 
   constructor() {
-    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL!);
+    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL);
     this.persister = new EventPersister({
       host: config.DB_HOST,
       port: config.DB_PORT,
@@ -164,6 +164,27 @@ class MacroEventExtractorApp {
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("uncaughtException", (error) => {
+      const appError = wrapError(error, "InternalServerError", {
+        context: { operation: "uncaughtException", service: "macro-event-extractor-service" },
+      });
+      console.error(
+        "[MacroEventExtractor] Uncaught exception:",
+        toErrorResponse(appError, { includeDebugInfo: true }),
+      );
+      void shutdown("uncaughtException");
+    });
+    process.on("unhandledRejection", (reason) => {
+      const error = reason instanceof Error ? reason : new Error(String(reason));
+      const appError = wrapError(error, "InternalServerError", {
+        context: { operation: "unhandledRejection", service: "macro-event-extractor-service" },
+      });
+      console.error(
+        "[MacroEventExtractor] Unhandled rejection:",
+        toErrorResponse(appError, { includeDebugInfo: true }),
+      );
+      void shutdown("unhandledRejection");
+    });
   }
 }
 

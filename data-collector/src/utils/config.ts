@@ -9,9 +9,9 @@ dotenv.config();
 export const config = {
   FRED_API_KEY: getEnv("FRED_API_KEY"),
   // COINGECKO_API_URL: getEnv("COINGECKO_API_URL"),
-  RABBITMQ_URL: getEnv("RABBITMQ_URL"),
+  RABBITMQ_URL: getEnv("RABBITMQ_URL", { required: true }),
   CRON_SCHEDULE: getEnv("CRON_SCHEDULE"),
-  PORT: getEnv("PORT"),
+  PORT: getEnv("PORT", { required: true }),
   HEALTH_HEAP_WARNING_MB: getEnv("HEALTH_HEAP_WARNING_MB", {
     defaultValue: 512,
     parse: parseIntegerEnv,

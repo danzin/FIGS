@@ -48,6 +48,7 @@ export class RabbitMQService implements MessageBroker {
   private readonly url: string;
   private isConnecting: boolean = false;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectAttempts: number = 0;
   private createdExchanges: Map<string, BrokerExchangeType> = new Map();
 
   constructor(url: string) {
@@ -79,6 +80,7 @@ export class RabbitMQService implements MessageBroker {
         "[RabbitMQService] Connected to RabbitMQ and channel created.",
       );
       this.createdExchanges.clear();
+      this.reconnectAttempts = 0;
 
       this.connection.on("error", (err) => {
         console.error("[RabbitMQService] Connection error:", err.message);
@@ -133,7 +135,9 @@ export class RabbitMQService implements MessageBroker {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
-    console.log("[RabbitMQService] Scheduling reconnect in 5 seconds...");
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30_000) + Math.random() * 1000;
+    this.reconnectAttempts++;
+    console.log(`[RabbitMQService] Scheduling reconnect in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts})...`);
     this.reconnectTimeout = setTimeout(async () => {
       this.reconnectTimeout = null;
       try {
@@ -141,7 +145,7 @@ export class RabbitMQService implements MessageBroker {
       } catch (err) {
         console.error("[RabbitMQService] Reconnect attempt failed:", err);
       }
-    }, 5000);
+    }, delay);
   }
 
   private async ensureExchange(exchangeName: string): Promise<void> {

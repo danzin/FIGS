@@ -65,8 +65,11 @@ export class ApiServer {
   }
 
   public listen(port: number): void {
-    this.app.listen(port, () => {
+    const server = this.app.listen(port, () => {
       console.log(`[ApiServer] HTTP API listening on port ${port}`);
+    });
+    server.on('error', (err) => {
+      console.error(`[ApiServer] Server error on port ${port}:`, err);
     });
   }
 }

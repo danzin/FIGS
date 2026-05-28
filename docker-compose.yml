@@ -1,4 +1,4 @@
-x-ampq-url: &ampq-url amqp://${RABBITMQ_USER:-user}:${RABBITMQ_PASS:-pass}@rabbitmq:5672
+x-ampq-url: &ampq-url amqp://${RABBITMQ_USER:?RABBITMQ_USER is required}:${RABBITMQ_PASS:?RABBITMQ_PASS is required}@rabbitmq:5672
 x-cron-schedule: &cron-schedule "0 * * * *"
 x-fred-key: &fred_api ${FRED_API_KEY:-}
 x-redis-url: &redis_url redis://redis:6379
@@ -12,8 +12,6 @@ services:
     image: redis:7-alpine
     container_name: redis
     logging: *default-logging
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -29,11 +27,9 @@ services:
     image: rabbitmq:3
     container_name: rabbitmq
     logging: *default-logging
-    ports:
-      - "5672:5672" # AMQP protocol port
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-user}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-pass}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:?RABBITMQ_PASS is required}
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -51,15 +47,15 @@ services:
           memory: 128M
 
   timescaledb:
-    image: timescale/timescaledb:latest-pg17
+    image: timescale/timescaledb:2.19.3-pg17
     container_name: timescaledb
     logging: *default-logging
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: market_signals
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-market_signals}
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
       - ./timescaledb-init:/docker-entrypoint-initdb.d
@@ -120,10 +116,10 @@ services:
     logging: *default-logging
     environment:
       RABBITMQ_URL: *ampq-url
-      DB_USER: postgres
+      DB_USER: ${POSTGRES_USER:-postgres}
       DB_HOST: timescaledb
-      DB_NAME: market_signals
-      DB_PASSWORD: postgres
+      DB_NAME: ${POSTGRES_DB:-market_signals}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       DB_PORT: "5432"
     depends_on:
       rabbitmq:
@@ -131,6 +127,12 @@ services:
       timescaledb:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
     deploy:
       resources:
@@ -149,9 +151,9 @@ services:
     environment:
       DB_HOST: timescaledb
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: market_signals
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      DB_NAME: ${POSTGRES_DB:-market_signals}
       PORT: 3003
       REDIS_URL: *redis_url
     depends_on:
@@ -195,10 +197,9 @@ services:
     environment:
       DB_HOST: timescaledb
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: market_signals
-      PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      DB_NAME: ${POSTGRES_DB:-market_signals}
       RABBITMQ_URL: *ampq-url
       CRON_SCHEDULE: *cron-schedule
     depends_on:
@@ -209,6 +210,12 @@ services:
       sentiment-analysis-service:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     # Scraping can be memory intensive.
     mem_limit: 4gb
     # Playwright needs a large shared memory size to run Chromium.
@@ -224,9 +231,9 @@ services:
       RABBITMQ_URL: *ampq-url
       DB_HOST: timescaledb
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: market_signals
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      DB_NAME: ${POSTGRES_DB:-market_signals}
       EXTRACTION_MODEL: heuristic-extractor-v1
       EXTRACTION_VERSION: v1
       EMBEDDING_MODEL: embedding-stub-v1
@@ -238,6 +245,12 @@ services:
       scraper-service:
         condition: service_started
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -254,9 +267,9 @@ services:
       RABBITMQ_URL: *ampq-url
       DB_HOST: timescaledb
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: market_signals
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      DB_NAME: ${POSTGRES_DB:-market_signals}
       ANALYST_ANALOGUE_LIMIT: 8
       ANALYST_LOOKBACK_DAYS: 180
       ANALYST_POLICY_LOOKBACK_DAYS: 3650
@@ -268,6 +281,12 @@ services:
       macro-event-extractor-service:
         condition: service_started
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -282,11 +301,12 @@ services:
     logging: *default-logging
     environment:
       - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_USER=${RABBITMQ_USER:-user}
-      - RABBITMQ_PASS=${RABBITMQ_PASS:-pass}
-      - GROQ_API_KEY=${GROQ_API_KEY}
+      - RABBITMQ_USER=${RABBITMQ_USER:?RABBITMQ_USER is required}
+      - RABBITMQ_PASS=${RABBITMQ_PASS:?RABBITMQ_PASS is required}
+      - GROQ_API_KEY=${GROQ_API_KEY:?GROQ_API_KEY is required}
       - SENTIMENT_BATCH_INTERVAL_SECONDS=60
       - GROQ_MODEL=llama-3.3-70b-versatile
+      - HEALTH_PORT=6220
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -312,9 +332,9 @@ services:
     environment:
       DB_HOST: timescaledb
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: market_signals
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      DB_NAME: ${POSTGRES_DB:-market_signals}
       RABBITMQ_URL: *ampq-url
       FRED_API_KEY: *fred_api
       MACRO_HISTORY_START_DATE: "2008-01-01"

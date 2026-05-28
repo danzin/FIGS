@@ -9,7 +9,7 @@ class ScraperApp {
   private isShuttingDown: boolean = false;
 
   constructor() {
-    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL!);
+    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL);
     this.scraperManager = new ScraperConfigManager(this.messageBroker);
     this.setupGracefulShutdown();
   }

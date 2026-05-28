@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_CONNECTION } from '../database/database.constants';
 import { CacheService } from './cache.service';
@@ -50,6 +50,8 @@ export interface OnChainMetricsByAsset {
 
 @Injectable()
 export class AnalyticsService {
+  private readonly logger = new Logger(AnalyticsService.name);
+
   constructor(
     @Inject(PG_CONNECTION) private readonly pool: Pool,
     private readonly cacheService: CacheService,
@@ -296,7 +298,9 @@ export class AnalyticsService {
             previous !== 0 ? ((current - previous) / previous) * 100 : null,
         };
       }
-    } catch {}
+    } catch (err) {
+      this.logger.warn('Failed to fetch BTC price', err);
+    }
 
     const ethQuery = `
       SELECT value, time FROM public.market_data 
@@ -315,7 +319,9 @@ export class AnalyticsService {
             previous !== 0 ? ((current - previous) / previous) * 100 : null,
         };
       }
-    } catch {}
+    } catch (err) {
+      this.logger.warn('Failed to fetch ETH price', err);
+    }
 
     const solQuery = `
       SELECT value, time FROM public.market_data 
@@ -334,7 +340,9 @@ export class AnalyticsService {
             previous !== 0 ? ((current - previous) / previous) * 100 : null,
         };
       }
-    } catch {}
+    } catch (err) {
+      this.logger.warn('Failed to fetch SOL price', err);
+    }
 
     const domQuery = `
       SELECT value FROM public.market_indicators 
@@ -352,7 +360,9 @@ export class AnalyticsService {
           change: previous - current,
         };
       }
-    } catch {}
+    } catch (err) {
+      this.logger.warn('Failed to fetch BTC dominance', err);
+    }
 
     const fgQuery = `
       SELECT value FROM public.market_indicators 
@@ -372,7 +382,9 @@ export class AnalyticsService {
 
         result.fearGreed = { value, label };
       }
-    } catch {}
+    } catch (err) {
+      this.logger.warn('Failed to fetch fear/greed index', err);
+    }
 
     const gasQuery = `
       SELECT value FROM public.market_indicators 
@@ -389,7 +401,9 @@ export class AnalyticsService {
 
         result.ethGas = { value, status };
       }
-    } catch {}
+    } catch (err) {
+      this.logger.warn('Failed to fetch ETH gas', err);
+    }
 
     return result;
   }

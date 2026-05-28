@@ -19,6 +19,7 @@ RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'user')
 RABBITMQ_PASS = os.getenv('RABBITMQ_PASS', 'pass')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+HEALTH_PORT = int(os.getenv('HEALTH_PORT', '6220'))
 
 RAW_NEWS_EXCHANGE = 'raw_news'
 SENTIMENT_RESULTS_EXCHANGE = 'sentiment_results'
@@ -488,8 +489,8 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 def start_health_server() -> None:
     try:
-        with socketserver.TCPServer(('', 6220), HealthHandler) as httpd:
-            logging.info('Health check server started on port 6220')
+        with socketserver.TCPServer(('', HEALTH_PORT), HealthHandler) as httpd:
+            logging.info(f'Health check server started on port {HEALTH_PORT}')
             httpd.serve_forever()
     except Exception as exc:
         logging.error(f'Failed to start health server: {exc}')

@@ -22,7 +22,7 @@ export function getEnv<T>(
   key: string,
   options: GetEnvOptions<T> & { defaultValue: T },
 ): T;
-export function getEnv<T>(
+export function getEnv<T = string>(
   key: string,
   options: GetEnvOptions<T> & { required: true },
 ): T;

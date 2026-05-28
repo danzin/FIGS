@@ -34,7 +34,6 @@ export class FredSource implements DataSource {
         !response.data.observations ||
         response.data.observations.length === 0
       ) {
-        // logger.warn(`No observations returned for series_id ${this.series_id} from FRED.`);
         console.warn(
           `No observations returned for series_id ${this.series_id} from FRED.`,
         );
@@ -46,7 +45,6 @@ export class FredSource implements DataSource {
         latestObservation.value === null ||
         latestObservation.value === undefined
       ) {
-        // logger.warn(`Invalid or missing value for M2SL on ${latestObservation.date}`);
         console.warn(
           `Invalid or missing value for ${this.series_id} on ${latestObservation.date}`,
         );
@@ -54,7 +52,6 @@ export class FredSource implements DataSource {
       }
       const value = parseFloat(latestObservation.value);
       if (isNaN(value)) {
-        // logger.warn(`Parsed NaN for M2SL on ${latestObservation.date}, original value: ${latestObservation.value}`);
         console.warn(
           `Parsed NaN for ${this.series_id} on ${latestObservation.date}, original value: ${latestObservation.value}`,
         );

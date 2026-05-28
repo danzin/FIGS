@@ -15,6 +15,7 @@ import { CoinGeckoDerivativesSource } from "./datasources/OpenInterestSource";
 import { HashRateExtendedSource, MiningDifficultySource } from "./datasources/HashRateSource";
 import { PowerLawIndicatorSource } from "./datasources/PowerLawSource";
 import { MessageBroker } from "@financialsignalsgatheringsystem/common";
+import { DataSource } from "@financialsignalsgatheringsystem/common";
 import { config } from "./utils/config";
 import { datapoints } from "./utils/datapoints";
 import { TaskScheduler, ScheduledDataSource } from "@financialsignalsgatheringsystem/common";
@@ -55,7 +56,7 @@ export class SchedulerConfigManager {
 
 		this.registerMediumFrequencySource(new VIXSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 		this.registerMediumFrequencySource(new SPYSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
-		this.registerHighFrequencySource(new BrentCrudeOilSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
+		this.registerMediumFrequencySource(new BrentCrudeOilSource(), "0 * * * *", { maxRetries: 3, retryDelay: 60000 });
 		// Bitcoin dominance (changes slowly but important)
 		this.registerMediumFrequencySource(
 			new CoinGeckoIndicatorSource("btc_dominance"),
@@ -239,7 +240,7 @@ export class SchedulerConfigManager {
 		});
 	}
 
-	public addCustomSchedule(source: any, cronExpression: string, options: Partial<ScheduledDataSource> = {}): void {
+	public addCustomSchedule(source: DataSource, cronExpression: string, options: Partial<ScheduledDataSource> = {}): void {
 		this.scheduler.registerSource({
 			source,
 			schedule: cronExpression,
@@ -257,7 +258,7 @@ export class SchedulerConfigManager {
 	}
 
 	private registerHighFrequencySource(
-		source: any,
+		source: DataSource,
 		schedule: string,
 		options: { maxRetries: number; retryDelay: number }
 	): void {
@@ -273,7 +274,7 @@ export class SchedulerConfigManager {
 	}
 
 	private registerMediumFrequencySource(
-		source: any,
+		source: DataSource,
 		schedule: string,
 		options: { maxRetries: number; retryDelay: number }
 	): void {
@@ -289,7 +290,7 @@ export class SchedulerConfigManager {
 	}
 
 	private registerLowFrequencySource(
-		source: any,
+		source: DataSource,
 		schedule: string,
 		options: { maxRetries: number; retryDelay: number }
 	): void {

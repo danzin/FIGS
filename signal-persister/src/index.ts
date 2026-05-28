@@ -15,8 +15,10 @@ class SignalPersisterApp {
   private readonly messageBroker: RabbitMQService;
   private readonly dbService: TimescaleDBService;
 
+  private isShuttingDown = false;
+
   constructor() {
-    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL!);
+    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL);
     this.dbService = new TimescaleDBService({
       host: config.DB_HOST,
       port: Number(config.DB_PORT),
@@ -24,6 +26,7 @@ class SignalPersisterApp {
       password: config.DB_PASSWORD,
       database: config.DB_NAME,
     });
+    this.setupGracefulShutdown();
   }
 
   public async start(): Promise<void> {
@@ -208,6 +211,51 @@ class SignalPersisterApp {
     }
 
     return true;
+  }
+  private setupGracefulShutdown(): void {
+    const shutdown = async (signal: string) => {
+      if (this.isShuttingDown) return;
+      this.isShuttingDown = true;
+      console.log(`[Signal Persister App] Received ${signal}, shutting down...`);
+      try {
+        await this.messageBroker.close();
+        await this.dbService.disconnect();
+        process.exit(0);
+      } catch (error) {
+        const appError = wrapError(error, "InternalServerError", {
+          context: { operation: "shutdown", signal, service: "signal-persister" },
+        });
+        console.error(
+          "[Signal Persister App] Shutdown error:",
+          toErrorResponse(appError, { includeDebugInfo: true }),
+        );
+        process.exit(1);
+      }
+    };
+
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("uncaughtException", (error) => {
+      const appError = wrapError(error, "InternalServerError", {
+        context: { operation: "uncaughtException", service: "signal-persister" },
+      });
+      console.error(
+        "[Signal Persister App] Uncaught exception:",
+        toErrorResponse(appError, { includeDebugInfo: true }),
+      );
+      void shutdown("uncaughtException");
+    });
+    process.on("unhandledRejection", (reason) => {
+      const error = reason instanceof Error ? reason : new Error(String(reason));
+      const appError = wrapError(error, "InternalServerError", {
+        context: { operation: "unhandledRejection", service: "signal-persister" },
+      });
+      console.error(
+        "[Signal Persister App] Unhandled rejection:",
+        toErrorResponse(appError, { includeDebugInfo: true }),
+      );
+      void shutdown("unhandledRejection");
+    });
   }
 }
 

@@ -29,7 +29,6 @@ export class TimescaleDBService implements DatabaseService {
         "[TimescaleDBService] Unexpected error on idle client",
         err,
       );
-      process.exit(1);
     });
   }
 
@@ -123,15 +122,6 @@ export class TimescaleDBService implements DatabaseService {
     `;
 
     try {
-      // Added validation logging
-      console.log(`[DB] Attempting to insert indicator:`, {
-        time: point.time,
-        name: point.name,
-        value: point.value,
-        source: point.source,
-      });
-
-      // Fixed: Parameters now match SQL column order (time, name, value, source)
       const res = await this.pool.query(text, [
         point.time,
         point.name,
@@ -139,22 +129,12 @@ export class TimescaleDBService implements DatabaseService {
         point.source,
       ]);
 
-      console.log(
-        `[DB] market_indicators insert result: rowCount=${res.rowCount}, command=${res.command}`,
-      );
-
       if (res.rowCount === 0) {
         console.warn(
-          `[DB] No rows inserted for indicator - this shouldn't happen. Likely duplicate: ${point.name} at ${point.time}`,
-        );
-      } else {
-        console.log(
-          `[DB] Successfully inserted/updated indicator: ${point.name}`,
+          `[TimescaleDBService] No rows inserted for indicator — possible duplicate: ${point.name} at ${point.time}`,
         );
       }
     } catch (error) {
-      console.error(`[DB] Error inserting indicator ${point.name}:`, error);
-      console.error(`[DB] Failed data point:`, point);
       throw Errors.database("Failed to insert indicator.", {
         cause: error,
         context: {

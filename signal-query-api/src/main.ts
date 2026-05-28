@@ -26,4 +26,7 @@ async function bootstrap() {
   await app.listen(Number(port), '0.0.0.0'); // '0.0.0.0' -> accessible from outside the container
   logger.log(`Signal Query API is running on: ${await app.getUrl()}`);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('[Bootstrap] Fatal startup error:', err);
+  process.exit(1);
+});

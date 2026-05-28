@@ -15,7 +15,7 @@ class DataCollectorApp {
   private systemMonitor: SystemMonitor;
 
   constructor() {
-    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL!);
+    this.messageBroker = new RabbitMQService(config.RABBITMQ_URL);
     this.schedulerManager = new SchedulerConfigManager(this.messageBroker);
     this.healthService = new HealthService(
       this.schedulerManager,
@@ -45,7 +45,7 @@ class DataCollectorApp {
       console.log("[DataCollectorApp] Scheduler started");
 
       // Start HTTP API server
-      const port = config.PORT!;
+      const port = config.PORT;
       this.apiServer.listen(Number(port));
 
       console.log("[DataCollectorApp] Application started successfully");
